@@ -38,7 +38,24 @@ class BaseLoginView(APIView):
             return invalidas
         if not actor.check_password(s.validated_data["password"]) or not actor.is_active:
             return invalidas
-        return Response(build_tokens(actor, self.ctx))
+        mfa_pendiente = bool(getattr(actor, "mfa_habilitado", False))
+        return Response(build_tokens(actor, self.ctx, mfa_pendiente=mfa_pendiente))
+
+
+class MeView(APIView):
+    """Devuelve el actor autenticado. Sujeto a los permisos por defecto (MFA + email verificado)."""
+
+    def get(self, request):
+        u = request.user
+        return Response(
+            {
+                "id": u.pk,
+                "email": u.email,
+                "nombre": getattr(u, "nombre", None),
+                "ctx": (request.auth or {}).get("ctx"),
+                "rol": getattr(u, "rol", None),
+            }
+        )
 
 
 class LogoutView(APIView):

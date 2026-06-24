@@ -12,6 +12,8 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
+from common.fields import EncryptedCharField
+
 
 class UsuarioManager(BaseUserManager):
     use_in_migrations = True
@@ -55,6 +57,9 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     activo = models.BooleanField(default=True)  # reemplaza status=inactive; el login lo exige
     fecha_baja = models.DateTimeField(null=True, blank=True)  # baja lógica (low_login/delete_at)
     is_staff = models.BooleanField(default=False)  # acceso al admin de Django del tenant
+    # MFA (TOTP). Secreto cifrado en reposo (Fernet). WebAuthn se añade aparte.
+    mfa_habilitado = models.BooleanField(default=False)
+    mfa_totp_secret = EncryptedCharField(max_length=64, null=True, blank=True)
 
     objects = UsuarioManager()
 

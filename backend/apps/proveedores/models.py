@@ -42,6 +42,9 @@ class CuentaProveedor(AbstractBaseUser):
     puesto = models.CharField(max_length=120, null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
     activo = models.BooleanField(default=True)
+    # MFA (TOTP). Secreto cifrado en reposo (Fernet).
+    mfa_habilitado = models.BooleanField(default=False)
+    mfa_totp_secret = EncryptedCharField(max_length=64, null=True, blank=True)
     # PII cifrada en reposo (Fernet):
     curp = EncryptedCharField(max_length=18, null=True, blank=True)
     nss = EncryptedCharField(max_length=11, null=True, blank=True)

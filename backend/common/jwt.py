@@ -24,14 +24,19 @@ CONTEXTS = {
 }
 
 
-def build_tokens(user, ctx: str) -> dict[str, str]:
-    """Emite par access/refresh con los claims ctx/tenant/user_id del schema actual."""
+def build_tokens(user, ctx: str, *, mfa_pendiente: bool = False) -> dict[str, str]:
+    """Emite par access/refresh con los claims ctx/tenant/user_id/mfa del schema actual.
+
+    ``mfa_pendiente=True`` marca el token como sesión MFA incompleta (claim ``mfa="pending"``):
+    solo sirve para completar el segundo factor; ``MFASesionCompleta`` rechaza el resto (F0.4).
+    """
     if ctx not in CONTEXTS:
         raise ValueError(f"Contexto JWT desconocido: {ctx}")
     refresh = RefreshToken()
     refresh["user_id"] = user.pk
     refresh["ctx"] = ctx
     refresh["tenant"] = connection.schema_name
+    refresh["mfa"] = "pending" if mfa_pendiente else "ok"
     return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 

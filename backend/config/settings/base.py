@@ -80,10 +80,10 @@ MIDDLEWARE = [
     "config.middleware.enforcement.RestringirAdminPorIP",           # 2. /admin/ por IP
     "config.middleware.enforcement.EnforceMantenimiento",           # 3. 503 en mantenimiento
     "config.middleware.enforcement.BloquearTenantsInactivos",       # 4. suspendido/cancelado
-    # "config.middleware.enforcement.BloquearEmailNoVerificado",    # 5. (F0.4: requiere actor JWT)
+    # Slot 5 (email no verificado) -> common.permissions.EmailVerificado (DRF, requiere actor JWT)
     "config.middleware.enforcement.BloquearTrialExpirado",          # 6. trial vencido
     "config.middleware.enforcement.EnforceModoSoloLectura",         # 7. 423 en dunning
-    # "config.middleware.enforcement.EnforceMFAFullSession",        # 9. (F0.4)
+    # Slot 9 (sesión MFA incompleta) -> common.permissions.MFASesionCompleta (DRF)
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -133,7 +133,11 @@ REST_FRAMEWORK = {
         # Resuelve el actor por contexto (acceso/proveedores) y valida pertenencia al tenant.
         "common.jwt.TenantAwareJWTAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+        "common.permissions.MFASesionCompleta",   # §6 slot 9: sesión MFA incompleta -> 403
+        "common.permissions.EmailVerificado",     # §6 slot 5: email no verificado -> 403
+    ),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
