@@ -155,7 +155,7 @@ Implementación por **fases verticales** (F0→F8) con checkpoint y aprobación 
 | **F0.4** | MFA TOTP (enrolar/activar/verificar) + enforcement por actor (sesión MFA, email verificado). WebAuthn pendiente | 🟡 |
 | **F0.5** | Billing Stripe (suscripción + créditos + webhooks, sandbox) + transiciones de estado del tenant | ✅ |
 | **F0.6** | `RequiereModulo`/`RequiereRol`/`RequiereMembresia` + Mesa de Ayuda (`apps.soporte`) + siembra de planes | ✅ |
-| **F0.7** | Tres shells React (acceso, proveedores, admin) | ⏳ |
+| **F0.7** | Tres shells React (Vite+TS+Tailwind+Zustand+Axios con JWT/refresh). Requiere `npm install` (Node) para arrancar | 🟡 |
 | **F1–F8** | Recintos · Documentos · Eventos · Citas/OCR · Gafetes/Acceso · Edge · Mensajería/69-B · Reportes/ETL | ⏳ |
 
 ## Decisiones de seguridad
