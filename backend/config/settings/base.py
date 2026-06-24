@@ -201,6 +201,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ── Integraciones (claves vía .env; nunca hardcodear — REMEDIACION §C2) ──────
 ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")          # vacío → modo sandbox
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")   # firma del webhook (prod)
+STRIPE_SUCCESS_URL = config("STRIPE_SUCCESS_URL", default="https://app.xenty.mx/billing/ok")
+STRIPE_CANCEL_URL = config("STRIPE_CANCEL_URL", default="https://app.xenty.mx/billing/cancel")
 ULTRAMSG_TOKEN = config("ULTRAMSG_TOKEN", default="")
 ULTRAMSG_INSTANCE_ID = config("ULTRAMSG_INSTANCE_ID", default="")
 AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")

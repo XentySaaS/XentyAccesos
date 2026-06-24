@@ -1,7 +1,13 @@
-"""Control plane — schema 'public'. F0 monta gestión de tenants, billing y webhooks Stripe."""
+"""Control plane — schema 'public'.
+
+F0.5 monta el webhook de Stripe (transiciona el estado del tenant). La gestión de tenants y la
+creación de sesiones de checkout (acción del super-admin) se montan cuando exista la auth del
+control plane; la lógica ya vive en ``apps.tenants.services`` (billing + stripe_gateway).
+"""
 from django.urls import path
 
+from apps.tenants.webhooks import StripeWebhookView
+
 urlpatterns = [
-    # path("api/tenants/", include("apps.tenants.urls")),       # F0
-    # path("webhooks/stripe/", stripe_webhook_view),            # F0
+    path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
 ]
