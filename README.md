@@ -157,7 +157,8 @@ Implementación por **fases verticales** (F0→F8) con checkpoint y aprobación 
 | **F0.6** | `RequiereModulo`/`RequiereRol`/`RequiereMembresia` + Mesa de Ayuda (`apps.soporte`) + siembra de planes | ✅ |
 | **F0.7** | Tres shells React (Vite+TS+Tailwind+Zustand+Axios con JWT/refresh). Requiere `npm install` (Node) para arrancar | 🟡 |
 | **F1** | Backend ✅ (Recintos · Proveedores+onboarding · Empleados+import Excel). Pantallas React ⏳ | 🟡 |
-| **F2–F8** | Documentos · Eventos · Citas/OCR · Gafetes/Acceso · Edge · Mensajería/69-B · Reportes/ETL | ⏳ |
+| **F2** | Backend ✅ (catálogo documental, upload validado, verificación, regla `checkdocs` como servicio). Pantallas React ⏳ | 🟡 |
+| **F3–F8** | Eventos · Citas/OCR · Gafetes/Acceso · Edge · Mensajería/69-B · Reportes/ETL | ⏳ |
 
 ## Decisiones de seguridad
 
