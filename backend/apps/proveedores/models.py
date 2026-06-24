@@ -14,6 +14,35 @@ from django.db import models
 from common.fields import EncryptedCharField
 
 
+class Proveedor(models.Model):  # suppliers (empresa externa)
+    """Empresa proveedora. Su responsable es una ``CuentaProveedor``. RFC validado al guardar."""
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        CONFIRMADO = "confirmado", "Confirmado"
+        ACTIVO = "activo", "Activo"
+        INACTIVO = "inactivo", "Inactivo"
+
+    nombre = models.CharField(max_length=200)
+    razon_social = models.CharField(max_length=255, null=True, blank=True)
+    rfc = models.CharField(max_length=13, null=True, blank=True, db_index=True)
+    email = models.EmailField(null=True, blank=True)
+    email_responsable = models.EmailField(null=True, blank=True)
+    nombre_responsable = models.CharField(max_length=200, null=True, blank=True)
+    telefono = models.CharField(max_length=30, null=True, blank=True)
+    direccion = models.TextField(null=True, blank=True)
+    file_repse = models.FileField(upload_to="proveedores/repse/", null=True, blank=True)
+    file_sua = models.FileField(upload_to="proveedores/sua/", null=True, blank=True)
+    responsable = models.ForeignKey(
+        "proveedores.CuentaProveedor", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="proveedor_responsable",
+    )
+    estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class CuentaProveedorManager(BaseUserManager):
     use_in_migrations = True
 
@@ -38,7 +67,9 @@ class CuentaProveedor(AbstractBaseUser):
     email = models.EmailField(unique=True)
     email_verificado = models.DateTimeField(null=True, blank=True)
     rol = models.CharField(max_length=10, choices=Rol.choices, default=Rol.USUARIO)
-    # NOTA: FK `proveedor` -> proveedores.Proveedor se añade en F1 (catálogo de empresas).
+    proveedor = models.ForeignKey(
+        Proveedor, on_delete=models.CASCADE, null=True, blank=True, related_name="cuentas"
+    )  # era company_id en el origen
     puesto = models.CharField(max_length=120, null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
     activo = models.BooleanField(default=True)

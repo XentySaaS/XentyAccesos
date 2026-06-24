@@ -33,4 +33,5 @@ urlpatterns = [
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
     path("api/", include("apps.recintos.urls")),  # F1: topología de recintos
+    path("api/", include("apps.proveedores.urls")),  # F1: catálogo + onboarding de proveedores
 ]
