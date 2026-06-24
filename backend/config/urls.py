@@ -36,4 +36,5 @@ urlpatterns = [
     path("api/", include("apps.proveedores.urls")),  # F1: catálogo + onboarding de proveedores
     path("api/", include("apps.empleados.urls")),  # F1: plantilla de empleados del proveedor
     path("api/", include("apps.documentos.urls")),  # F2: catálogo documental + verificación
+    path("api/", include("apps.eventos.urls")),  # F3: eventos
 ]
