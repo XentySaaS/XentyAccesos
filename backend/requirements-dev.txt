@@ -1,0 +1,5 @@
+-r requirements.txt
+# Herramientas de desarrollo y pruebas (no se instalan en la imagen de producción).
+pytest==8.3.2
+pytest-django==4.8.0
+ruff==0.6.2
