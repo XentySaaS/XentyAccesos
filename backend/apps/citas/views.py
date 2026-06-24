@@ -32,7 +32,12 @@ class CitaViewSet(viewsets.ModelViewSet):
     filterset_fields = ["tipo", "tipo_cita", "estado", "recinto", "proveedor"]
 
     def perform_create(self, serializer):
-        serializer.save(creado_por_usuario=self.request.user)
+        cita = serializer.save(creado_por_usuario=self.request.user)
+        # Walk-in: crea automáticamente el registro de entrada (SAR_FUNC §7.1).
+        if cita.tipo_cita == Cita.TipoCita.WALK_IN:
+            from apps.acceso.services import registrar_walkin
+
+            registrar_walkin(cita)
 
     def perform_destroy(self, instance):
         # No eliminable: tipo proveedor con empleados, o tipo directa con asistentes (SAR_FUNC §7.1).

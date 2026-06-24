@@ -160,7 +160,7 @@ Implementación por **fases verticales** (F0→F8) con checkpoint y aprobación 
 | **F2** | Backend ✅ (catálogo documental, upload validado, verificación, regla `checkdocs` como servicio). Pantallas React ⏳ | 🟡 |
 | **F3** | Backend ✅ (Evento+estados, EventoProveedor, parking, requisitos doc, asignación masiva con `checkdocs`+límite, guardia de borrado). Pantallas React ⏳ | 🟡 |
 | **F4** | Backend ✅ (Citas: cascada, GFK asistente, INE cifrado, reglas de borrado; OCR INE Textract/sandbox + validación de sección). Pantallas React ⏳ | 🟡 |
-| **F5** | QR firmado inviolable (Fernet+jti+exp) ✅ · Acceso físico + sanciones ⏳ | 🟡 |
+| **F5** | Backend ✅ (QR inviolable, escáner con validación de pertenencia/vigencia/`statusdocs`/sanciones, salida, parking, walk-in, sanciones). Pantallas React ⏳ | 🟡 |
 | **F6–F8** | Edge · Mensajería/69-B · Reportes/ETL | ⏳ |
 
 ## Decisiones de seguridad

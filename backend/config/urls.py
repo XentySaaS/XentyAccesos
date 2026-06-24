@@ -38,4 +38,6 @@ urlpatterns = [
     path("api/", include("apps.documentos.urls")),  # F2: catálogo documental + verificación
     path("api/", include("apps.eventos.urls")),  # F3: eventos
     path("api/", include("apps.citas.urls")),  # F4: citas
+    path("api/", include("apps.acceso.urls")),  # F5: acceso físico (escáner + bitácora)
+    path("api/", include("apps.sanciones.urls")),  # F5: sanciones
 ]
