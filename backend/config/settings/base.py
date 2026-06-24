@@ -168,7 +168,8 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": f"{REDIS_URL}/2",
-        # F0: aislar por tenant con KEY_PREFIX por schema (REMEDIACION §A5)
+        # Aislamiento por tenant: prefija cada clave con el schema actual (REMEDIACION §A5).
+        "KEY_FUNCTION": "common.cache.tenant_key_func",
     }
 }
 RATELIMIT_USE_CACHE = "default"

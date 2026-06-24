@@ -8,4 +8,17 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# F0: Sentry con scrubbing de PII (REMEDIACION §A7) si SENTRY_DSN está presente.
+# Sentry con scrubbing de PII (REMEDIACION §A7) si SENTRY_DSN está presente.
+if SENTRY_DSN:  # noqa: F405
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    from common.observability import scrub_event
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,  # noqa: F405
+        integrations=[DjangoIntegration()],
+        before_send=scrub_event,
+        send_default_pii=False,
+        traces_sample_rate=0.0,
+    )

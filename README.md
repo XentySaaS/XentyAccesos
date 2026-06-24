@@ -163,7 +163,7 @@ Implementación por **fases verticales** (F0→F8) con checkpoint y aprobación 
 | **F5** | Backend ✅ (QR inviolable, escáner con validación de pertenencia/vigencia/`statusdocs`/sanciones, salida, parking, walk-in, sanciones). Pantallas React ⏳ | 🟡 |
 | **F6** | Backend ✅ (API edge `/api/v1/*` HMAC + nonce anti-replay, long-poll por dispositivo, validación QR aislada por tenant) | ✅ |
 | **F7** | Backend ✅ (Mensajería WhatsApp segmentada por Celery + cumplimiento SAT 69-B: importador EFOS + validación). Pantallas React ⏳ | 🟡 |
-| **F8** | Reportes/dashboard/calendario · ETL MySQL→Postgres · hardening | ⏳ |
+| **F8** | Backend ✅ (dashboard/calendario/Excel, auditoría, framework ETL, aislamiento de cache, scrubbing PII, suite de aislamiento). Pantallas React ⏳ | 🟡 |
 
 ## Decisiones de seguridad
 
