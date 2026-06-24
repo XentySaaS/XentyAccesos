@@ -1,0 +1,25 @@
+# Secretos (REMEDIACION §C1) — jamás versionar
+.env
+*.env
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+staticfiles/
+
+# Media de tenants (PII) — fuera del repo
+media/
+
+# Node
+node_modules/
+dist/
+
+# Código del stack anterior (mantener como repo hermano, NO aquí)
+_ref-sar-legacy/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
