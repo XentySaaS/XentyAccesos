@@ -54,6 +54,24 @@ def RequiereRol(*roles: str):
     return _RequiereRol
 
 
+class ContextoProveedores(BasePermission):
+    """Solo actores del contexto *proveedores* (claim ``ctx="proveedores"``)."""
+
+    message = "Disponible solo para cuentas de proveedor."
+
+    def has_permission(self, request, view):
+        return (request.auth or {}).get("ctx") == "proveedores"
+
+
+class ContextoAcceso(BasePermission):
+    """Solo actores del contexto *acceso* (operación del recinto)."""
+
+    message = "Disponible solo para usuarios de operación."
+
+    def has_permission(self, request, view):
+        return (request.auth or {}).get("ctx") == "acceso"
+
+
 class RequiereMembresia(BasePermission):
     """Pertenencia a nivel objeto: el proveedor solo accede a recursos de su propia empresa.
 
