@@ -210,4 +210,8 @@ AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
 AWS_REGION = config("AWS_REGION", default="us-east-1")
 SAT_EFOS_UPDATE_EVERY_MONTHS = config("SAT_EFOS_UPDATE_EVERY_MONTHS", default=1, cast=int)
+SAT_EFOS_CSV_URL = config("SAT_EFOS_CSV_URL", default="")
+SAT_EFOS_ESTATUS_BLOQUEANTES = config(
+    "SAT_EFOS_ESTATUS_BLOQUEANTES", default="Definitivo,Presunto", cast=Csv()
+)
 SENTRY_DSN = config("SENTRY_DSN", default="")

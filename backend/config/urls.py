@@ -41,4 +41,5 @@ urlpatterns = [
     path("api/", include("apps.acceso.urls")),  # F5: acceso físico (escáner + bitácora)
     path("api/", include("apps.sanciones.urls")),  # F5: sanciones
     path("api/", include("apps.mensajeria.urls")),  # F7: mensajería WhatsApp
+    path("api/", include("apps.cumplimiento.urls")),  # F7: cumplimiento SAT 69-B
 ]
