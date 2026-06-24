@@ -6,8 +6,11 @@ control plane; la lógica ya vive en ``apps.tenants.services`` (billing + stripe
 """
 from django.urls import path
 
+from django.urls import include
+
 from apps.tenants.webhooks import StripeWebhookView
 
 urlpatterns = [
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
+    path("", include("apps.dispositivos.urls")),  # F6: API edge /api/v1/* (HMAC)
 ]
