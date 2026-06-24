@@ -158,7 +158,7 @@ Implementación por **fases verticales** (F0→F8) con checkpoint y aprobación 
 | **F0.7** | Tres shells React (Vite+TS+Tailwind+Zustand+Axios con JWT/refresh). Requiere `npm install` (Node) para arrancar | 🟡 |
 | **F1** | Backend ✅ (Recintos · Proveedores+onboarding · Empleados+import Excel). Pantallas React ⏳ | 🟡 |
 | **F2** | Backend ✅ (catálogo documental, upload validado, verificación, regla `checkdocs` como servicio). Pantallas React ⏳ | 🟡 |
-| **F3** | Evento + máquina de estados + propiedad + verificadores ✅ · EventoProveedor/parking/asignación masiva ⏳ | 🟡 |
+| **F3** | Backend ✅ (Evento+estados, EventoProveedor, parking, requisitos doc, asignación masiva con `checkdocs`+límite, guardia de borrado). Pantallas React ⏳ | 🟡 |
 | **F4–F8** | Citas/OCR · Gafetes/Acceso · Edge · Mensajería/69-B · Reportes/ETL | ⏳ |
 
 ## Decisiones de seguridad

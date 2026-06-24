@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import Evento
+from .models import EmpleadoEventoProveedor, Evento, EventoProveedor
 
 
 class EventoSerializer(serializers.ModelSerializer):
@@ -25,3 +25,17 @@ class EventoSerializer(serializers.ModelSerializer):
                 {"vigencia_fin": "La vigencia final no puede ser anterior a la inicial."}
             )
         return attrs
+
+
+class EventoProveedorSerializer(serializers.ModelSerializer):
+    asignados = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EventoProveedor
+        fields = [
+            "id", "evento", "proveedor", "protocolo", "zona", "acceso", "ubicacion",
+            "punto_acceso", "limite", "requiere_parking", "cajones_parking", "notas", "asignados",
+        ]
+
+    def get_asignados(self, obj) -> int:
+        return EmpleadoEventoProveedor.objects.filter(evento_proveedor=obj).count()
