@@ -12,7 +12,7 @@ Autenticación de los dos contextos (F0.2):
 F1+ monta las apps de negocio bajo /api/.
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.api import AccesoLoginView
@@ -32,5 +32,5 @@ urlpatterns = [
     path("api/auth/mfa/totp/activar/", ActivarTOTPView.as_view(), name="mfa-totp-activar"),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
-    # path("api/", include("apps.<app>.urls")),  # F1+
+    path("api/", include("apps.recintos.urls")),  # F1: topología de recintos
 ]

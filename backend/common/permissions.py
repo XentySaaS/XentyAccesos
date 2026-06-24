@@ -9,7 +9,7 @@ Endpoints que deben quedar exentos (login, verificación MFA) fijan su propio ``
 from __future__ import annotations
 
 from rest_framework.exceptions import APIException
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, IsAuthenticated
 
 
 class ModuloNoContratado(APIException):
@@ -67,6 +67,15 @@ class RequiereMembresia(BasePermission):
         if actor_prov is None or obj_prov is None:
             return True
         return actor_prov == obj_prov
+
+
+def PERMISOS_BASE():
+    """Permisos por defecto (sesión válida + MFA completa + email verificado).
+
+    Se anteponen en los ViewSets que añaden RequiereRol/RequiereModulo, ya que fijar
+    ``permission_classes`` reemplaza —no agrega— a los de ``DEFAULT_PERMISSION_CLASSES``.
+    """
+    return [IsAuthenticated, MFASesionCompleta, EmailVerificado]
 
 
 class MFASesionCompleta(BasePermission):

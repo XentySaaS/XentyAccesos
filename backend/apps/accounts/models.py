@@ -52,7 +52,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     email_verificado = models.DateTimeField(null=True, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.EDITOR)
-    # NOTA: FK `recinto` -> recintos.Recinto se añade en F1 (cuando exista el modelo Recinto).
+    recinto = models.ForeignKey(
+        "recintos.Recinto", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="usuarios",
+    )
     telefono = models.CharField(max_length=30, null=True, blank=True)
     activo = models.BooleanField(default=True)  # reemplaza status=inactive; el login lo exige
     fecha_baja = models.DateTimeField(null=True, blank=True)  # baja lógica (low_login/delete_at)
