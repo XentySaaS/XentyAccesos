@@ -42,4 +42,5 @@ urlpatterns = [
     path("api/", include("apps.sanciones.urls")),  # F5: sanciones
     path("api/", include("apps.mensajeria.urls")),  # F7: mensajería WhatsApp
     path("api/", include("apps.cumplimiento.urls")),  # F7: cumplimiento SAT 69-B
+    path("api/", include("apps.config.urls")),  # F8: configuración, auditoría y reportes
 ]
