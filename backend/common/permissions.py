@@ -8,7 +8,65 @@ Endpoints que deben quedar exentos (login, verificación MFA) fijan su propio ``
 """
 from __future__ import annotations
 
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import BasePermission
+
+
+class ModuloNoContratado(APIException):
+    """HTTP 402: el módulo solicitado no está incluido en el plan del tenant."""
+
+    status_code = 402
+    default_detail = "Este módulo no está incluido en el plan contratado."
+    default_code = "modulo_no_contratado"
+
+
+def RequiereModulo(modulo: str):
+    """Permission de módulo comercial: 402 si el plan del tenant no incluye ``modulo``.
+
+    Uso: ``permission_classes = [RequiereModulo("eventos")]``. Lee ``request.tenant.plan.modulos``.
+    """
+
+    class _RequiereModulo(BasePermission):
+        def has_permission(self, request, view):
+            tenant = getattr(request, "tenant", None)
+            plan = getattr(tenant, "plan", None) if tenant else None
+            modulos = (getattr(plan, "modulos", None) or []) if plan else []
+            if modulo in modulos:
+                return True
+            raise ModuloNoContratado()
+
+    return _RequiereModulo
+
+
+def RequiereRol(*roles: str):
+    """Permission de rol primario: pasa solo si ``request.user.rol`` está en ``roles``.
+
+    Uso: ``permission_classes = [RequiereRol("administrador", "editor")]``.
+    """
+
+    class _RequiereRol(BasePermission):
+        message = "Tu rol no tiene permiso para esta acción."
+
+        def has_permission(self, request, view):
+            user = getattr(request, "user", None)
+            return bool(user and user.is_authenticated and getattr(user, "rol", None) in roles)
+
+    return _RequiereRol
+
+
+class RequiereMembresia(BasePermission):
+    """Pertenencia a nivel objeto: el proveedor solo accede a recursos de su propia empresa.
+
+    Se refina en F1 (cuando ``CuentaProveedor.proveedor`` y los modelos de negocio existan). Si no
+    hay relación de proveedor en juego, no restringe.
+    """
+
+    def has_object_permission(self, request, view, obj):
+        actor_prov = getattr(request.user, "proveedor_id", None)
+        obj_prov = getattr(obj, "proveedor_id", None)
+        if actor_prov is None or obj_prov is None:
+            return True
+        return actor_prov == obj_prov
 
 
 class MFASesionCompleta(BasePermission):
