@@ -20,8 +20,10 @@ class Command(BaseCommand):
         parser.add_argument("--password", default=None)
 
     def handle(self, *args, **opts):
-        if SuperAdmin.objects.filter(email=opts["email"]).exists():
-            self.stdout.write(self.style.WARNING("Ya existe; no se modifica."))
+        if SuperAdmin.objects.exists():
+            self.stdout.write(self.style.WARNING(
+                "Ya existe un super-administrador; solo puede haber uno. No se crea otro."
+            ))
             return
         password = opts["password"] or secrets.token_urlsafe(12)
         SuperAdmin.objects.create_user(email=opts["email"], nombre=opts["nombre"], password=password)

@@ -9,6 +9,7 @@ Referencias: MODELO_DATOS_SAR §5, PLAYBOOK_SAR_XENTY §5/§9 (F0).
 from __future__ import annotations
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.core.exceptions import ValidationError
 from django.db import models
 from django_tenants.models import DomainMixin, TenantMixin
 
@@ -180,6 +181,12 @@ class SuperAdmin(AbstractBaseUser):
     @property
     def is_active(self) -> bool:  # contrato esperado por los backends de auth
         return self.activo
+
+    def save(self, *args, **kwargs):
+        # Singleton: solo puede existir UN super-admin con super permisos.
+        if self._state.adding and SuperAdmin.objects.exists():
+            raise ValidationError("Ya existe un super-administrador; solo puede haber uno.")
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.email
