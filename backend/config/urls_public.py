@@ -15,6 +15,8 @@ from apps.tenants.admin_api import (
     SuperAdminLoginView,
     TenantAdminViewSet,
 )
+from rest_framework_simplejwt.views import TokenRefreshView
+
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
@@ -29,6 +31,7 @@ urlpatterns = [
     path("api/signup/", SignupView.as_view(), name="signup"),
     # Control plane (super-admin)
     path("api/admin/login/", SuperAdminLoginView.as_view(), name="admin-login"),
+    path("api/auth/refresh/", TokenRefreshView.as_view(), name="admin-token-refresh"),
     path("api/admin/me/", MeView.as_view(), name="admin-me"),
     path("api/admin/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="admin-mfa-enrolar"),
     path("api/admin/mfa/totp/activar/", ActivarTOTPView.as_view(), name="admin-mfa-activar"),

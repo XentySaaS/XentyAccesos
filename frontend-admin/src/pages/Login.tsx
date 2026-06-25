@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../store/auth";
 
@@ -14,11 +14,11 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     try {
-      const { data } = await api.post("/api/auth/acceso/login/", { email, password });
+      const { data } = await api.post("/api/admin/login/", { email, password });
       setTokens(data.access, data.refresh);
-      navigate("/dashboard");
+      navigate("/tenants");
     } catch {
-      setError("Credenciales invalidas.");
+      setError("Credenciales inválidas.");
     }
   }
 
@@ -29,11 +29,15 @@ export default function Login() {
         {error && <p className="text-sm text-red-600">{error}</p>}
         <input className="w-full rounded border px-3 py-2" type="email" placeholder="Correo"
           value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <input className="w-full rounded border px-3 py-2" type="password" placeholder="Contrasena"
+        <input className="w-full rounded border px-3 py-2" type="password" placeholder="Contraseña"
           value={password} onChange={(e) => setPassword(e.target.value)} required />
         <button className="w-full rounded bg-slate-900 py-2 text-white" type="submit">
           Entrar
         </button>
+        <p className="text-center text-sm text-slate-500">
+          ¿Nueva empresa?{" "}
+          <Link className="text-slate-900 underline" to="/registro">Crear cuenta</Link>
+        </p>
       </form>
     </div>
   );

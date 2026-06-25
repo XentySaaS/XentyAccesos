@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import Signup from "./pages/Signup";
+import Tenants from "./pages/Tenants";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -10,5 +11,6 @@ function Protegida({ children }: { children: JSX.Element }) {
 
 export const router = createBrowserRouter([
   { path: "/", element: <Login /> },
-  { path: "/dashboard", element: <Protegida><Dashboard /></Protegida> },
+  { path: "/registro", element: <Signup /> },
+  { path: "/tenants", element: <Protegida><Tenants /></Protegida> },
 ]);
