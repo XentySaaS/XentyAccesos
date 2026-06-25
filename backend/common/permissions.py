@@ -72,6 +72,15 @@ class ContextoAcceso(BasePermission):
         return (request.auth or {}).get("ctx") == "acceso"
 
 
+class EsSuperAdmin(BasePermission):
+    """Solo el super-admin del control plane (claim ``ctx="superadmin"``)."""
+
+    message = "Disponible solo para el super-admin."
+
+    def has_permission(self, request, view):
+        return (request.auth or {}).get("ctx") == "superadmin"
+
+
 class RequiereMembresia(BasePermission):
     """Pertenencia a nivel objeto: el proveedor solo accede a recursos de su propia empresa.
 

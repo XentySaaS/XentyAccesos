@@ -21,6 +21,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 CONTEXTS = {
     "acceso": ("accounts", "Usuario"),
     "proveedores": ("proveedores", "CuentaProveedor"),
+    "superadmin": ("tenants", "SuperAdmin"),  # control plane (schema public)
 }
 
 
