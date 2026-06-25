@@ -7,6 +7,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-xenty}
     ports: ["5434:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-xenty}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   redis:
     image: redis:7-alpine
@@ -16,13 +21,16 @@ services:
     image: axllent/mailpit:latest
     ports: ["8025:8025", "1025:1025"]
 
+  # Data plane: aplica migraciones compartidas al arrancar y sirve la API del tenant.
   backend:
     build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: sh -c "python manage.py migrate_schemas --shared && python manage.py runserver 0.0.0.0:8000"
     env_file: [.env]
     volumes: ["./backend:/app"]
     ports: ["8002:8000"]
-    depends_on: [postgres, redis]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_started }
 
   celery-worker:
     build: ./backend
@@ -38,6 +46,7 @@ services:
     volumes: ["./backend:/app"]
     depends_on: [backend, redis]
 
+  # Control plane (super-admin / signup): schema public.
   superadmin-backend:
     build: ./backend
     command: python manage.py runserver 0.0.0.0:8000
@@ -46,7 +55,34 @@ services:
     env_file: [.env]
     volumes: ["./backend:/app"]
     ports: ["8003:8000"]
-    depends_on: [postgres, redis]
+    depends_on:
+      backend: { condition: service_started }
+      postgres: { condition: service_healthy }
+
+  # ── SPAs (Vite dev; el proxy /api apunta al servicio del compose) ──────────
+  frontend-acceso:
+    build: ./frontend-acceso
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    volumes: ["./frontend-acceso:/app", "/app/node_modules"]
+    ports: ["5174:5174"]
+    depends_on: [backend]
+
+  frontend-proveedores:
+    build: ./frontend-proveedores
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    volumes: ["./frontend-proveedores:/app", "/app/node_modules"]
+    ports: ["5175:5175"]
+    depends_on: [backend]
+
+  frontend-admin:
+    build: ./frontend-admin
+    environment:
+      VITE_PROXY_TARGET: http://superadmin-backend:8000
+    volumes: ["./frontend-admin:/app", "/app/node_modules"]
+    ports: ["5176:5176"]
+    depends_on: [superadmin-backend]
 
 volumes:
   pgdata:

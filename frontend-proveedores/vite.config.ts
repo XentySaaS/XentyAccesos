@@ -1,11 +1,14 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
-// El proxy /api -> backend evita CORS en dev. En prod sirve Nginx.
+// Proxy /api -> backend (data plane). En Docker apunta al servicio 'backend'; en local a :8002.
+const target = process.env.VITE_PROXY_TARGET || "http://localhost:8002";
+
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: true,
     port: 5175,
-    proxy: { "/api": { target: "http://localhost:8002", changeOrigin: true } },
+    proxy: { "/api": { target, changeOrigin: true } },
   },
 });
