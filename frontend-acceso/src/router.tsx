@@ -1,6 +1,9 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import Login from "./pages/Login";
+import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Proveedores from "./pages/Proveedores";
+import Recintos from "./pages/Recintos";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -10,5 +13,16 @@ function Protegida({ children }: { children: JSX.Element }) {
 
 export const router = createBrowserRouter([
   { path: "/", element: <Login /> },
-  { path: "/dashboard", element: <Protegida><Dashboard /></Protegida> },
+  {
+    element: (
+      <Protegida>
+        <Layout />
+      </Protegida>
+    ),
+    children: [
+      { path: "/dashboard", element: <Dashboard /> },
+      { path: "/recintos", element: <Recintos /> },
+      { path: "/proveedores", element: <Proveedores /> },
+    ],
+  },
 ]);
