@@ -32,6 +32,7 @@ class Mensaje(models.Model):  # messages
     progreso = models.FloatField(default=0)
     creado_por = models.ForeignKey("accounts.Usuario", on_delete=models.SET_NULL, null=True)
     creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
 
 class DestinatarioMensaje(models.Model):  # message_recipients
@@ -46,3 +47,5 @@ class DestinatarioMensaje(models.Model):  # message_recipients
         max_length=10, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True
     )  # FIX: índice para seguimiento de progreso
     external_id = models.CharField(max_length=64, null=True, blank=True)  # id de UltraMsg
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)

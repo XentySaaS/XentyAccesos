@@ -29,3 +29,4 @@ class Sancion(models.Model):  # warnings
     fecha_inicio = models.DateField(null=True, blank=True)  # obligatoria si penalidad=Suspensión
     fecha_fin = models.DateField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)

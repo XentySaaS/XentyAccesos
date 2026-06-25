@@ -45,6 +45,8 @@ class Evento(models.Model):  # events
     areas_autorizadas = models.ManyToManyField(
         "recintos.AreaAutorizada", through="AreaAutorizadaEvento", related_name="eventos"
     )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def puede_transicionar(self, nuevo: str) -> bool:
         return nuevo in self.TRANSICIONES.get(self.estado, set())
@@ -56,6 +58,7 @@ class Evento(models.Model):  # events
 class VerificadorEvento(models.Model):  # verifiers_events
     usuario = models.ForeignKey("accounts.Usuario", on_delete=models.CASCADE)
     evento = models.ForeignKey(Evento, on_delete=models.CASCADE)
+    creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = [("usuario", "evento")]
@@ -84,6 +87,8 @@ class EventoProveedor(models.Model):  # event_suppliers
         "recintos.AreaAutorizada", through="AreaAutorizadaEventoProveedor",
         related_name="eventos_proveedor",
     )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("evento", "proveedor")]
@@ -100,6 +105,8 @@ class EmpleadoEventoProveedor(models.Model):  # employee_event_supplier
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
     evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE, related_name="asignaciones")
     statusdocs = models.IntegerField(choices=StatusDocs.choices, default=StatusDocs.PENDIENTES)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("empleado", "evento_proveedor")]
@@ -108,6 +115,8 @@ class EmpleadoEventoProveedor(models.Model):  # employee_event_supplier
 class CajonParking(models.Model):  # parking_event_suppliers
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)  # va en el QR
     evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE, related_name="cajones")
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
 
 class EventoGrupoDocumentos(models.Model):  # event_group_documents
@@ -120,6 +129,8 @@ class EventoGrupoDocumentos(models.Model):  # event_group_documents
     type_validation = models.IntegerField(
         choices=TypeValidation.choices, default=TypeValidation.AL_MENOS_UNO
     )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("evento", "grupo")]
@@ -128,6 +139,8 @@ class EventoGrupoDocumentos(models.Model):  # event_group_documents
 class EventoTipoDocumento(models.Model):  # event_list_document
     evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name="tipos_documento")
     tipo_documento = models.ForeignKey("documentos.TipoDocumento", on_delete=models.CASCADE)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("evento", "tipo_documento")]

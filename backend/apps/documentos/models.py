@@ -14,6 +14,8 @@ class GrupoDocumentos(models.Model):  # group_documents
     nombre = models.CharField(max_length=160)
     descripcion = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre
@@ -26,6 +28,8 @@ class TipoDocumento(models.Model):  # list_documents
     nombre = models.CharField(max_length=160)
     descripcion = models.CharField(max_length=255, null=True, blank=True)
     activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre
@@ -48,6 +52,7 @@ class DocumentoEmpleado(models.Model):  # employee_documents
     )
     motivo_rechazo = models.TextField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return f"{self.empleado} · {self.tipo_documento}"

@@ -63,6 +63,8 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     # MFA (TOTP). Secreto cifrado en reposo (Fernet). WebAuthn se añade aparte.
     mfa_habilitado = models.BooleanField(default=False)
     mfa_totp_secret = EncryptedCharField(max_length=64, null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     objects = UsuarioManager()
 

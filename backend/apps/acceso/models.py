@@ -29,6 +29,8 @@ class RegistroAcceso(models.Model):  # access_logs
     hora_entrada = models.DateTimeField(db_index=True)
     hora_salida = models.DateTimeField(null=True, blank=True, db_index=True)
     observaciones = models.TextField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
 
 class RegistroAccesoParking(models.Model):  # access_log_parkings
@@ -43,3 +45,5 @@ class RegistroAccesoParking(models.Model):  # access_log_parkings
     personas = models.IntegerField(default=1)
     placa_vehiculo = models.CharField(max_length=20, null=True, blank=True)
     observaciones = models.TextField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)

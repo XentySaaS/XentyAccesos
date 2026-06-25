@@ -15,6 +15,8 @@ class Recinto(models.Model):  # precincts
     descripcion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
     codigo = models.CharField(max_length=60, unique=True, null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre or f"Recinto {self.pk}"
@@ -25,6 +27,8 @@ class Zona(models.Model):  # zones
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("recinto", "nombre")]  # FIX: el origen lo tenía único global
@@ -38,6 +42,8 @@ class Acceso(models.Model):  # accesses
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("recinto", "nombre")]
@@ -53,6 +59,8 @@ class Ubicacion(models.Model):  # locations
     padre = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="hijas"
     )  # FIX: parent_id ahora FK self real
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre
@@ -65,6 +73,8 @@ class Entrada(models.Model):  # entries
     padre = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="hijas"
     )  # FIX: parent_id ahora FK self real
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre
@@ -75,6 +85,8 @@ class AreaAutorizada(models.Model):  # authorized_areas
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(null=True, blank=True)
     activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("recinto", "nombre")]
@@ -88,6 +100,8 @@ class Protocolo(models.Model):  # protocols
     descripcion = models.TextField(null=True, blank=True)
     archivo = models.FileField(upload_to="protocolos/", null=True, blank=True)  # PDF ≤10MB
     activo = models.BooleanField(default=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre

@@ -18,6 +18,8 @@ class Contacto(models.Model):  # contacts
     nombre = models.CharField(max_length=200)
     email = models.EmailField(null=True, blank=True)
     telefono = models.CharField(max_length=30, null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre
@@ -69,6 +71,8 @@ class Cita(models.Model):  # appointments
     areas_autorizadas = models.ManyToManyField(
         "recintos.AreaAutorizada", through="AreaAutorizadaCita", related_name="citas"
     )
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre or f"Cita {self.pk}"
@@ -77,6 +81,8 @@ class Cita(models.Model):  # appointments
 class EmpleadoCita(models.Model):  # employee_appointment
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
     cita = models.ForeignKey(Cita, on_delete=models.CASCADE)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = [("empleado", "cita")]
@@ -85,6 +91,7 @@ class EmpleadoCita(models.Model):  # employee_appointment
 class AreaAutorizadaCita(models.Model):  # authorized_areas_appointments
     area = models.ForeignKey("recintos.AreaAutorizada", on_delete=models.CASCADE)
     cita = models.ForeignKey(Cita, on_delete=models.CASCADE)
+    creado = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = [("area", "cita")]
@@ -118,6 +125,8 @@ class AsistenteCita(models.Model):  # assistent_appointments -> asistentes_cita
     tipo_identificacion = models.PositiveSmallIntegerField(null=True, blank=True)
     numero_identificacion = EncryptedCharField(max_length=64, null=True, blank=True)
     estado_adicional = models.PositiveSmallIntegerField(default=0)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre

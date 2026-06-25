@@ -25,6 +25,8 @@ class Empleado(models.Model):  # employees
     telefono = models.CharField(max_length=30, null=True, blank=True)
     foto = models.ImageField(upload_to="empleados/fotos/", null=True, blank=True)
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.nombre

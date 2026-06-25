@@ -12,6 +12,8 @@ class SatEfo(models.Model):  # sat_efos (espejo del CSV oficial)
     nombre = models.CharField(max_length=255, null=True, blank=True)
     situacion = models.CharField(max_length=40)  # Presunto|Definitivo|Desvirtuado|Sentencia Favorable
     meta = models.JSONField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return f"{self.rfc} ({self.situacion})"
@@ -33,3 +35,4 @@ class ResultadoLista69b(models.Model):  # result__lista69bs -> resultados_lista6
     query_data = models.JSONField(null=True, blank=True)
     estado = models.IntegerField(choices=Estado.choices, default=Estado.LIMPIO)
     creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)

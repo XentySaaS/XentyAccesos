@@ -10,6 +10,8 @@ from django.db import models
 class Opcion(models.Model):  # options (helper get_option del origen)
     clave = models.CharField(max_length=120, unique=True, db_index=True)
     valor = models.TextField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
         return self.clave
