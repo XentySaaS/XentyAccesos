@@ -102,16 +102,31 @@ cp .env.example .env        # (Windows: copy .env.example .env)
 python -c "import base64,os;print(base64.urlsafe_b64encode(os.urandom(50)).decode())"   # SECRET_KEY
 python -c "from cryptography.fernet import Fernet;print(Fernet.generate_key().decode())" # SECRET_KEY_FERNET
 
-# 3) Levantar el stack
-docker compose up --build
+# 3) Levantar TODO el stack (backend, control plane, Celery, Postgres, Redis, Mailpit y 3 SPAs)
+docker compose up --build -d
+#    El backend auto-aplica migrate_schemas --shared y crea el tenant público al arrancar.
 
-# 4) Migraciones (SIEMPRE con migrate_schemas, nunca 'migrate' a secas)
-docker compose run --rm backend python manage.py migrate_schemas --shared
+# 4) Crear un super-admin para el panel de control
+docker compose exec backend python manage.py crear_superadmin --email root@xenty.mx --nombre Root --password ****
 
-# 5) Provisionar un tenant (schema + migraciones + admin)
-docker compose run --rm backend python manage.py crear_tenant rayados rayados.localhost \
+# 5) Alta de tenants: desde la SPA admin (http://localhost:5176 → "Crear cuenta")
+#    o por CLI:
+docker compose exec backend python manage.py crear_tenant rayados rayados.localhost \
     --admin-email admin@rayados.mx --admin-nombre "Admin"
 ```
+
+### Puertos del stack dockerizado
+| Servicio | URL | Notas |
+|---|---|---|
+| Data plane (API tenant) | http://localhost:8002 | se accede por subdominio del tenant (Host) |
+| Control plane (super-admin/signup) | http://localhost:8003 | |
+| SPA admin | http://localhost:5176 | signup público + panel de tenants |
+| SPA acceso | http://localhost:5174 | operación del recinto |
+| SPA proveedores | http://localhost:5175 | autoservicio |
+| Mailpit | http://localhost:8025 | correo de dev |
+
+> **Acceso por subdominio**: el tenant se resuelve por `Host`. Para probar un tenant en local,
+> agrega su subdominio a tu archivo `hosts` apuntando a `127.0.0.1` (p. ej. `rayados.localhost`).
 
 > **Desarrollo local sin Docker para el backend**: se incluye soporte para un venv
 > (`bootstrap.bat --local-venv`) útil para el IDE; el runtime real sigue siendo el contenedor 3.12.
