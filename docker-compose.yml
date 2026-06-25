@@ -24,9 +24,9 @@ services:
   # Data plane: aplica migraciones compartidas al arrancar y sirve la API del tenant.
   backend:
     build: ./backend
-    command: sh -c "python manage.py migrate_schemas --shared && python manage.py runserver 0.0.0.0:8000"
+    command: sh -c "python manage.py migrate_schemas --shared && python manage.py bootstrap_public && python manage.py runserver 0.0.0.0:8000 --noreload"
     env_file: [.env]
-    volumes: ["./backend:/app"]
+    volumes: ["./backend:/app", "/app/.venv"]
     ports: ["8002:8000"]
     depends_on:
       postgres: { condition: service_healthy }
@@ -36,24 +36,24 @@ services:
     build: ./backend
     command: celery -A config worker -l info
     env_file: [.env]
-    volumes: ["./backend:/app"]
+    volumes: ["./backend:/app", "/app/.venv"]
     depends_on: [backend, redis]
 
   celery-beat:
     build: ./backend
     command: celery -A config beat -l info
     env_file: [.env]
-    volumes: ["./backend:/app"]
+    volumes: ["./backend:/app", "/app/.venv"]
     depends_on: [backend, redis]
 
   # Control plane (super-admin / signup): schema public.
   superadmin-backend:
     build: ./backend
-    command: python manage.py runserver 0.0.0.0:8000
+    command: python manage.py runserver 0.0.0.0:8000 --noreload
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.control_plane
     env_file: [.env]
-    volumes: ["./backend:/app"]
+    volumes: ["./backend:/app", "/app/.venv"]
     ports: ["8003:8000"]
     depends_on:
       backend: { condition: service_started }
