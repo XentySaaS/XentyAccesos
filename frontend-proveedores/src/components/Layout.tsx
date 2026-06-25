@@ -2,13 +2,10 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../store/auth";
 
 const NAV = [
-  ["/dashboard", "Panel"],
-  ["/recintos", "Recintos"],
-  ["/eventos", "Eventos"],
-  ["/citas", "Citas"],
-  ["/proveedores", "Proveedores"],
-  ["/sanciones", "Sanciones"],
-  ["/escaner", "Escáner"],
+  ["/dashboard", "Inicio"],
+  ["/empleados", "Empleados"],
+  ["/documentos", "Documentos"],
+  ["/eventos", "Mis eventos"],
 ];
 
 export default function Layout() {
@@ -17,7 +14,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-slate-50">
       <nav className="flex items-center gap-5 border-b bg-white px-6 py-3 shadow-sm">
-        <Link to="/dashboard" className="font-semibold text-slate-900">Xenty Acceso</Link>
+        <Link to="/dashboard" className="font-semibold text-slate-900">Xenty Proveedores</Link>
         {NAV.slice(1).map(([to, label]) => (
           <Link key={to} to={to} className="text-slate-600 hover:text-slate-900">{label}</Link>
         ))}
