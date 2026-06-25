@@ -23,3 +23,7 @@ _ref-sar-legacy/
 .DS_Store
 .idea/
 .vscode/
+
+# Artefactos runtime de Celery beat
+celerybeat-schedule*
+backend/celerybeat-schedule*
