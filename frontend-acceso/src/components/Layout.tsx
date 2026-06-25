@@ -8,6 +8,8 @@ const NAV = [
   ["/citas", "Citas"],
   ["/proveedores", "Proveedores"],
   ["/sanciones", "Sanciones"],
+  ["/verificacion", "Verificación"],
+  ["/mensajeria", "Mensajería"],
   ["/escaner", "Escáner"],
 ];
 

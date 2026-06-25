@@ -5,9 +5,11 @@ import Dashboard from "./pages/Dashboard";
 import Escaner from "./pages/Escaner";
 import Eventos from "./pages/Eventos";
 import Login from "./pages/Login";
+import Mensajeria from "./pages/Mensajeria";
 import Proveedores from "./pages/Proveedores";
 import Recintos from "./pages/Recintos";
 import Sanciones from "./pages/Sanciones";
+import Verificacion from "./pages/Verificacion";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -30,6 +32,8 @@ export const router = createBrowserRouter([
       { path: "/proveedores", element: <Proveedores /> },
       { path: "/citas", element: <Citas /> },
       { path: "/sanciones", element: <Sanciones /> },
+      { path: "/verificacion", element: <Verificacion /> },
+      { path: "/mensajeria", element: <Mensajeria /> },
       { path: "/escaner", element: <Escaner /> },
     ],
   },
