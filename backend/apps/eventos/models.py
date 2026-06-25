@@ -42,6 +42,9 @@ class Evento(models.Model):  # events
     verificadores = models.ManyToManyField(
         "accounts.Usuario", through="VerificadorEvento", related_name="eventos_a_verificar"
     )
+    areas_autorizadas = models.ManyToManyField(
+        "recintos.AreaAutorizada", through="AreaAutorizadaEvento", related_name="eventos"
+    )
 
     def puede_transicionar(self, nuevo: str) -> bool:
         return nuevo in self.TRANSICIONES.get(self.estado, set())
@@ -77,6 +80,10 @@ class EventoProveedor(models.Model):  # event_suppliers
     cajones_parking = models.IntegerField(default=0)
     notas = models.TextField(null=True, blank=True)
     empleados = models.ManyToManyField("empleados.Empleado", through="EmpleadoEventoProveedor")
+    areas_autorizadas = models.ManyToManyField(
+        "recintos.AreaAutorizada", through="AreaAutorizadaEventoProveedor",
+        related_name="eventos_proveedor",
+    )
 
     class Meta:
         unique_together = [("evento", "proveedor")]
@@ -124,3 +131,19 @@ class EventoTipoDocumento(models.Model):  # event_list_document
 
     class Meta:
         unique_together = [("evento", "tipo_documento")]
+
+
+class AreaAutorizadaEvento(models.Model):  # authorized_areas_events
+    area = models.ForeignKey("recintos.AreaAutorizada", on_delete=models.CASCADE)
+    evento = models.ForeignKey(Evento, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [("area", "evento")]
+
+
+class AreaAutorizadaEventoProveedor(models.Model):  # authorized_areas_event_supppliers (typo corregido)
+    area = models.ForeignKey("recintos.AreaAutorizada", on_delete=models.CASCADE)
+    evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [("area", "evento_proveedor")]

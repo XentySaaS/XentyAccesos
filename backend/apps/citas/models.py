@@ -66,6 +66,9 @@ class Cita(models.Model):  # appointments
     )
     acceso = models.ForeignKey("recintos.Acceso", on_delete=models.SET_NULL, null=True, blank=True)
     empleados = models.ManyToManyField("empleados.Empleado", through="EmpleadoCita")
+    areas_autorizadas = models.ManyToManyField(
+        "recintos.AreaAutorizada", through="AreaAutorizadaCita", related_name="citas"
+    )
 
     def __str__(self) -> str:
         return self.nombre or f"Cita {self.pk}"
@@ -77,6 +80,14 @@ class EmpleadoCita(models.Model):  # employee_appointment
 
     class Meta:
         unique_together = [("empleado", "cita")]
+
+
+class AreaAutorizadaCita(models.Model):  # authorized_areas_appointments
+    area = models.ForeignKey("recintos.AreaAutorizada", on_delete=models.CASCADE)
+    cita = models.ForeignKey(Cita, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = [("area", "cita")]
 
 
 class AsistenteCita(models.Model):  # assistent_appointments -> asistentes_cita

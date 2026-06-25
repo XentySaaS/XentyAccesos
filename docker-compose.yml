@@ -24,7 +24,7 @@ services:
   # Data plane: aplica migraciones compartidas al arrancar y sirve la API del tenant.
   backend:
     build: ./backend
-    command: sh -c "python manage.py migrate_schemas --shared && python manage.py bootstrap_public && python manage.py runserver 0.0.0.0:8000 --noreload"
+    command: sh -c "python manage.py migrate_schemas --shared && python manage.py bootstrap_public && python manage.py migrate_schemas --tenant && python manage.py runserver 0.0.0.0:8000 --noreload"
     env_file: [.env]
     volumes: ["./backend:/app", "/app/.venv"]
     ports: ["8002:8000"]
