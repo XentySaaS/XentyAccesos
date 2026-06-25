@@ -60,6 +60,15 @@ services:
       postgres: { condition: service_healthy }
 
   # ── SPAs (Vite dev; el proxy /api apunta al servicio del compose) ──────────
+  # Landing pública: alta self-service de empresas (cara al usuario final).
+  frontend-landing:
+    build: ./frontend-landing
+    environment:
+      VITE_PROXY_TARGET: http://superadmin-backend:8000
+    volumes: ["./frontend-landing:/app", "/app/node_modules"]
+    ports: ["5173:5173"]
+    depends_on: [superadmin-backend]
+
   frontend-acceso:
     build: ./frontend-acceso
     environment:

@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../store/auth";
 
@@ -34,10 +34,7 @@ export default function Login() {
         <button className="w-full rounded bg-slate-900 py-2 text-white" type="submit">
           Entrar
         </button>
-        <p className="text-center text-sm text-slate-500">
-          ¿Nueva empresa?{" "}
-          <Link className="text-slate-900 underline" to="/registro">Crear cuenta</Link>
-        </p>
+        <p className="text-center text-xs text-slate-400">Panel interno · acceso restringido</p>
       </form>
     </div>
   );
