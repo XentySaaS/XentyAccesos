@@ -7,15 +7,26 @@ control plane; la lógica ya vive en ``apps.tenants.services`` (billing + stripe
 from django.urls import path
 
 from django.urls import include
+from rest_framework.routers import DefaultRouter
 
-from apps.tenants.admin_api import CrearCheckoutView, SuperAdminLoginView
+from apps.tenants.admin_api import (
+    CrearCheckoutView,
+    SignupView,
+    SuperAdminLoginView,
+    TenantAdminViewSet,
+)
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
 
+router = DefaultRouter()
+router.register("api/admin/tenants", TenantAdminViewSet, basename="admin-tenant")
+
 urlpatterns = [
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
     path("", include("apps.dispositivos.urls")),  # F6: API edge /api/v1/* (HMAC)
+    # Alta pública self-service de tenants
+    path("api/signup/", SignupView.as_view(), name="signup"),
     # Control plane (super-admin)
     path("api/admin/login/", SuperAdminLoginView.as_view(), name="admin-login"),
     path("api/admin/me/", MeView.as_view(), name="admin-me"),
@@ -24,4 +35,5 @@ urlpatterns = [
     path("api/admin/mfa/verificar/", VerificarMFAView.as_view(), name="admin-mfa-verificar"),
     path("api/admin/tenants/<int:tenant_id>/checkout/", CrearCheckoutView.as_view(),
          name="admin-checkout"),
+    *router.urls,
 ]

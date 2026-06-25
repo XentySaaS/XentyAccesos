@@ -1,22 +1,110 @@
-"""Control plane (schema public): login del super-admin y creación de checkout (F0.5/F0 cierre)."""
+"""Control plane (schema public): alta self-service de tenants + administración del super-admin."""
 from __future__ import annotations
 
-from rest_framework.permissions import IsAuthenticated
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
+from rest_framework import serializers, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.auth_api import BaseLoginView
 from common.permissions import EsSuperAdmin, MFASesionCompleta
 
-from .models import Plan, SuperAdmin, Tenant
+from .models import Plan, SaldoCreditos, SuperAdmin, Tenant
+from .services import billing
+from .services.provisioning import ProvisionError, provisionar_tenant
 from .services.stripe_gateway import crear_checkout_suscripcion
 
 
+# ── Auth del super-admin ─────────────────────────────────────────────────────
 class SuperAdminLoginView(BaseLoginView):
-    """POST /api/admin/login/ — autentica al super-admin (MFA si está habilitado)."""
-
     model = SuperAdmin
     ctx = "superadmin"
+
+
+# ── Alta pública self-service de tenants ─────────────────────────────────────
+class SignupSerializer(serializers.Serializer):
+    nombre = serializers.CharField(max_length=200)         # razón comercial
+    subdominio = serializers.SlugField(max_length=31)
+    admin_email = serializers.EmailField()
+    admin_nombre = serializers.CharField(max_length=160)
+    admin_password = serializers.CharField(min_length=8, write_only=True, trim_whitespace=False)
+    plan = serializers.CharField(required=False, allow_blank=True)
+
+
+@method_decorator(ratelimit(key="ip", rate="10/h", method="POST", block=True), name="post")
+class SignupView(APIView):
+    """POST /api/signup/ — alta pública: aprovisiona el tenant completo y su admin."""
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        s = SignupSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        d = s.validated_data
+        slug = d["subdominio"].lower()
+        dominio = f"{slug}.{settings.TENANT_BASE_DOMAIN}"
+        try:
+            tenant, _ = provisionar_tenant(
+                slug=slug, dominio=dominio, nombre=d["nombre"],
+                admin_email=d["admin_email"], admin_nombre=d["admin_nombre"],
+                admin_password=d["admin_password"], plan_clave=d.get("plan") or None,
+            )
+        except ProvisionError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        return Response(
+            {"tenant": tenant.schema_name, "dominio": dominio, "estado": tenant.estado},
+            status=201,
+        )
+
+
+# ── Administración de tenants (super-admin) ──────────────────────────────────
+class TenantAdminSerializer(serializers.ModelSerializer):
+    plan = serializers.SerializerMethodField()
+    saldo = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Tenant
+        fields = ["id", "schema_name", "nombre", "estado", "trial_ends_at",
+                  "modo_solo_lectura", "plan", "saldo"]
+
+    def get_plan(self, obj):
+        return obj.plan.clave if obj.plan_id else None
+
+    def get_saldo(self, obj) -> int:
+        s = SaldoCreditos.objects.filter(tenant=obj).first()
+        return s.saldo if s else 0
+
+
+class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
+    """Lista y administra TODOS los tenants (suspender/activar/cancelar)."""
+
+    queryset = Tenant.objects.all().order_by("schema_name")
+    serializer_class = TenantAdminSerializer
+    permission_classes = [IsAuthenticated, MFASesionCompleta, EsSuperAdmin]
+    filterset_fields = ["estado"]
+
+    def _accion(self, fn):
+        tenant = self.get_object()
+        fn(tenant)
+        tenant.refresh_from_db()
+        return Response(self.get_serializer(tenant).data)
+
+    @action(detail=True, methods=["post"])
+    def suspender(self, request, pk=None):
+        return self._accion(billing.suspender)
+
+    @action(detail=True, methods=["post"])
+    def activar(self, request, pk=None):
+        return self._accion(billing.activar)
+
+    @action(detail=True, methods=["post"])
+    def cancelar(self, request, pk=None):
+        return self._accion(billing.cancelar)
 
 
 class CrearCheckoutView(APIView):

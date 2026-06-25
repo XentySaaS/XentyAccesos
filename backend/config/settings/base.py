@@ -16,6 +16,8 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 # Allowlist de IPs para /admin/ (RestringirAdminPorIP). Vacío = sin restricción (dev).
 ADMIN_IP_ALLOWLIST = config("ADMIN_IP_ALLOWLIST", default="", cast=Csv())
+# Dominio base para los subdominios de tenant (alta self-service). Dev: localhost.
+TENANT_BASE_DOMAIN = config("TENANT_BASE_DOMAIN", default="localhost")
 
 # ── Multitenancy (django-tenants) ────────────────────────────────────────────
 SHARED_APPS = [

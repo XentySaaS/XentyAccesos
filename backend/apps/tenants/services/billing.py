@@ -66,6 +66,13 @@ def suspender(tenant: Tenant) -> None:
     tenant.save(update_fields=["estado"])
 
 
+def activar(tenant: Tenant) -> None:
+    """Reactiva un tenant suspendido (sin tocar la suscripción Stripe)."""
+    tenant.estado = Tenant.Estado.ACTIVO
+    tenant.modo_solo_lectura = False
+    tenant.save(update_fields=["estado", "modo_solo_lectura"])
+
+
 def cancelar(tenant: Tenant) -> None:
     Suscripcion.objects.filter(tenant=tenant).update(estado=Suscripcion.Estado.CANCELADA)
     tenant.estado = Tenant.Estado.CANCELADO
