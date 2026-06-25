@@ -14,17 +14,20 @@ from apps.tenants.models import Domain, Tenant
 class Command(BaseCommand):
     help = "Crea el tenant público (schema 'public') y su dominio base. Idempotente."
 
-    def add_arguments(self, parser):
-        parser.add_argument("--dominio", default=getattr(settings, "TENANT_BASE_DOMAIN", "localhost"))
-
     def handle(self, *args, **opts):
+        base = getattr(settings, "TENANT_BASE_DOMAIN", "localhost")
+        # Hosts que sirve el control plane (LP, www y panel super-admin) → schema public.
+        hosts = [base, f"www.{base}", f"xenty.{base}", f"admin.{base}"]
+
         tenant = Tenant.objects.filter(schema_name="public").first()
         if tenant is None:
             tenant = Tenant(schema_name="public", nombre="Public", estado=Tenant.Estado.ACTIVO)
             tenant.auto_create_schema = False  # el schema 'public' ya existe
             tenant.save()
             self.stdout.write(self.style.SUCCESS("✔ Tenant público creado."))
-        _, creado = Domain.objects.get_or_create(
-            domain=opts["dominio"], tenant=tenant, defaults={"is_primary": True}
-        )
-        self.stdout.write(self.style.SUCCESS(f"✔ Dominio público '{opts['dominio']}' {'creado' if creado else 'ya existía'}."))
+
+        for i, host in enumerate(hosts):
+            _, creado = Domain.objects.get_or_create(
+                domain=host, tenant=tenant, defaults={"is_primary": i == 0}
+            )
+            self.stdout.write(self.style.SUCCESS(f"✔ Dominio público '{host}' {'creado' if creado else 'ya existía'}."))

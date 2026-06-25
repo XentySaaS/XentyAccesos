@@ -125,8 +125,22 @@ docker compose exec backend python manage.py crear_tenant rayados rayados.localh
 | SPA proveedores | http://localhost:5175 | autoservicio |
 | Mailpit | http://localhost:8025 | correo de dev |
 
-> **Acceso por subdominio**: el tenant se resuelve por `Host`. Para probar un tenant en local,
-> agrega su subdominio a tu archivo `hosts` apuntando a `127.0.0.1` (p. ej. `rayados.localhost`).
+### Topología por dominios (Nginx, dev en `:8080`)
+Un reverse proxy (`nginx`) implementa la separación de superficies preservando el `Host`:
+
+| Dominio (dev) | Superficie | Plano |
+|---|---|---|
+| `xenty.localhost:8080` | **Landing pública** (alta self-service) | control plane |
+| `admin.localhost:8080` | **Panel super-admin** (aislado) | control plane |
+| `<tenant>.localhost:8080/` | **Operación** del recinto | data plane |
+| `<tenant>.localhost:8080/proveedores/` | **Autoservicio de proveedores** | data plane |
+
+En prod: `xenty.mx` (LP), `admin.xenty.mx` (super-admin, interno/IP-restringido), `*.xenty.mx`
+(tenants), con DNS wildcard + TLS. El backend ya resuelve el tenant por subdominio.
+
+> **Dev**: agrega a tu archivo `hosts` (→ `127.0.0.1`): `xenty.localhost`, `admin.localhost` y el
+> subdominio de cada tenant (p. ej. `rayados.localhost`). En navegadores Chrome/Edge, `*.localhost`
+> ya resuelve a `127.0.0.1` sin tocar `hosts`.
 
 > **Desarrollo local sin Docker para el backend**: se incluye soporte para un venv
 > (`bootstrap.bat --local-venv`) útil para el IDE; el runtime real sigue siendo el contenedor 3.12.

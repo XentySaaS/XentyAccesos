@@ -93,5 +93,19 @@ services:
     ports: ["5176:5176"]
     depends_on: [superadmin-backend]
 
+  # Reverse proxy: implementa la topología por dominios (LP / tenant / super-admin).
+  # Dev en :8080 (XAMPP suele ocupar :80). Preserva Host -> el tenant se resuelve por subdominio.
+  nginx:
+    image: nginx:alpine
+    volumes: ["./nginx/nginx.conf:/etc/nginx/nginx.conf:ro"]
+    ports: ["8080:80"]
+    depends_on:
+      - frontend-landing
+      - frontend-acceso
+      - frontend-proveedores
+      - frontend-admin
+      - backend
+      - superadmin-backend
+
 volumes:
   pgdata:

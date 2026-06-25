@@ -5,6 +5,7 @@ import { defineConfig } from "vite";
 const target = process.env.VITE_PROXY_TARGET || "http://localhost:8002";
 
 export default defineConfig({
+  base: "/proveedores/",  // se sirve bajo <tenant>.localhost/proveedores/ (Nginx)
   plugins: [react()],
   server: {
     host: true,

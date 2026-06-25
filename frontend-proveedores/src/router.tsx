@@ -8,7 +8,10 @@ function Protegida({ children }: { children: JSX.Element }) {
   return access ? children : <Navigate to="/" replace />;
 }
 
-export const router = createBrowserRouter([
-  { path: "/", element: <Login /> },
-  { path: "/dashboard", element: <Protegida><Dashboard /></Protegida> },
-]);
+export const router = createBrowserRouter(
+  [
+    { path: "/", element: <Login /> },
+    { path: "/dashboard", element: <Protegida><Dashboard /></Protegida> },
+  ],
+  { basename: "/proveedores" },  // servida bajo <tenant>.localhost/proveedores/
+);
