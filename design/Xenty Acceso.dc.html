@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+@keyframes scanline{0%{transform:translateY(-110px)}100%{transform:translateY(110px)}}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+</style>
+</helmet>
+
+<!-- ============ SECCIÓN: SISTEMA ============ -->
+<div style="position:absolute;left:80px;top:56px;width:1280px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Sistema</span>
+<span style="width:10px;height:10px;background:#2563EB;transform:rotate(45deg);flex:0 0 auto"></span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">tokens · tipografía · firma</span>
+</div>
+
+<!-- Plan card -->
+<div style="position:absolute;left:80px;top:110px;width:600px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Plan de diseño</div>
+<div style="background:#0F1B2D;border-radius:6px;box-shadow:0 12px 40px rgba(15,27,45,.16);padding:30px 30px;color:#E2E8F0;height:400px;display:flex;flex-direction:column;gap:16px">
+<div style="font:800 22px 'Hanken Grotesk',sans-serif;color:#fff;letter-spacing:-.01em">El carril de control</div>
+<div style="font:400 14px/1.6 'Hanken Grotesk',sans-serif;color:rgba(226,232,240,.82)">La interfaz organiza la información como un punto de acceso: entrada clara, estado inequívoco, registro de quién pasó. Nada decorativo compite con el estado de acceso.</div>
+<div style="height:1px;background:rgba(255,255,255,.12)"></div>
+<div style="font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#60A5FA">Elemento de firma</div>
+<div style="font:400 14px/1.6 'Hanken Grotesk',sans-serif;color:rgba(226,232,240,.82)">La <b style="color:#fff">pantalla de resultado del escaneo</b>: veredicto legible a un metro, en menos de un segundo. Color total de fondo, foto grande, un solo dato de acción. Todo lo demás, silencioso.</div>
+<div style="margin-top:auto;display:flex;gap:10px;flex-wrap:wrap">
+<span style="font:500 12px 'Hanken Grotesk',sans-serif;background:rgba(37,99,235,.18);color:#93C5FD;padding:6px 12px;border-radius:999px">acceso · operación</span>
+<span style="font:500 12px 'Hanken Grotesk',sans-serif;background:rgba(255,255,255,.08);color:#CBD5E1;padding:6px 12px;border-radius:999px">proveedores · móvil</span>
+<span style="font:500 12px 'Hanken Grotesk',sans-serif;background:rgba(255,255,255,.08);color:#CBD5E1;padding:6px 12px;border-radius:999px">admin · control plane</span>
+</div>
+</div>
+</div>
+
+<!-- Color tokens -->
+<div style="position:absolute;left:740px;top:110px;width:560px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Color — sala de control</div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:6px;box-shadow:0 1px 3px rgba(15,27,45,.10),0 12px 32px rgba(15,27,45,.05);padding:24px;height:400px;display:flex;flex-direction:column;gap:18px">
+<div>
+<div style="font:600 11px 'Hanken Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(15,27,45,.45);margin-bottom:10px">Base + señal</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0"><div style="height:54px;background:#0F1B2D"></div><div style="padding:7px 9px"><div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#0F1B2D">ink-900</div><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#0F1B2D</div></div></div>
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0"><div style="height:54px;background:#1F3147"></div><div style="padding:7px 9px"><div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#0F1B2D">ink-700</div><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#1F3147</div></div></div>
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0"><div style="height:54px;background:#2563EB"></div><div style="padding:7px 9px"><div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#0F1B2D">signal-600</div><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#2563EB</div></div></div>
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0"><div style="height:54px;background:#F1F4F8"></div><div style="padding:7px 9px"><div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#0F1B2D">slate-100</div><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#F1F4F8</div></div></div>
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0"><div style="height:54px;background:#CBD5E1"></div><div style="padding:7px 9px"><div style="font:600 12px 'Hanken Grotesk',sans-serif;color:#0F1B2D">slate-300</div><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#CBD5E1</div></div></div>
+<div style="border-radius:5px;overflow:hidden;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;background:#F8FAFC"><div style="font:500 11px 'Hanken Grotesk',sans-serif;color:rgba(15,27,45,.4);text-align:center;padding:8px">señal usada<br>con restricción</div></div>
+</div>
+</div>
+<div>
+<div style="font:600 11px 'Hanken Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(15,27,45,.45);margin-bottom:10px">Trío de acceso — sólo en estados reales</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+<div style="border-radius:5px;overflow:hidden"><div style="height:56px;background:#16A34A;display:flex;align-items:center;justify-content:center"><span style="font:700 13px 'Hanken Grotesk',sans-serif;color:#fff">PERMITIDO</span></div><div style="padding:6px 0 0"><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#16A34A</div></div></div>
+<div style="border-radius:5px;overflow:hidden"><div style="height:56px;background:#DC2626;display:flex;align-items:center;justify-content:center"><span style="font:700 13px 'Hanken Grotesk',sans-serif;color:#fff">DENEGADO</span></div><div style="padding:6px 0 0"><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#DC2626</div></div></div>
+<div style="border-radius:5px;overflow:hidden"><div style="height:56px;background:#D97706;display:flex;align-items:center;justify-content:center"><span style="font:700 13px 'Hanken Grotesk',sans-serif;color:#fff">ADVERTENCIA</span></div><div style="padding:6px 0 0"><div style="font:400 11px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">#D97706</div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Brand post-it -->
+<div style="position:absolute;left:1360px;top:130px;width:264px">
+<div style="background:#FEF4A8;padding:16px 16px;font:400 13px/1.5 'Hanken Grotesk',sans-serif;color:#5b4e1a;box-shadow:0 6px 18px rgba(15,27,45,.12);transform:rotate(-1.4deg);border-radius:2px">
+<b>Marca Xenty pendiente.</b> Esta dirección sigue el brief por defecto (azul-tinta + señal). Cuando envíes logo/colores de la suite Fiscal/Nómina, reconcilio tokens para cohesión.
+</div>
+</div>
+
+<!-- Type Hanken -->
+<div style="position:absolute;left:80px;top:560px;width:600px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Opción A · Hanken Grotesk</div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:6px;box-shadow:0 1px 3px rgba(15,27,45,.10);padding:26px 28px;height:360px;display:flex;flex-direction:column;gap:6px;font-family:'Hanken Grotesk',sans-serif">
+<div style="font-size:13px;font-weight:600;color:#2563EB;letter-spacing:.04em">PERMITIDO</div>
+<div style="font-size:52px;font-weight:800;color:#0F1B2D;letter-spacing:-.02em;line-height:1">Veredicto<br>glanceable</div>
+<div style="margin-top:8px;font-size:15px;font-weight:400;color:#475569;line-height:1.5">Grotesca geométrica de personalidad contenida. Títulos, números grandes y el veredicto del escáner.</div>
+<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:end">
+<div><div style="font-size:11px;color:rgba(15,27,45,.45);font-weight:600;letter-spacing:.04em">CIFRAS TABULARES</div><div style="font-size:30px;font-weight:700;color:#0F1B2D;font-variant-numeric:tabular-nums">21:48 · 1,247</div></div>
+<div style="text-align:right"><div style="font-size:11px;color:rgba(15,27,45,.45);font-weight:600;letter-spacing:.04em">MONO · FOLIO</div><div style="font:500 16px 'Geist Mono',monospace;color:#0F1B2D">VR-8F3A-1190</div></div>
+</div>
+</div>
+</div>
+
+<!-- Type Geist -->
+<div style="position:absolute;left:740px;top:560px;width:600px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Opción B · Geist</div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:6px;box-shadow:0 1px 3px rgba(15,27,45,.10);padding:26px 28px;height:360px;display:flex;flex-direction:column;gap:6px;font-family:'Geist',sans-serif">
+<div style="font-size:13px;font-weight:600;color:#2563EB;letter-spacing:.04em">PERMITIDO</div>
+<div style="font-size:52px;font-weight:700;color:#0F1B2D;letter-spacing:-.03em;line-height:1">Veredicto<br>glanceable</div>
+<div style="margin-top:8px;font-size:15px;font-weight:400;color:#475569;line-height:1.5">Más técnica y neutra; excelente en datos densos. Misma jerarquía, tono ligeramente más de software.</div>
+<div style="margin-top:auto;display:flex;justify-content:space-between;align-items:end">
+<div><div style="font-size:11px;color:rgba(15,27,45,.45);font-weight:600;letter-spacing:.04em">CIFRAS TABULARES</div><div style="font-size:30px;font-weight:600;color:#0F1B2D;font-variant-numeric:tabular-nums">21:48 · 1,247</div></div>
+<div style="text-align:right"><div style="font-size:11px;color:rgba(15,27,45,.45);font-weight:600;letter-spacing:.04em">MONO · FOLIO</div><div style="font:500 16px 'Geist Mono',monospace;color:#0F1B2D">VR-8F3A-1190</div></div>
+</div>
+</div>
+</div>
+
+<!-- ============ SECCIÓN: ESCÁNER ============ -->
+<div style="position:absolute;left:80px;top:990px;width:1900px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Escáner — el veredicto</span>
+<span style="font:500 13px 'Hanken Grotesk',sans-serif;color:#16A34A;background:rgba(22,163,74,.1);padding:4px 12px;border-radius:999px">firma del producto</span>
+<span style="width:10px;height:10px;background:#2563EB;transform:rotate(45deg);flex:0 0 auto"></span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">modo oscuro · pantalla completa · puesto del guardia</span>
+</div>
+
+<!-- ESPERA -->
+<div style="position:absolute;left:80px;top:1050px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Estado · En espera</div>
+<div data-screen-label="Escáner · Espera" style="height:780px;border-radius:20px;overflow:hidden;background:#0F1B2D;box-shadow:0 16px 48px rgba(15,27,45,.22);display:flex;flex-direction:column;padding:26px 22px;color:#fff;font-family:'Hanken Grotesk',sans-serif">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div><div style="font:700 14px 'Hanken Grotesk'">Estadio Valle Real</div><div style="font:400 12px 'Hanken Grotesk';color:rgba(226,232,240,.6)">Acceso Norte · Torniquete 4</div></div>
+<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);padding:5px 10px;border-radius:999px"><span style="width:7px;height:7px;border-radius:50%;background:#16A34A"></span><span style="font:500 11px 'Hanken Grotesk';color:#CBD5E1">En línea</span></div>
+</div>
+<div style="font:500 13px 'Hanken Grotesk';color:#60A5FA;margin-top:14px">Atlas vs. América · Jornada 14</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
+<div style="position:relative;width:230px;height:230px">
+<div style="position:absolute;inset:0;border-radius:14px;background:rgba(255,255,255,.03)"></div>
+<div style="position:absolute;top:0;left:0;width:42px;height:42px;border-top:4px solid #60A5FA;border-left:4px solid #60A5FA;border-radius:14px 0 0 0"></div>
+<div style="position:absolute;top:0;right:0;width:42px;height:42px;border-top:4px solid #60A5FA;border-right:4px solid #60A5FA;border-radius:0 14px 0 0"></div>
+<div style="position:absolute;bottom:0;left:0;width:42px;height:42px;border-bottom:4px solid #60A5FA;border-left:4px solid #60A5FA;border-radius:0 0 0 14px"></div>
+<div style="position:absolute;bottom:0;right:0;width:42px;height:42px;border-bottom:4px solid #60A5FA;border-right:4px solid #60A5FA;border-radius:0 0 14px 0"></div>
+<div style="position:absolute;left:18px;right:18px;top:50%;height:2px;background:linear-gradient(90deg,transparent,#60A5FA,transparent);animation:scanline 2.2s ease-in-out infinite alternate"></div>
+</div>
+<div style="text-align:center"><div style="font:600 17px 'Hanken Grotesk'">Acerca el gafete al lector</div><div style="font:400 13px 'Hanken Grotesk';color:rgba(226,232,240,.55);margin-top:4px">Cámara o lector HID · escaneo automático</div></div>
+</div>
+<div style="border-top:1px solid rgba(255,255,255,.1);padding-top:16px;display:flex;justify-content:space-between;align-items:center">
+<div><div style="font:400 11px 'Hanken Grotesk';color:rgba(226,232,240,.55)">Accesos del turno</div><div style="font:700 26px 'Hanken Grotesk';font-variant-numeric:tabular-nums">1,247</div></div>
+<div style="text-align:right"><div style="font:400 11px 'Hanken Grotesk';color:rgba(226,232,240,.55)">Guardia</div><div style="font:600 14px 'Hanken Grotesk'">J. Méndez</div></div>
+</div>
+</div>
+</div>
+
+<!-- PERMITIDO -->
+<div style="position:absolute;left:570px;top:1050px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Estado · Permitido</div>
+<div data-screen-label="Escáner · Permitido" style="height:780px;border-radius:20px;overflow:hidden;background:#16A34A;box-shadow:0 16px 48px rgba(22,163,74,.3);display:flex;flex-direction:column;padding:30px 26px;color:#fff;font-family:'Hanken Grotesk',sans-serif">
+<div style="font:500 13px 'Hanken Grotesk';color:rgba(255,255,255,.8)">Estadio Valle Real · Acceso Norte</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center">
+<svg width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+<div style="font:800 30px 'Hanken Grotesk';letter-spacing:.02em">PERMITIDO</div>
+<div style="width:140px;height:140px;border-radius:50%;border:4px solid rgba(255,255,255,.55);overflow:hidden;background:repeating-linear-gradient(45deg,#0d7a37,#0d7a37 7px,#138a40 7px,#138a40 14px);display:flex;align-items:center;justify-content:center"><span style="font:500 11px 'Geist Mono',monospace;color:rgba(255,255,255,.7)">foto persona</span></div>
+<div style="font:800 26px 'Hanken Grotesk';line-height:1.1;letter-spacing:-.01em">María Fernanda<br>Robles Lugo</div>
+</div>
+<div style="background:rgba(255,255,255,.14);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:11px">
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.75)">Proveedor</span><span style="font:600 13px 'Hanken Grotesk'">Banquetes del Bajío</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.75)">Evento</span><span style="font:600 13px 'Hanken Grotesk'">Atlas vs. América · J14</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.75)">Vigencia</span><span style="font:600 13px 'Hanken Grotesk';font-variant-numeric:tabular-nums">Hoy hasta 23:30</span></div>
+</div>
+<div style="text-align:center;font:400 12px 'Hanken Grotesk';color:rgba(255,255,255,.7);margin-top:14px">Regresa al visor en 2.5 s · toca para continuar</div>
+</div>
+</div>
+
+<!-- DENEGADO -->
+<div style="position:absolute;left:1060px;top:1050px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Estado · Denegado</div>
+<div data-screen-label="Escáner · Denegado" style="height:780px;border-radius:20px;overflow:hidden;background:#DC2626;box-shadow:0 16px 48px rgba(220,38,38,.3);display:flex;flex-direction:column;padding:30px 26px;color:#fff;font-family:'Hanken Grotesk',sans-serif">
+<div style="font:500 13px 'Hanken Grotesk';color:rgba(255,255,255,.8)">Estadio Valle Real · Acceso Norte</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center">
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+<div style="font:800 30px 'Hanken Grotesk';letter-spacing:.02em">DENEGADO</div>
+<div style="background:rgba(0,0,0,.18);border-radius:14px;padding:18px 22px;width:100%">
+<div style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.75);margin-bottom:6px">Motivo</div>
+<div style="font:800 27px 'Hanken Grotesk';line-height:1.15">Documentos<br>vencidos</div>
+<div style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.8);margin-top:10px">SUA venció el 31 may 2026. El proveedor debe recargar el comprobante.</div>
+</div>
+<div style="width:96px;height:96px;border-radius:50%;border:3px solid rgba(255,255,255,.5);overflow:hidden;background:repeating-linear-gradient(45deg,#a31818,#a31818 7px,#bb1c1c 7px,#bb1c1c 14px);display:flex;align-items:center;justify-content:center"><span style="font:500 10px 'Geist Mono',monospace;color:rgba(255,255,255,.7)">foto</span></div>
+<div style="font:700 19px 'Hanken Grotesk'">Roberto Carlos Aguirre Peña</div>
+</div>
+<button style="background:#fff;color:#DC2626;border:none;border-radius:12px;padding:18px;font:700 17px 'Hanken Grotesk';cursor:pointer">Entendido · continuar</button>
+</div>
+</div>
+
+<!-- ADVERTENCIA -->
+<div style="position:absolute;left:1550px;top:1050px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Estado · Advertencia</div>
+<div data-screen-label="Escáner · Advertencia" style="height:780px;border-radius:20px;overflow:hidden;background:#D97706;box-shadow:0 16px 48px rgba(217,119,6,.3);display:flex;flex-direction:column;padding:30px 26px;color:#fff;font-family:'Hanken Grotesk',sans-serif">
+<div style="font:500 13px 'Hanken Grotesk';color:rgba(255,255,255,.85)">Estadio Valle Real · Acceso Norte</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center">
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+<div style="font:800 26px 'Hanken Grotesk';letter-spacing:.01em">ACCESO CON NOTA</div>
+<div style="width:130px;height:130px;border-radius:50%;border:4px solid rgba(255,255,255,.55);overflow:hidden;background:repeating-linear-gradient(45deg,#a85a05,#a85a05 7px,#c06807 7px,#c06807 14px);display:flex;align-items:center;justify-content:center"><span style="font:500 11px 'Geist Mono',monospace;color:rgba(255,255,255,.75)">foto persona</span></div>
+<div style="font:800 24px 'Hanken Grotesk';line-height:1.1">Laura Itzel<br>Cervantes Ríos</div>
+<div style="background:rgba(0,0,0,.16);border-radius:12px;padding:14px 18px;width:100%">
+<div style="font:400 12px 'Hanken Grotesk';color:rgba(255,255,255,.8)">Nota</div>
+<div style="font:700 18px 'Hanken Grotesk';margin-top:3px">INE por vencer · 3 días</div>
+</div>
+</div>
+<button style="background:#fff;color:#D97706;border:none;border-radius:12px;padding:17px;font:700 17px 'Hanken Grotesk';cursor:pointer">Permitir el paso</button>
+</div>
+</div>
+
+<!-- ============ SECCIÓN: TRATAMIENTOS ============ -->
+<div style="position:absolute;left:80px;top:1900px;width:1420px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Tratamientos del veredicto</span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">mismo veredicto · 3 composiciones · elige una</span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+</div>
+
+<!-- Tratamiento A -->
+<div style="position:absolute;left:80px;top:1960px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">A · Pleno color</div>
+<div style="height:780px;border-radius:20px;overflow:hidden;background:#16A34A;box-shadow:0 16px 48px rgba(22,163,74,.28);display:flex;flex-direction:column;padding:30px 26px;color:#fff;font-family:'Hanken Grotesk',sans-serif;align-items:center;justify-content:center;gap:20px;text-align:center">
+<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+<div style="font:800 30px 'Hanken Grotesk'">PERMITIDO</div>
+<div style="width:150px;height:150px;border-radius:50%;border:4px solid rgba(255,255,255,.5);overflow:hidden;background:repeating-linear-gradient(45deg,#0d7a37,#0d7a37 7px,#138a40 7px,#138a40 14px);display:flex;align-items:center;justify-content:center"><span style="font:500 11px 'Geist Mono',monospace;color:rgba(255,255,255,.7)">foto persona</span></div>
+<div style="font:800 26px 'Hanken Grotesk';line-height:1.1">María Fernanda<br>Robles Lugo</div>
+<div style="font:500 15px 'Hanken Grotesk';color:rgba(255,255,255,.85)">Atlas vs. América · J14<br><span style="font-variant-numeric:tabular-nums">Vigente hasta 23:30</span></div>
+</div>
+</div>
+
+<!-- Tratamiento B -->
+<div style="position:absolute;left:570px;top:1960px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">B · Panel dividido</div>
+<div style="height:780px;border-radius:20px;overflow:hidden;box-shadow:0 16px 48px rgba(15,27,45,.22);display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif">
+<div style="background:#16A34A;color:#fff;padding:40px 26px 34px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+<div style="font:800 32px 'Hanken Grotesk';letter-spacing:.02em">PERMITIDO</div>
+</div>
+<div style="flex:1;background:#0F1B2D;color:#fff;padding:28px 26px;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+<div style="width:128px;height:128px;border-radius:16px;overflow:hidden;background:repeating-linear-gradient(45deg,#1F3147,#1F3147 7px,#27425c 7px,#27425c 14px);display:flex;align-items:center;justify-content:center;margin-top:6px"><span style="font:500 11px 'Geist Mono',monospace;color:rgba(255,255,255,.6)">foto persona</span></div>
+<div style="font:800 25px 'Hanken Grotesk';line-height:1.1">María Fernanda<br>Robles Lugo</div>
+<div style="width:100%;display:flex;flex-direction:column;gap:12px;margin-top:6px">
+<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px"><span style="font:400 13px 'Hanken Grotesk';color:rgba(226,232,240,.6)">Proveedor</span><span style="font:600 14px 'Hanken Grotesk'">Banquetes del Bajío</span></div>
+<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:10px"><span style="font:400 13px 'Hanken Grotesk';color:rgba(226,232,240,.6)">Evento</span><span style="font:600 14px 'Hanken Grotesk'">Atlas vs. América</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:rgba(226,232,240,.6)">Vigencia</span><span style="font:600 14px 'Hanken Grotesk';font-variant-numeric:tabular-nums">Hoy · 23:30</span></div>
+</div>
+<div style="margin-top:auto;font:400 12px 'Hanken Grotesk';color:rgba(226,232,240,.5)">Toca para continuar</div>
+</div>
+</div>
+</div>
+
+<!-- Tratamiento C -->
+<div style="position:absolute;left:1060px;top:1960px;width:440px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">C · Foto a sangre</div>
+<div style="height:780px;border-radius:20px;overflow:hidden;box-shadow:0 16px 48px rgba(15,27,45,.22);position:relative;font-family:'Hanken Grotesk',sans-serif;background:repeating-linear-gradient(45deg,#16324a,#16324a 9px,#1c3d59 9px,#1c3d59 18px)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.35);font:500 12px 'Geist Mono',monospace">foto persona (a sangre)</div>
+<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,163,74,.85) 0%,rgba(22,163,74,.2) 26%,rgba(15,27,45,.1) 50%,rgba(15,27,45,.92) 100%)"></div>
+<div style="position:absolute;top:0;left:0;right:0;padding:28px 26px;display:flex;align-items:center;gap:14px;color:#fff">
+<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+<span style="font:800 30px 'Hanken Grotesk';letter-spacing:.02em">PERMITIDO</span>
+</div>
+<div style="position:absolute;bottom:0;left:0;right:0;padding:0 26px 32px;color:#fff">
+<div style="font:800 30px 'Hanken Grotesk';line-height:1.05;letter-spacing:-.01em">María Fernanda<br>Robles Lugo</div>
+<div style="margin-top:14px;display:flex;flex-direction:column;gap:6px">
+<div style="font:500 15px 'Hanken Grotesk';color:rgba(255,255,255,.9)">Banquetes del Bajío</div>
+<div style="font:400 14px 'Hanken Grotesk';color:rgba(255,255,255,.7)">Atlas vs. América · J14 · <span style="font-variant-numeric:tabular-nums">vigente 23:30</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============ SECCIÓN: OPERACIÓN ============ -->
+<div style="position:absolute;left:80px;top:2840px;width:2720px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Operación — SPA acceso</span>
+<span style="width:10px;height:10px;background:#2563EB;transform:rotate(45deg);flex:0 0 auto"></span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">densidad alta · teclado · escritorio</span>
+</div>
+
+<!-- DASHBOARD -->
+<div style="position:absolute;left:80px;top:2900px;width:1320px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Inicio · dashboard de operación</div>
+<div data-screen-label="Acceso · Dashboard" style="height:900px;border-radius:8px;overflow:hidden;box-shadow:0 12px 40px rgba(15,27,45,.14);display:flex;font-family:'Hanken Grotesk',sans-serif;background:#F1F4F8">
+<!-- sidebar -->
+<div style="width:236px;background:#0F1B2D;color:#CBD5E1;flex:0 0 auto;display:flex;flex-direction:column;padding:20px 0">
+<div style="padding:0 20px 18px;display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:7px;background:#2563EB;display:flex;align-items:center;justify-content:center"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M12 5v14"/></svg></span><div><div style="font:800 16px 'Hanken Grotesk';color:#fff;line-height:1">Xenty</div><div style="font:500 11px 'Hanken Grotesk';color:#60A5FA">Acceso</div></div></div>
+<div style="margin:0 14px 16px;background:#1F3147;border-radius:8px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between"><div><div style="font:400 10px 'Hanken Grotesk';color:rgba(203,213,225,.6)">Recinto</div><div style="font:600 13px 'Hanken Grotesk';color:#fff">Estadio Valle Real</div></div><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></div>
+<div style="padding:0 12px;display:flex;flex-direction:column;gap:2px;font-size:13px">
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;background:#2563EB;color:#fff;font-weight:600"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Inicio</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Calendario</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V5a1 1 0 0 1 1-1h2M4 17v2a1 1 0 0 0 1 1h2M20 7V5a1 1 0 0 0-1-1h-2M20 17v2a1 1 0 0 1-1 1h-2"/></svg>Eventos</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg>Citas</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>Proveedores</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>Verificación <span style="margin-left:auto;background:#D97706;color:#fff;font:700 10px 'Hanken Grotesk';padding:2px 7px;border-radius:999px">12</span></div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#fff;background:rgba(37,99,235,.16)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>Escáner</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bitácora</div>
+<div style="display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:7px;color:#CBD5E1"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Sanciones</div>
+</div>
+<div style="margin-top:auto;padding:14px 20px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:50%;background:#1F3147;display:flex;align-items:center;justify-content:center;font:700 13px 'Hanken Grotesk';color:#fff">GR</span><div><div style="font:600 13px 'Hanken Grotesk';color:#fff">Gabriela Ríos</div><div style="font:400 11px 'Hanken Grotesk';color:rgba(203,213,225,.55)">Gerente</div></div></div>
+</div>
+<!-- main -->
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="height:60px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;padding:0 24px;gap:16px;flex:0 0 auto">
+<div style="flex:1;max-width:420px;display:flex;align-items:center;gap:10px;background:#F1F4F8;border:1px solid #E2E8F0;border-radius:8px;padding:9px 14px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg><span style="font:400 13px 'Hanken Grotesk';color:#94A3B8">Buscar persona, evento, folio…</span><span style="margin-left:auto;font:500 11px 'Geist Mono',monospace;color:#94A3B8;background:#fff;border:1px solid #E2E8F0;border-radius:4px;padding:2px 6px">⌘K</span></div>
+<div style="margin-left:auto;font:400 13px 'Hanken Grotesk';color:#475569;font-variant-numeric:tabular-nums">mar 24 jun · 21:48</div>
+<span style="width:34px;height:34px;border-radius:50%;background:#0F1B2D;display:flex;align-items:center;justify-content:center;font:700 13px 'Hanken Grotesk';color:#fff">GR</span>
+</div>
+<div style="flex:1;padding:24px;overflow:hidden">
+<div style="display:flex;justify-content:space-between;align-items:end;margin-bottom:18px"><div><div style="font:800 24px 'Hanken Grotesk';color:#0F1B2D;letter-spacing:-.01em">Buenas noches, Gabriela</div><div style="font:400 14px 'Hanken Grotesk';color:#64748B;margin-top:2px">2 eventos en curso en Estadio Valle Real</div></div><button style="background:#2563EB;color:#fff;border:none;border-radius:8px;padding:10px 16px;font:600 13px 'Hanken Grotesk';cursor:pointer">Crear evento</button></div>
+<!-- KPIs -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:16px"><div style="font:500 12px 'Hanken Grotesk';color:#64748B">Invitados hoy</div><div style="font:800 30px 'Hanken Grotesk';color:#0F1B2D;font-variant-numeric:tabular-nums;margin-top:4px">1,840</div></div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:16px"><div style="font:500 12px 'Hanken Grotesk';color:#64748B">Ingresados</div><div style="font:800 30px 'Hanken Grotesk';color:#16A34A;font-variant-numeric:tabular-nums;margin-top:4px">1,247</div><div style="font:500 11px 'Hanken Grotesk';color:#64748B">68% del aforo previsto</div></div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:16px"><div style="font:500 12px 'Hanken Grotesk';color:#64748B">Eventos en curso</div><div style="font:800 30px 'Hanken Grotesk';color:#0F1B2D;font-variant-numeric:tabular-nums;margin-top:4px">2</div></div>
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:16px"><div style="font:500 12px 'Hanken Grotesk';color:#64748B">Accesos denegados</div><div style="font:800 30px 'Hanken Grotesk';color:#DC2626;font-variant-numeric:tabular-nums;margin-top:4px">38</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
+<!-- chart -->
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:18px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><div style="font:700 15px 'Hanken Grotesk';color:#0F1B2D">Accesos por hora</div><div style="font:400 12px 'Hanken Grotesk';color:#64748B">hoy</div></div>
+<div style="display:flex;align-items:end;gap:10px;height:160px">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:24px;background:#DBEAFE;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">16</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:52px;background:#BFDBFE;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">17</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:90px;background:#93C5FD;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">18</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:130px;background:#60A5FA;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">19</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:152px;background:#2563EB;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">20</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="width:100%;height:110px;background:#3B82F6;border-radius:4px 4px 0 0"></div><span style="font:400 10px 'Geist Mono',monospace;color:#94A3B8">21</span></div>
+</div>
+</div>
+<!-- eventos activos -->
+<div style="background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px">
+<div style="font:700 15px 'Hanken Grotesk';color:#0F1B2D">Eventos en curso</div>
+<div style="border:1px solid #E2E8F0;border-radius:8px;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Atlas vs. América</span><span style="font:600 11px 'Hanken Grotesk';color:#16A34A;background:#DCFCE7;padding:3px 9px;border-radius:999px">En curso</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:4px;font-variant-numeric:tabular-nums">Jornada 14 · 19:00–23:30 · 1,180 ingresados</div></div>
+<div style="border:1px solid #E2E8F0;border-radius:8px;padding:12px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Montaje · Zoé</span><span style="font:600 11px 'Hanken Grotesk';color:#16A34A;background:#DCFCE7;padding:3px 9px;border-radius:999px">En curso</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:4px;font-variant-numeric:tabular-nums">Sonido Cósmico Tour · 67 ingresados</div></div>
+<div style="margin-top:auto;background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:11px 12px;display:flex;gap:9px;align-items:start"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.2" style="flex:0 0 auto;margin-top:1px" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><div style="font:500 12px 'Hanken Grotesk';color:#92400E;line-height:1.4">3 proveedores con documentos por vencer esta semana · 1 dispositivo silencioso (Acceso Sur)</div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- VERIFICACIÓN -->
+<div style="position:absolute;left:1480px;top:2900px;width:1320px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Verificación de documentos · bandeja</div>
+<div data-screen-label="Acceso · Verificación" style="height:900px;border-radius:8px;overflow:hidden;box-shadow:0 12px 40px rgba(15,27,45,.14);display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif;background:#fff">
+<div style="height:60px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;padding:0 24px;gap:14px;flex:0 0 auto">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>
+<div style="font:800 18px 'Hanken Grotesk';color:#0F1B2D">Verificación</div>
+<span style="font:600 12px 'Hanken Grotesk';color:#D97706;background:#FEF3C7;padding:3px 10px;border-radius:999px">12 pendientes</span>
+<div style="margin-left:auto;font:400 13px 'Hanken Grotesk';color:#64748B">Verificador · L. Cervantes · Evento: Atlas vs. América</div>
+</div>
+<div style="flex:1;display:flex;min-height:0">
+<!-- inbox list -->
+<div style="width:380px;border-right:1px solid #E2E8F0;flex:0 0 auto;display:flex;flex-direction:column;overflow:hidden">
+<div style="padding:12px 16px;border-bottom:1px solid #E2E8F0;display:flex;gap:8px"><span style="font:600 12px 'Hanken Grotesk';color:#0F1B2D;background:#EFF6FF;border:1px solid #BFDBFE;padding:5px 11px;border-radius:7px">Pendientes 12</span><span style="font:500 12px 'Hanken Grotesk';color:#64748B;padding:5px 11px">Aprobados</span><span style="font:500 12px 'Hanken Grotesk';color:#64748B;padding:5px 11px">Rechazados</span></div>
+<div style="flex:1;overflow:hidden">
+<div style="padding:14px 16px;border-bottom:1px solid #F1F4F8;background:#EFF6FF;border-left:3px solid #2563EB"><div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Carlos Iván Domínguez</span><span style="font:400 11px 'Geist Mono',monospace;color:#94A3B8">21:32</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:2px">Banquetes del Bajío · Constancia SUA</div></div>
+<div style="padding:14px 16px;border-bottom:1px solid #F1F4F8"><div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Ana Sofía Quintero</span><span style="font:400 11px 'Geist Mono',monospace;color:#94A3B8">21:18</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:2px">Banquetes del Bajío · INE</div></div>
+<div style="padding:14px 16px;border-bottom:1px solid #F1F4F8"><div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Montajes del Pacífico</span><span style="font:400 11px 'Geist Mono',monospace;color:#94A3B8">20:55</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:2px">Opinión de cumplimiento · REPSE</div></div>
+<div style="padding:14px 16px;border-bottom:1px solid #F1F4F8"><div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Jorge Luis Paredes</span><span style="font:400 11px 'Geist Mono',monospace;color:#94A3B8">20:40</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:2px">Seguridad Halcón · Curso DC-3</div></div>
+<div style="padding:14px 16px;border-bottom:1px solid #F1F4F8"><div style="display:flex;justify-content:space-between"><span style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Diana Marlene Ortiz</span><span style="font:400 11px 'Geist Mono',monospace;color:#94A3B8">20:21</span></div><div style="font:400 12px 'Hanken Grotesk';color:#64748B;margin-top:2px">Banquetes del Bajío · Comprobante IMSS</div></div>
+</div>
+</div>
+<!-- preview pane -->
+<div style="flex:1;display:flex;flex-direction:column;background:#F8FAFC;min-width:0">
+<div style="padding:18px 24px;background:#fff;border-bottom:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:start">
+<div><div style="font:800 18px 'Hanken Grotesk';color:#0F1B2D">Constancia de situación fiscal (SUA)</div><div style="font:400 13px 'Hanken Grotesk';color:#64748B;margin-top:3px">Carlos Iván Domínguez Reyes · Banquetes del Bajío S.A. de C.V.</div></div>
+<span style="font:600 11px 'Hanken Grotesk';color:#D97706;background:#FEF3C7;padding:4px 11px;border-radius:999px;flex:0 0 auto">Pendiente</span>
+</div>
+<div style="flex:1;padding:24px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+<div style="width:340px;height:440px;background:#fff;border:1px solid #E2E8F0;border-radius:6px;box-shadow:0 8px 24px rgba(15,27,45,.1);background-image:repeating-linear-gradient(0deg,#fff,#fff 22px,#F1F4F8 22px,#F1F4F8 23px);position:relative;overflow:hidden"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:500 12px 'Geist Mono',monospace;color:#94A3B8">vista previa · PDF</div></div>
+</div>
+<div style="padding:16px 24px;background:#fff;border-top:1px solid #E2E8F0;display:flex;gap:12px;align-items:center">
+<div style="margin-right:auto;font:400 12px 'Geist Mono',monospace;color:#94A3B8">SUA_2026-06.pdf · 1.2 MB · subido 21:32</div>
+<button style="background:#fff;color:#DC2626;border:1.5px solid #DC2626;border-radius:8px;padding:11px 20px;font:600 14px 'Hanken Grotesk';cursor:pointer">Rechazar</button>
+<button style="background:#16A34A;color:#fff;border:none;border-radius:8px;padding:11px 22px;font:600 14px 'Hanken Grotesk';cursor:pointer">Aprobar documento</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============ SECCIÓN: PROVEEDORES ============ -->
+<div style="position:absolute;left:80px;top:3900px;width:1750px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Proveedores — autoservicio</span>
+<span style="font:500 13px 'Hanken Grotesk';color:#2563EB;background:rgba(37,99,235,.1);padding:4px 12px;border-radius:999px">móvil · guiado</span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">táctil ≥44px · paso a paso</span>
+</div>
+
+<!-- Paso 1 -->
+<div style="position:absolute;left:80px;top:3960px;width:392px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Onboarding · paso 1</div>
+<div data-screen-label="Proveedores · Onboarding 1" style="height:820px;border-radius:30px;overflow:hidden;background:#fff;box-shadow:0 16px 48px rgba(15,27,45,.18);border:8px solid #0F1B2D;display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif">
+<div style="background:#0F1B2D;color:#fff;padding:18px 22px 20px"><div style="font:400 12px 'Hanken Grotesk';color:rgba(203,213,225,.7)">Estadio Valle Real</div><div style="font:700 17px 'Hanken Grotesk';margin-top:2px">Registro de proveedor</div></div>
+<div style="padding:20px 22px;flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;height:5px;border-radius:3px;background:#2563EB"></span><span style="flex:1;height:5px;border-radius:3px;background:#E2E8F0"></span><span style="flex:1;height:5px;border-radius:3px;background:#E2E8F0"></span><span style="flex:1;height:5px;border-radius:3px;background:#E2E8F0"></span></div>
+<div style="font:500 12px 'Hanken Grotesk';color:#64748B;margin-bottom:18px">Paso 1 de 4</div>
+<div style="font:800 22px 'Hanken Grotesk';color:#0F1B2D;letter-spacing:-.01em">Datos de la empresa</div>
+<div style="font:400 13px 'Hanken Grotesk';color:#64748B;margin-top:4px;margin-bottom:20px">Tal como aparecen en tu constancia fiscal.</div>
+<div style="display:flex;flex-direction:column;gap:16px">
+<div><div style="font:600 12px 'Hanken Grotesk';color:#334155;margin-bottom:6px">Razón social</div><div style="border:1px solid #CBD5E1;border-radius:9px;padding:13px 14px;font:400 14px 'Hanken Grotesk';color:#0F1B2D">Banquetes del Bajío S.A. de C.V.</div></div>
+<div><div style="font:600 12px 'Hanken Grotesk';color:#334155;margin-bottom:6px">RFC</div><div style="border:1.5px solid #2563EB;border-radius:9px;padding:13px 14px;font:500 14px 'Geist Mono',monospace;color:#0F1B2D">BBA210504H28</div></div>
+<div><div style="font:600 12px 'Hanken Grotesk';color:#334155;margin-bottom:6px">Régimen fiscal</div><div style="border:1px solid #CBD5E1;border-radius:9px;padding:13px 14px;font:400 14px 'Hanken Grotesk';color:#94A3B8;display:flex;justify-content:space-between">Selecciona <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg></div></div>
+</div>
+<button style="margin-top:auto;background:#2563EB;color:#fff;border:none;border-radius:11px;padding:16px;font:700 16px 'Hanken Grotesk';cursor:pointer">Continuar</button>
+</div>
+</div>
+</div>
+
+<!-- Paso 2 documentos -->
+<div style="position:absolute;left:532px;top:3960px;width:392px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Onboarding · paso 2 · documentos</div>
+<div data-screen-label="Proveedores · Onboarding 2" style="height:820px;border-radius:30px;overflow:hidden;background:#fff;box-shadow:0 16px 48px rgba(15,27,45,.18);border:8px solid #0F1B2D;display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif">
+<div style="background:#0F1B2D;color:#fff;padding:18px 22px 20px"><div style="font:400 12px 'Hanken Grotesk';color:rgba(203,213,225,.7)">Estadio Valle Real</div><div style="font:700 17px 'Hanken Grotesk';margin-top:2px">Registro de proveedor</div></div>
+<div style="padding:20px 22px;flex:1;overflow:hidden;display:flex;flex-direction:column">
+<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;height:5px;border-radius:3px;background:#16A34A"></span><span style="flex:1;height:5px;border-radius:3px;background:#2563EB"></span><span style="flex:1;height:5px;border-radius:3px;background:#E2E8F0"></span><span style="flex:1;height:5px;border-radius:3px;background:#E2E8F0"></span></div>
+<div style="font:500 12px 'Hanken Grotesk';color:#64748B;margin-bottom:18px">Paso 2 de 4</div>
+<div style="font:800 22px 'Hanken Grotesk';color:#0F1B2D;letter-spacing:-.01em">Documentos REPSE / SUA</div>
+<div style="font:400 13px 'Hanken Grotesk';color:#64748B;margin-top:4px;margin-bottom:18px">PDF o imagen, máx 10 MB cada uno.</div>
+<div style="display:flex;flex-direction:column;gap:12px;flex:1">
+<div style="border:1px solid #E2E8F0;border-radius:11px;padding:14px;display:flex;align-items:center;gap:12px;background:#F0FDF4"><span style="width:38px;height:38px;border-radius:8px;background:#16A34A;display:flex;align-items:center;justify-content:center;flex:0 0 auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><div style="flex:1;min-width:0"><div style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Registro REPSE</div><div style="font:400 12px 'Hanken Grotesk';color:#16A34A">Cargado · repse_2026.pdf</div></div></div>
+<div style="border:1.5px dashed #2563EB;border-radius:11px;padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;background:#EFF6FF"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><div style="font:600 14px 'Hanken Grotesk';color:#2563EB">Subir constancia SUA</div><div style="font:400 12px 'Hanken Grotesk';color:#64748B">Toca para tomar foto o elegir archivo</div></div>
+<div style="border:1px solid #E2E8F0;border-radius:11px;padding:14px;display:flex;align-items:center;gap:12px"><span style="width:38px;height:38px;border-radius:8px;background:#F1F4F8;display:flex;align-items:center;justify-content:center;flex:0 0 auto"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span><div style="flex:1;min-width:0"><div style="font:600 14px 'Hanken Grotesk';color:#0F1B2D">Opinión de cumplimiento</div><div style="font:400 12px 'Hanken Grotesk';color:#94A3B8">Pendiente</div></div></div>
+</div>
+<button style="margin-top:16px;background:#2563EB;color:#fff;border:none;border-radius:11px;padding:16px;font:700 16px 'Hanken Grotesk';cursor:pointer">Continuar</button>
+</div>
+</div>
+</div>
+
+<!-- Confirmación -->
+<div style="position:absolute;left:984px;top:3960px;width:392px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Onboarding · paso 4 · confirmación</div>
+<div data-screen-label="Proveedores · Onboarding 4" style="height:820px;border-radius:30px;overflow:hidden;background:#fff;box-shadow:0 16px 48px rgba(15,27,45,.18);border:8px solid #0F1B2D;display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif">
+<div style="background:#16A34A;color:#fff;padding:40px 22px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+<div style="font:800 22px 'Hanken Grotesk'">Registro completo</div>
+<div style="font:400 13px 'Hanken Grotesk';color:rgba(255,255,255,.85)">Tu empresa quedó dada de alta en Estadio Valle Real.</div>
+</div>
+<div style="padding:22px;flex:1;display:flex;flex-direction:column;gap:14px">
+<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:11px;padding:16px;display:flex;flex-direction:column;gap:12px">
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:#64748B">Empresa</span><span style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Banquetes del Bajío</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:#64748B">Documentos</span><span style="font:600 13px 'Hanken Grotesk';color:#16A34A">3 de 3 en revisión</span></div>
+<div style="display:flex;justify-content:space-between"><span style="font:400 13px 'Hanken Grotesk';color:#64748B">Responsable</span><span style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">C. Domínguez</span></div>
+</div>
+<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:11px;padding:14px 16px;font:400 13px/1.5 'Hanken Grotesk';color:#1E40AF">Te avisaremos por <b>WhatsApp y correo</b> cuando el recinto verifique tus documentos. Después podrás dar de alta empleados y asignarlos a eventos.</div>
+<div style="margin-top:auto;display:flex;flex-direction:column;gap:10px">
+<button style="background:#2563EB;color:#fff;border:none;border-radius:11px;padding:16px;font:700 16px 'Hanken Grotesk';cursor:pointer">Ir a mis empleados</button>
+<button style="background:#fff;color:#475569;border:1px solid #CBD5E1;border-radius:11px;padding:14px;font:600 15px 'Hanken Grotesk';cursor:pointer">Volver al inicio</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Mi gafete -->
+<div style="position:absolute;left:1436px;top:3960px;width:392px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Mi gafete · credencial</div>
+<div data-screen-label="Proveedores · Gafete" style="height:820px;border-radius:30px;overflow:hidden;background:#F1F4F8;box-shadow:0 16px 48px rgba(15,27,45,.18);border:8px solid #0F1B2D;display:flex;flex-direction:column;font-family:'Hanken Grotesk',sans-serif">
+<div style="background:#0F1B2D;color:#fff;padding:18px 22px"><div style="font:700 17px 'Hanken Grotesk'">Mi gafete</div></div>
+<div style="padding:22px;flex:1;display:flex;flex-direction:column;align-items:center">
+<div style="width:100%;background:#fff;border-radius:18px;box-shadow:0 8px 30px rgba(15,27,45,.12);overflow:hidden">
+<div style="background:#2563EB;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center"><div style="font:700 14px 'Hanken Grotesk'">Estadio Valle Real</div><div style="font:500 11px 'Hanken Grotesk';background:rgba(255,255,255,.2);padding:3px 9px;border-radius:999px">Proveedor</div></div>
+<div style="padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px">
+<div style="width:96px;height:96px;border-radius:14px;overflow:hidden;background:repeating-linear-gradient(45deg,#E2E8F0,#E2E8F0 7px,#EEF2F7 7px,#EEF2F7 14px);display:flex;align-items:center;justify-content:center"><span style="font:500 10px 'Geist Mono',monospace;color:#94A3B8">foto</span></div>
+<div style="text-align:center"><div style="font:800 19px 'Hanken Grotesk';color:#0F1B2D">Carlos Iván Domínguez</div><div style="font:400 13px 'Hanken Grotesk';color:#64748B">Banquetes del Bajío</div></div>
+<div style="width:172px;height:172px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;position:relative;padding:14px">
+<div style="position:absolute;inset:0;background-image:radial-gradient(#0F1B2D 1.3px,transparent 1.3px);background-size:11px 11px;margin:14px;opacity:.85"></div>
+<div style="position:absolute;top:14px;left:14px;width:42px;height:42px;border:7px solid #0F1B2D;background:#fff"></div>
+<div style="position:absolute;top:14px;right:14px;width:42px;height:42px;border:7px solid #0F1B2D;background:#fff"></div>
+<div style="position:absolute;bottom:14px;left:14px;width:42px;height:42px;border:7px solid #0F1B2D;background:#fff"></div>
+</div>
+<div style="font:500 12px 'Geist Mono',monospace;color:#0F1B2D">VR-8F3A-1190</div>
+</div>
+<div style="background:#F0FDF4;border-top:1px solid #DCFCE7;padding:12px 18px;text-align:center;font:600 13px 'Hanken Grotesk';color:#16A34A;font-variant-numeric:tabular-nums">Vigente · Atlas vs. América hasta 23:30</div>
+</div>
+<div style="margin-top:18px;font:400 12px/1.5 'Hanken Grotesk';color:#64748B;text-align:center">Muestra este código en el acceso. También llegó a tu WhatsApp.</div>
+</div>
+</div>
+</div>
+
+<!-- ============ SECCIÓN: ADMIN ============ -->
+<div style="position:absolute;left:80px;top:4900px;width:1320px;display:flex;align-items:center;gap:16px">
+<span style="font:800 24px 'Hanken Grotesk',sans-serif;color:#0F1B2D;letter-spacing:-.01em">Control plane — SPA admin</span>
+<span style="width:10px;height:10px;background:#2563EB;transform:rotate(45deg);flex:0 0 auto"></span>
+<span style="flex:1;height:2px;background:#CBD5E1"></span>
+<span style="font:500 12px 'Geist Mono',monospace;color:rgba(15,27,45,.5)">sobrio · data-rich · super-admin Xenty</span>
+</div>
+
+<!-- EDGE DEVICES -->
+<div style="position:absolute;left:80px;top:4960px;width:1320px">
+<div data-drags-parent="1" style="position:absolute;top:-26px;font:600 12px 'Hanken Grotesk',sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(15,27,45,.55)">Dispositivos edge · estado en vivo</div>
+<div data-screen-label="Admin · Dispositivos edge" style="height:860px;border-radius:8px;overflow:hidden;box-shadow:0 12px 40px rgba(15,27,45,.14);display:flex;font-family:'Hanken Grotesk',sans-serif;background:#fff">
+<!-- admin sidebar (lighter) -->
+<div style="width:220px;background:#F8FAFC;border-right:1px solid #E2E8F0;flex:0 0 auto;padding:20px 0;display:flex;flex-direction:column">
+<div style="padding:0 20px 20px;display:flex;align-items:center;gap:9px"><span style="width:28px;height:28px;border-radius:7px;background:#0F1B2D;display:flex;align-items:center;justify-content:center;font:800 13px 'Hanken Grotesk';color:#fff">X</span><div style="font:700 15px 'Hanken Grotesk';color:#0F1B2D">Xenty Admin</div></div>
+<div style="padding:0 12px;display:flex;flex-direction:column;gap:2px;font-size:13px">
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;color:#475569"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Tenants</div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;color:#475569"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Planes y billing</div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;background:#fff;border:1px solid #E2E8F0;color:#0F1B2D;font-weight:600;box-shadow:0 1px 2px rgba(15,27,45,.05)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg>Dispositivos edge</div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;color:#475569"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/></svg>Mantenimiento</div>
+<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;color:#475569"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>Métricas globales</div>
+</div>
+</div>
+<!-- main -->
+<div style="flex:1;display:flex;flex-direction:column;min-width:0">
+<div style="padding:24px 28px 18px;border-bottom:1px solid #E2E8F0">
+<div style="display:flex;justify-content:space-between;align-items:start"><div><div style="font:800 22px 'Hanken Grotesk';color:#0F1B2D;letter-spacing:-.01em">Dispositivos edge</div><div style="font:400 13px 'Hanken Grotesk';color:#64748B;margin-top:2px">Raspberry Pi en torniquetes · estado vía long-poll</div></div><button style="background:#0F1B2D;color:#fff;border:none;border-radius:8px;padding:10px 16px;font:600 13px 'Hanken Grotesk';cursor:pointer">Dar de alta dispositivo</button></div>
+<div style="display:flex;gap:24px;margin-top:18px">
+<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#16A34A"></span><span style="font:600 13px 'Hanken Grotesk';color:#0F1B2D;font-variant-numeric:tabular-nums">18 en línea</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#D97706"></span><span style="font:600 13px 'Hanken Grotesk';color:#0F1B2D;font-variant-numeric:tabular-nums">2 silenciosos</span></div>
+<div style="display:flex;align-items:center;gap:8px"><span style="width:8px;height:8px;border-radius:50%;background:#94A3B8"></span><span style="font:600 13px 'Hanken Grotesk';color:#0F1B2D;font-variant-numeric:tabular-nums">1 dado de baja</span></div>
+</div>
+</div>
+<div style="flex:1;padding:0 28px;overflow:hidden">
+<!-- table header -->
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #E2E8F0;font:600 11px 'Hanken Grotesk';color:#64748B;text-transform:uppercase;letter-spacing:.04em">
+<div>Dispositivo</div><div>MAC</div><div>Recinto / acceso</div><div>Tenant</div><div>Estado</div><div style="text-align:right">Acción</div>
+</div>
+<!-- rows -->
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #F1F4F8;align-items:center;font-size:13px"><div style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Torniquete Norte 4</div><div style="font:400 12px 'Geist Mono',monospace;color:#475569">B8:27:EB:1A:3F</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Valle Real · Norte</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Estadio VR</div><div><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Hanken Grotesk';color:#16A34A"><span style="width:7px;height:7px;border-radius:50%;background:#16A34A"></span>En línea · 2s</span></div><div style="text-align:right"><button style="background:#fff;border:1px solid #CBD5E1;border-radius:7px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#2563EB;cursor:pointer">Probar</button></div></div>
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #F1F4F8;align-items:center;font-size:13px"><div style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Pluma Vehicular E1</div><div style="font:400 12px 'Geist Mono',monospace;color:#475569">B8:27:EB:0C:71</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Valle Real · Estac. 1</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Estadio VR</div><div><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Hanken Grotesk';color:#16A34A"><span style="width:7px;height:7px;border-radius:50%;background:#16A34A"></span>En línea · 1s</span></div><div style="text-align:right"><button style="background:#fff;border:1px solid #CBD5E1;border-radius:7px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#2563EB;cursor:pointer">Probar</button></div></div>
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #F1F4F8;align-items:center;font-size:13px;background:#FFFBEB"><div style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Torniquete Sur 2</div><div style="font:400 12px 'Geist Mono',monospace;color:#475569">B8:27:EB:55:A2</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Valle Real · Sur</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Estadio VR</div><div><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Hanken Grotesk';color:#D97706"><span style="width:7px;height:7px;border-radius:50%;background:#D97706;animation:pulse 1.4s infinite"></span>Silencioso · 4 min</span></div><div style="text-align:right"><button style="background:#fff;border:1px solid #CBD5E1;border-radius:7px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#2563EB;cursor:pointer">Probar</button></div></div>
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #F1F4F8;align-items:center;font-size:13px"><div style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Caseta Peatonal O3</div><div style="font:400 12px 'Geist Mono',monospace;color:#475569">B8:27:EB:9D:14</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Valle Real · Oriente</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Estadio VR</div><div><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Hanken Grotesk';color:#16A34A"><span style="width:7px;height:7px;border-radius:50%;background:#16A34A"></span>En línea · 3s</span></div><div style="text-align:right"><button style="background:#fff;border:1px solid #CBD5E1;border-radius:7px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#2563EB;cursor:pointer">Probar</button></div></div>
+<div style="display:grid;grid-template-columns:1.4fr 1.2fr 1fr 1fr 1.1fr 0.8fr;gap:12px;padding:14px 12px;border-bottom:1px solid #F1F4F8;align-items:center;font-size:13px"><div style="font:600 13px 'Hanken Grotesk';color:#0F1B2D">Torniquete Norte 5</div><div style="font:400 12px 'Geist Mono',monospace;color:#475569">B8:27:EB:1A:40</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Valle Real · Norte</div><div style="font:400 13px 'Hanken Grotesk';color:#475569">Estadio VR</div><div><span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Hanken Grotesk';color:#94A3B8"><span style="width:7px;height:7px;border-radius:50%;background:#94A3B8"></span>Dado de baja</span></div><div style="text-align:right"><button style="background:#fff;border:1px solid #E2E8F0;border-radius:7px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#CBD5E1;cursor:not-allowed">Probar</button></div></div>
+</div>
+<div style="padding:14px 28px;border-top:1px solid #E2E8F0;display:flex;justify-content:space-between;align-items:center"><span style="font:400 12px 'Hanken Grotesk';color:#64748B;font-variant-numeric:tabular-nums">21 dispositivos · actualizado hace 2 s</span><span style="font:400 12px 'Geist Mono',monospace;color:#94A3B8">comando: abrir relé · mostrar texto</span></div>
+</div>
+</div>
+</div>
+
+<!-- annotation post-it -->
+<div style="position:absolute;left:1480px;top:4990px;width:280px">
+<div style="background:#FEF4A8;padding:16px;font:400 13px/1.5 'Hanken Grotesk';color:#5b4e1a;box-shadow:0 6px 18px rgba(15,27,45,.12);transform:rotate(1.2deg);border-radius:2px">
+<b>Estados por pantalla.</b> Cada lista trae vacío / carga (skeleton) / error en la voz del producto. El edge "silencioso" pulsa en ámbar; el dado de baja queda inerte. ¿Sigo con el resto (calendario, bitácora, mensajería) o iteramos estas cinco primero?
+</div>
+</div>
+</x-dc>
+</body>
+</html>

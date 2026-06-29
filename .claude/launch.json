@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "frontend-acceso",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["exec", "xenty-frontend-acceso-1", "echo", "ready"],
+      "port": 5174,
+      "autoPort": false
+    }
+  ]
+}
