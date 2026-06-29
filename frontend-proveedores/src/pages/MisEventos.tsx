@@ -95,6 +95,11 @@ export default function MisEventos() {
   const [accion, setAccion] = useState<number | null>(null);     // empleado en proceso
   const [aviso, setAviso] = useState("");
 
+  /* cajones de estacionamiento */
+  const [cajones, setCajones] = useState<{ id: number; numero: number }[]>([]);
+  const [loadingCajones, setLoadingCajones] = useState(false);
+  const [descargandoCajon, setDescargandoCajon] = useState<number | null>(null);
+
   const cargar = () =>
     api.get("/api/evento-proveedores/")
       .then(r => setInvitaciones(r.data.results ?? r.data))
@@ -104,14 +109,43 @@ export default function MisEventos() {
   useEffect(() => { cargar(); }, []);
 
   async function abrirGestion(inv: Invitacion) {
-    setGestion(inv); setCand(null); setAviso(""); setLoadingCand(true);
+    setGestion(inv); setCand(null); setAviso(""); setCajones([]);
+    setLoadingCand(true);
+    if (inv.requiere_parking) setLoadingCajones(true);
     try {
-      const { data } = await api.get(`/api/evento-proveedores/${inv.id}/candidatos/`);
-      setCand(data);
+      const [candRes] = await Promise.all([
+        api.get(`/api/evento-proveedores/${inv.id}/candidatos/`),
+        inv.requiere_parking
+          ? api.get(`/api/evento-proveedores/${inv.id}/cajones/`)
+              .then(r => setCajones(r.data.cajones ?? []))
+              .catch(() => {})
+          : Promise.resolve(),
+      ]);
+      setCand(candRes.data);
     } catch {
       setError("No se pudieron cargar los empleados.");
       setGestion(null);
-    } finally { setLoadingCand(false); }
+    } finally {
+      setLoadingCand(false);
+      if (inv.requiere_parking) setLoadingCajones(false);
+    }
+  }
+
+  async function descargarQrParking(epId: number, cajonId: number, numero: number) {
+    setDescargandoCajon(cajonId);
+    try {
+      const resp = await api.get(`/api/evento-proveedores/${epId}/gafete-parking/`, {
+        params: { cajon: cajonId },
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(resp.data);
+      const a = document.createElement("a");
+      a.href = url; a.download = `pase-estacionamiento-${numero}.png`;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch {
+      /* silent */
+    } finally { setDescargandoCajon(null); }
   }
 
   async function recargarCand() {
@@ -245,6 +279,42 @@ export default function MisEventos() {
                     </div>
                   </div>
 
+                  {/* Pases de estacionamiento */}
+                  {gestion.requiere_parking && (
+                    <div className="rounded-lg border border-slate-200 p-4">
+                      <p className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                        Pases de estacionamiento
+                        {gestion.parking ? ` — ${gestion.parking}` : ""}
+                      </p>
+                      {loadingCajones ? (
+                        <div className="flex justify-center py-4">
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+                        </div>
+                      ) : cajones.length === 0 ? (
+                        <p className="text-sm text-slate-400">Sin cajones configurados aún.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2">
+                          {cajones.map(c => (
+                            <button
+                              key={c.id}
+                              onClick={() => descargarQrParking(gestion.id, c.id, c.numero)}
+                              disabled={descargandoCajon === c.id}
+                              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              <svg className="h-3.5 w-3.5 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path d="M12 5v14M5 12l7 7 7-7"/>
+                              </svg>
+                              {descargandoCajon === c.id ? "Descargando…" : `Cajón ${c.numero}`}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      <p className="mt-2 text-[11px] text-slate-400">
+                        Descarga el QR de cada cajón y preséntalo al ingresar al estacionamiento.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Cupo */}
                   <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-2.5 text-sm">
                     <span className="text-slate-600">Cupo</span>
@@ -329,9 +399,7 @@ function EmpleadoFila({ emp, epId, cupoLleno, enAccion, onAsignar, onQuitar, onS
     fd.append("tipo_documento", String(tipoSel));
     fd.append("archivo", file);
     try {
-      await api.post("/api/documentos-empleado/", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/api/documentos-empleado/", fd);
       setTipoSel("");
       if (fileRef.current) fileRef.current.value = "";
       onSubido();

@@ -148,9 +148,7 @@ export default function Empleados() {
     fd.append("tipo_documento", String(tipoSel));
     fd.append("archivo", file);
     try {
-      await api.post("/api/documentos-empleado/", fd, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      await api.post("/api/documentos-empleado/", fd);
       setTipoSel("");
       if (docFileRef.current) docFileRef.current.value = "";
       await abrirDocs(docsModal);

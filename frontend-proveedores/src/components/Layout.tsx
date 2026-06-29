@@ -8,7 +8,6 @@ interface Me { nombre?: string; email?: string; empresa?: string; }
 const NAV_ITEMS: { to: string; label: string }[] = [
   { to: "/dashboard",  label: "Inicio" },
   { to: "/empleados",  label: "Empleados" },
-  { to: "/documentos", label: "Documentos" },
   { to: "/eventos",    label: "Mis eventos" },
 ];
 

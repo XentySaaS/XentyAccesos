@@ -291,6 +291,13 @@ class EventoProveedorViewSet(viewsets.ModelViewSet):
             "requiere_documentos": bool(reqs),
         })
 
+    @action(detail=True, methods=["get"])
+    def cajones(self, request, pk=None):
+        """Lista los cajones de estacionamiento de esta invitación (id + número secuencial)."""
+        ep = self.get_object()
+        data = [{"id": c.id, "numero": i + 1} for i, c in enumerate(ep.cajones.order_by("id"))]
+        return Response({"cajones": data})
+
     @action(detail=True, methods=["post"], url_path="desasignar-empleados")
     def desasignar_empleados(self, request, pk=None):
         """Quita empleados de la invitación (lado proveedor)."""

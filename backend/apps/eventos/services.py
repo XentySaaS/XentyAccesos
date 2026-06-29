@@ -8,13 +8,34 @@ y el correo va a Mailpit).
 from __future__ import annotations
 
 import logging
+from datetime import datetime, time as _dtime, timezone as _dtz
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage, send_mail
 
 from apps.mensajeria.services import obtener_whatsapp
 
 logger = logging.getLogger(__name__)
+
+
+def _exp_epoch(evento) -> float:
+    """Epoch del fin del último día de vigencia del evento (para el QR)."""
+    return datetime.combine(evento.vigencia_fin, _dtime(23, 59, 59), tzinfo=_dtz.utc).timestamp()
+
+
+def _lineas_gafete(ep) -> list[str]:
+    """Líneas de texto que van en el gafete: nombre evento, zona, acceso, fecha/hora."""
+    ev = ep.evento
+    lineas = [ev.nombre]
+    if ep.zona_id:
+        lineas.append(f"Zona: {ep.zona.nombre}")
+    if ep.acceso_id:
+        lineas.append(f"Acceso: {ep.acceso.nombre}")
+    fecha = ev.vigencia_inicio.strftime("%d/%m/%Y")
+    if ev.hora_inicio:
+        fecha += f" · {ev.hora_inicio.strftime('%H:%M')}"
+    lineas.append(fecha)
+    return lineas
 
 
 def _enviar_whatsapp(telefono: str | None, cuerpo: str) -> None:
@@ -40,7 +61,12 @@ def _enviar_correo(asunto: str, cuerpo: str, destino: str | None) -> None:
 
 
 def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None) -> None:
-    """Avisa al proveedor (correo + WhatsApp) que fue invitado a un evento."""
+    """Avisa al proveedor (correo + WhatsApp) que fue invitado a un evento.
+
+    Si tiene cajones de estacionamiento, adjunta los QR de cada cajón al correo.
+    """
+    from django.db import connection as _conn
+
     proveedor = ep.proveedor
     evento = ep.evento
     responsable = (proveedor.nombre_responsable or proveedor.nombre or "").strip().title()
@@ -55,13 +81,54 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
     if ep.requiere_parking and ep.cajones_parking:
         cuerpo += (
             f"\nSe te asignaron {ep.cajones_parking} cajón(es) de estacionamiento"
-            f"{(' (' + ep.parking + ')') if ep.parking else ''}; "
-            "descarga los pases desde tu cuenta.\n"
+            f"{(' (' + ep.parking + ')') if ep.parking else ''}."
+            " Los pases QR de estacionamiento van adjuntos a este correo.\n"
         )
     cuerpo += f"\nIngresa aquí: {enlace}\n\n— {nombre_tenant} · Xenty Acceso"
 
     asunto = f"Invitación al evento {evento.nombre} — {nombre_tenant}"
-    _enviar_correo(asunto, cuerpo, proveedor.email_responsable or proveedor.email)
+    destino = proveedor.email_responsable or proveedor.email
+
+    # Adjuntar QR de estacionamiento si hay cajones
+    adjuntos: list[tuple[str, bytes, str]] = []
+    if ep.requiere_parking:
+        try:
+            from apps.gafetes.services import TIPO_PARKING, componer_gafete, emitir_qr
+            lineas = _lineas_gafete(ep)
+            if ep.parking:
+                lineas.append(f"Estacionamiento: {ep.parking}")
+            exp = _exp_epoch(evento)
+            tenant = _conn.schema_name
+            for i, cajon in enumerate(ep.cajones.order_by("id"), start=1):
+                token = emitir_qr(
+                    id=cajon.id, tipo=TIPO_PARKING, tenant=tenant,
+                    exp_epoch=exp, contexto=str(cajon.uuid),
+                )
+                png = componer_gafete(
+                    token=token, titulo=proveedor.nombre,
+                    recinto=evento.recinto.nombre if evento.recinto_id else nombre_tenant,
+                    lineas=lineas, empresa=nombre_tenant,
+                )
+                adjuntos.append((f"pase-estacionamiento-{i}.png", png, "image/png"))
+        except Exception as exc:
+            logger.warning("QR parking no generado para invitación %s: %s", ep.id, exc)
+
+    if adjuntos and destino:
+        try:
+            msg = EmailMessage(
+                subject=asunto, body=cuerpo,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@xenty.mx"),
+                to=[destino],
+            )
+            for nombre_f, datos, ct in adjuntos:
+                msg.attach(nombre_f, datos, ct)
+            msg.send(fail_silently=False)
+        except Exception as exc:
+            logger.warning("Correo con QR parking no enviado a %s: %s", destino, exc)
+            _enviar_correo(asunto, cuerpo, destino)
+    else:
+        _enviar_correo(asunto, cuerpo, destino)
+
     _enviar_whatsapp(proveedor.telefono, cuerpo)
 
 
@@ -93,14 +160,57 @@ def _resumen_evento(ep) -> str:
 
 
 def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
-    """Avisa al empleado (correo + WhatsApp) que fue asignado a un evento y cómo entrar."""
+    """Avisa al empleado (correo + WhatsApp) que fue asignado a un evento.
+
+    Adjunta el gafete QR como PNG al correo para que el empleado lo presente en el acceso.
+    """
+    from django.db import connection as _conn
+
     empleado = asignacion.empleado
     ep = asignacion.evento_proveedor
+    ev = ep.evento
     cuerpo = (
         f"Hola {empleado.nombre}, {nombre_tenant} te asignó al evento {_resumen_evento(ep)}.\n\n"
-        f"Presenta tu gafete de acceso (QR) en el punto de acceso indicado."
+        f"Tu gafete de acceso QR va adjunto a este correo. "
+        f"Preséntalo en el punto de acceso indicado."
     )
-    _enviar_correo(f"Acceso a evento — {ep.evento.nombre}", cuerpo, empleado.email)
+
+    # Genera el gafete y adjúntalo al correo (best-effort; falla → texto sin adjunto).
+    enviado_con_adjunto = False
+    try:
+        from apps.gafetes.services import TIPO_EVENTO, componer_gafete, emitir_qr
+
+        token = emitir_qr(
+            id=asignacion.id, tipo=TIPO_EVENTO,
+            tenant=_conn.schema_name, exp_epoch=_exp_epoch(ev),
+        )
+        foto: bytes | None = None
+        if empleado.foto:
+            try:
+                foto = empleado.foto.read()
+            except OSError:
+                pass
+        recinto = ev.recinto.nombre if ev.recinto_id else nombre_tenant
+        png = componer_gafete(
+            token=token, titulo=empleado.nombre, recinto=recinto,
+            lineas=_lineas_gafete(ep), foto_bytes=foto, empresa=nombre_tenant,
+        )
+        if empleado.email:
+            nombre_f = f"gafete-{empleado.nombre.replace(' ', '-').lower()}.png"
+            msg = EmailMessage(
+                subject=f"Tu gafete de acceso — {ev.nombre}",
+                body=cuerpo,
+                from_email=getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@xenty.mx"),
+                to=[empleado.email],
+            )
+            msg.attach(nombre_f, png, "image/png")
+            msg.send(fail_silently=False)
+            enviado_con_adjunto = True
+    except Exception as exc:
+        logger.warning("Gafete no generado/adjuntado para asignación %s: %s", asignacion.id, exc)
+
+    if not enviado_con_adjunto:
+        _enviar_correo(f"Acceso a evento — {ev.nombre}", cuerpo, empleado.email)
     _enviar_whatsapp(empleado.telefono, cuerpo)
 
 
