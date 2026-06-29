@@ -8,14 +8,16 @@ interface Stats {
   eventos_asignados: number;
 }
 
+const INK = "#0F1B2D";
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     Promise.all([
-      api.get("/api/empleados/empleados/"),
-      api.get("/api/documentos/documentos-empleado/?estado=0"),
-      api.get("/api/eventos/eventos-proveedor/"),
+      api.get("/api/empleados/"),
+      api.get("/api/documentos-empleado/?estado=0"),
+      api.get("/api/evento-proveedores/"),
     ]).then(([emp, docs, evs]) => {
       const todos: { estado: string }[] = emp.data.results ?? emp.data;
       setStats({
@@ -28,23 +30,31 @@ export default function Dashboard() {
   }, []);
 
   const cards = stats ? [
-    { label: "Total empleados", value: stats.total_empleados, color: "bg-blue-50 text-blue-700" },
-    { label: "Empleados activos", value: stats.empleados_activos, color: "bg-green-50 text-green-700" },
-    { label: "Documentos por verificar", value: stats.documentos_pendientes, color: "bg-yellow-50 text-yellow-700" },
-    { label: "Eventos asignados", value: stats.eventos_asignados, color: "bg-purple-50 text-purple-700" },
+    { label: "Total empleados",        value: stats.total_empleados,        color: INK },
+    { label: "Empleados activos",      value: stats.empleados_activos,      color: "#16A34A" },
+    { label: "Documentos por verificar", value: stats.documentos_pendientes, color: "#D97706" },
+    { label: "Eventos asignados",      value: stats.eventos_asignados,      color: "#2563EB" },
   ] : [];
 
   return (
     <div>
-      <h1 className="mb-6 text-xl font-semibold text-slate-900">Panel del proveedor</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold" style={{ color: INK }}>Panel del proveedor</h1>
+        <p className="mt-0.5 text-sm text-slate-500">Resumen de tu plantilla, documentos y eventos.</p>
+      </div>
+
       {stats === null ? (
-        <p className="text-slate-500">Cargando…</p>
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-24 animate-pulse rounded-card bg-white shadow-card ring-1 ring-slate-100" />
+          ))}
+        </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((c) => (
-            <div key={c.label} className={`rounded-xl p-5 ${c.color} shadow-sm`}>
-              <p className="text-3xl font-bold">{c.value}</p>
-              <p className="mt-1 text-sm">{c.label}</p>
+            <div key={c.label} className="rounded-card bg-white p-5 shadow-card ring-1 ring-slate-100">
+              <p className="text-[30px] font-extrabold leading-none tabular" style={{ color: c.color }}>{c.value}</p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-400">{c.label}</p>
             </div>
           ))}
         </div>

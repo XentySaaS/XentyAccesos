@@ -2,5 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light dark; }
-body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+/* ── Design tokens ─────────────────────────────────────────────── */
+:root {
+  --ink-900:    #0F1B2D;
+  --ink-700:    #1F3147;
+  --slate-100:  #F1F4F8;
+  --slate-300:  #CBD5E1;
+  --signal-600: #2563EB;
+  --permitido:  #16A34A;
+  --denegado:   #DC2626;
+  --advertencia:#D97706;
+
+  color-scheme: light;
+}
+
+/* ── Base tipográfica ───────────────────────────────────────────── */
+body {
+  margin: 0;
+  font-family: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1e293b;
+  background: var(--slate-100);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Números tabulares en toda columna de datos */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* Mono — folios, RFC, MAC */
+.font-mono,
+[class*="font-mono"] {
+  font-family: "Geist Mono", "Fira Mono", ui-monospace, monospace;
+}

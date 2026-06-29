@@ -5,6 +5,7 @@ import Documentos from "./pages/Documentos";
 import Empleados from "./pages/Empleados";
 import Login from "./pages/Login";
 import MisEventos from "./pages/MisEventos";
+import Onboarding from "./pages/Onboarding";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -15,6 +16,7 @@ function Protegida({ children }: { children: JSX.Element }) {
 export const router = createBrowserRouter(
   [
     { path: "/", element: <Login /> },
+    { path: "/onboarding", element: <Onboarding /> },
     {
       element: (
         <Protegida>
