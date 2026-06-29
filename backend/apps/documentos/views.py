@@ -38,8 +38,13 @@ class GrupoDocumentosViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 class TipoDocumentoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = TipoDocumento.objects.all().order_by("id")
     serializer_class = TipoDocumentoSerializer
-    permission_classes = _CATALOGO_PERMS
     filterset_fields = ["grupo", "activo"]
+
+    def get_permissions(self):
+        # Proveedores necesitan leer los tipos al subir documentos de sus empleados.
+        if self.action in ("list", "retrieve"):
+            return [*PERMISOS_BASE()]
+        return list(_CATALOGO_PERMS)
 
 
 class ProtocoloViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
@@ -74,6 +79,22 @@ class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
     def _exige_verificador(self):
         if self._ctx() != "acceso" or self.request.user.rol not in ("verificador", "administrador"):
             raise PermissionDenied("Requiere rol verificador o administrador.")
+
+    @action(detail=True, methods=["get"])
+    def download(self, request, pk=None):
+        """Descarga autenticada del archivo. El queryset ya filtra por pertenencia."""
+        import mimetypes
+        from django.http import FileResponse
+
+        doc = self.get_object()
+        if not doc.archivo:
+            return Response({"detail": "Sin archivo."}, status=status.HTTP_404_NOT_FOUND)
+        try:
+            f = doc.archivo.open("rb")
+        except (FileNotFoundError, OSError):
+            return Response({"detail": "Archivo no encontrado en disco."}, status=status.HTTP_404_NOT_FOUND)
+        content_type, _ = mimetypes.guess_type(doc.archivo.name)
+        return FileResponse(f, content_type=content_type or "application/octet-stream")
 
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
