@@ -16,7 +16,9 @@ from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.api import AccesoLoginView
+from apps.ocr.views import ExtraerIneView
 from apps.proveedores.api import ProveedorLoginView
+from apps.proveedores.views import OnboardingProveedorView
 from apps.soporte.api import SaludConfiguracionView
 from common.auth_api import LogoutView, MeView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
@@ -32,6 +34,9 @@ urlpatterns = [
     path("api/auth/mfa/totp/activar/", ActivarTOTPView.as_view(), name="mfa-totp-activar"),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
+    path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
+    path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"),
+    path("api/", include("apps.accounts.urls")),  # F1: gestión de usuarios del tenant
     path("api/", include("apps.recintos.urls")),  # F1: topología de recintos
     path("api/", include("apps.proveedores.urls")),  # F1: catálogo + onboarding de proveedores
     path("api/", include("apps.empleados.urls")),  # F1: plantilla de empleados del proveedor

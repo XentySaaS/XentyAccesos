@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from apps.config.services import AuditViewSetMixin
 from common.permissions import (
     PERMISOS_BASE,
     ContextoAcceso,
@@ -13,31 +14,39 @@ from common.permissions import (
     RequiereRol,
 )
 
-from .models import DocumentoEmpleado, GrupoDocumentos, TipoDocumento
+from .models import DocumentoEmpleado, GrupoDocumentos, Protocolo, TipoDocumento
 from .serializers import (
     DocumentoEmpleadoSerializer,
     GrupoDocumentosSerializer,
+    ProtocoloSerializer,
     TipoDocumentoSerializer,
 )
-from .services import notificar_rechazo
+from .services import notificar_aprobacion, notificar_rechazo
 
 _CATALOGO_PERMS = [
     *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("documentos"), RequiereRol("administrador"),
 ]
 
 
-class GrupoDocumentosViewSet(viewsets.ModelViewSet):
+class GrupoDocumentosViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = GrupoDocumentos.objects.all().order_by("id")
     serializer_class = GrupoDocumentosSerializer
     permission_classes = _CATALOGO_PERMS
     filterset_fields = ["activo"]
 
 
-class TipoDocumentoViewSet(viewsets.ModelViewSet):
+class TipoDocumentoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = TipoDocumento.objects.all().order_by("id")
     serializer_class = TipoDocumentoSerializer
     permission_classes = _CATALOGO_PERMS
     filterset_fields = ["grupo", "activo"]
+
+
+class ProtocoloViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
+    queryset = Protocolo.objects.all().order_by("id")
+    serializer_class = ProtocoloSerializer
+    permission_classes = _CATALOGO_PERMS
+    filterset_fields = ["estado"]
 
 
 class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
@@ -51,15 +60,13 @@ class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = DocumentoEmpleado.objects.all().order_by("-creado")
         if self._ctx() == "proveedores":
-            # El proveedor solo ve documentos de empleados de SU empresa.
             return qs.filter(empleado__proveedor__proveedor_id=self.request.user.proveedor_id)
-        return qs  # acceso (verificador/administrador): bandeja de verificación
+        return qs
 
     def perform_create(self, serializer):
         if self._ctx() != "proveedores":
             raise PermissionDenied("Solo el proveedor sube documentos.")
         empleado = serializer.validated_data["empleado"]
-        # El empleado debe pertenecer a la empresa del actor.
         if empleado.proveedor.proveedor_id != self.request.user.proveedor_id:
             raise ValidationError({"empleado": "No pertenece a tu empresa."})
         serializer.save()
@@ -75,6 +82,10 @@ class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
         doc.estado = DocumentoEmpleado.Estado.VERIFICADO
         doc.motivo_rechazo = None
         doc.save(update_fields=["estado", "motivo_rechazo"])
+        # Propaga checkdocs: una asignación pendiente puede pasar a "cumple" al validar este doc.
+        from apps.eventos.services import recalcular_status_asignaciones
+        recalcular_status_asignaciones(doc.empleado)
+        notificar_aprobacion(doc)
         return Response({"estado": doc.estado})
 
     @action(detail=True, methods=["post"])
@@ -84,5 +95,8 @@ class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
         doc.estado = DocumentoEmpleado.Estado.RECHAZADO
         doc.motivo_rechazo = request.data.get("motivo", "")
         doc.save(update_fields=["estado", "motivo_rechazo"])
+        # Al rechazar, una asignación que dependía de este doc deja de cumplir.
+        from apps.eventos.services import recalcular_status_asignaciones
+        recalcular_status_asignaciones(doc.empleado)
         notificar_rechazo(doc)
         return Response({"estado": doc.estado})

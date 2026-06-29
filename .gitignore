@@ -15,7 +15,7 @@ media/
 # Node
 node_modules/
 dist/
-
+proyecto_original/
 # Código del stack anterior (mantener como repo hermano, NO aquí)
 _ref-sar-legacy/
 

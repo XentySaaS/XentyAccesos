@@ -53,6 +53,12 @@ def provisionar_tenant(
     from apps.accounts.models import Usuario
 
     with schema_context(slug):
-        Usuario.objects.create_superuser(email=admin_email, nombre=admin_nombre, password=password)
+        admin = Usuario.objects.create_superuser(
+            email=admin_email, nombre=admin_nombre, password=password,
+        )
+        # El primer usuario del tenant es el responsable; su email se considera verificado
+        # en el momento del alta porque el propio tenant lo registró en el control plane.
+        admin.email_verificado = timezone.now()
+        admin.save(update_fields=["email_verificado"])
 
     return tenant, password

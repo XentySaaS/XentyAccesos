@@ -17,6 +17,8 @@ from apps.tenants.admin_api import (
 )
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.ocr.views import ExtraerIneView
+from apps.proveedores.views import OnboardingProveedorView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
@@ -27,6 +29,10 @@ router.register("api/admin/tenants", TenantAdminViewSet, basename="admin-tenant"
 urlpatterns = [
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
     path("", include("apps.dispositivos.urls")),  # F6: API edge /api/v1/* (HMAC)
+    # OCR público — usada en el onboarding antes de tener cuenta
+    path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine-public"),
+    # Onboarding público de proveedores (accesible sin subdominio de tenant)
+    path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor-public"),
     # Alta pública self-service de tenants
     path("api/signup/", SignupView.as_view(), name="signup"),
     # Control plane (super-admin)

@@ -35,6 +35,24 @@ class TipoDocumento(models.Model):  # list_documents
         return self.nombre
 
 
+class Protocolo(models.Model):  # protocols
+    """Protocolo operativo del recinto (PDF descargable por el proveedor en su portal)."""
+
+    class Estado(models.TextChoices):
+        ACTIVO   = "activo",   "Activo"
+        INACTIVO = "inactivo", "Inactivo"
+
+    nombre      = models.CharField(max_length=200)
+    descripcion = models.TextField(null=True, blank=True)
+    archivo     = models.FileField(upload_to="protocolos/", null=True, blank=True)
+    estado      = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
+    creado      = models.DateTimeField(auto_now_add=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.nombre
+
+
 class DocumentoEmpleado(models.Model):  # employee_documents
     class Estado(models.IntegerChoices):
         PENDIENTE = 0, "Pendiente"

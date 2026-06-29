@@ -40,20 +40,45 @@ def cumple_requisitos(empleado, requisitos: Iterable[tuple[int, int]]) -> bool:
     return True
 
 
-def notificar_rechazo(documento) -> None:
-    """Best-effort: avisa al proveedor que su documento fue rechazado (no bloquea la petición)."""
+def _avisar_documento(documento, *, verificado: bool) -> None:
+    """Best-effort: avisa al proveedor (correo + WhatsApp) el resultado de la verificación."""
+    import logging
+
     from django.core.mail import send_mail
 
+    logger = logging.getLogger(__name__)
     cuenta = getattr(documento.empleado, "proveedor", None)
-    email = getattr(cuenta, "email", None)
-    if not email:
+    if not cuenta:
         return
-    try:
-        send_mail(
-            "Documento rechazado",
-            f"El documento '{documento.tipo_documento}' de {documento.empleado} fue rechazado. "
-            f"Motivo: {documento.motivo_rechazo or 'no especificado'}.",
-            None, [email], fail_silently=True,
-        )
-    except Exception:
-        pass
+
+    estado = "verificado" if verificado else "rechazado"
+    cuerpo = (
+        f"El documento «{documento.tipo_documento}» de {documento.empleado} fue {estado}."
+    )
+    if not verificado:
+        cuerpo += f" Motivo: {documento.motivo_rechazo or 'no especificado'}."
+
+    email = getattr(cuenta, "email", None)
+    if email:
+        try:
+            send_mail(f"Documento {estado}", cuerpo, None, [email], fail_silently=True)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Correo de verificación no enviado: %s", exc)
+
+    telefono = getattr(documento.empleado, "telefono", None) or getattr(cuenta, "telefono", None)
+    if telefono:
+        try:
+            from apps.mensajeria.services import obtener_whatsapp
+            obtener_whatsapp().enviar(telefono, cuerpo)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("WhatsApp de verificación no enviado: %s", exc)
+
+
+def notificar_aprobacion(documento) -> None:
+    """Avisa al proveedor que su documento fue verificado."""
+    _avisar_documento(documento, verificado=True)
+
+
+def notificar_rechazo(documento) -> None:
+    """Avisa al proveedor que su documento fue rechazado (con el motivo)."""
+    _avisar_documento(documento, verificado=False)

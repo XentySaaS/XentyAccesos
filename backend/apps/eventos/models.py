@@ -80,6 +80,7 @@ class EventoProveedor(models.Model):  # event_suppliers
     )
     limite = models.IntegerField(default=0)  # 0 = sin límite
     requiere_parking = models.BooleanField(default=False)
+    parking = models.CharField(max_length=120, null=True, blank=True)  # nombre del estacionamiento
     cajones_parking = models.IntegerField(default=0)
     notas = models.TextField(null=True, blank=True)
     empleados = models.ManyToManyField("empleados.Empleado", through="EmpleadoEventoProveedor")

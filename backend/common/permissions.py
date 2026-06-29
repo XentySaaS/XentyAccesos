@@ -30,7 +30,13 @@ def RequiereModulo(modulo: str):
         def has_permission(self, request, view):
             tenant = getattr(request, "tenant", None)
             plan = getattr(tenant, "plan", None) if tenant else None
-            modulos = (getattr(plan, "modulos", None) or []) if plan else []
+            # Sin plan asignado → todos los módulos accesibles (trial sin restricción comercial).
+            if plan is None:
+                return True
+            modulos = getattr(plan, "modulos", None) or []
+            # Plan sin módulos configurados aún → acceso libre (plan vacío = sin límite).
+            if not modulos:
+                return True
             if modulo in modulos:
                 return True
             raise ModuloNoContratado()
