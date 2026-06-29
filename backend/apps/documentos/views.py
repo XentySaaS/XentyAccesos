@@ -42,9 +42,10 @@ class TipoDocumentoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
     def get_permissions(self):
         # Proveedores necesitan leer los tipos al subir documentos de sus empleados.
+        # NOTA: get_permissions() debe retornar INSTANCIAS (p()), no las clases sueltas.
         if self.action in ("list", "retrieve"):
-            return [*PERMISOS_BASE()]
-        return list(_CATALOGO_PERMS)
+            return [p() for p in PERMISOS_BASE()]
+        return [p() for p in _CATALOGO_PERMS]
 
 
 class ProtocoloViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
