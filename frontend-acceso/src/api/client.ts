@@ -3,14 +3,14 @@ import { useAuth } from "../store/auth";
 
 const api = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? "/" });
 
-// Inyecta el access token en cada peticion.
+// Inyecta el access token en cada petición.
 api.interceptors.request.use((config) => {
   const { access } = useAuth.getState();
   if (access) config.headers.Authorization = `Bearer ${access}`;
   return config;
 });
 
-// En 401, intenta refrescar una sola vez (rotacion + blacklist en el backend) y reintenta.
+// En 401: intenta refrescar una sola vez (rotación + blacklist); si falla → login con aviso.
 let refreshing: Promise<string | null> | null = null;
 
 api.interceptors.response.use(
@@ -22,6 +22,7 @@ api.interceptors.response.use(
       const { refresh, setTokens, logout } = useAuth.getState();
       if (!refresh) {
         logout();
+        window.location.href = "/?sesion=expirada";
         return Promise.reject(error);
       }
       try {
@@ -32,9 +33,7 @@ api.interceptors.response.use(
               setTokens(res.data.access, res.data.refresh ?? refresh);
               return res.data.access as string;
             })
-            .finally(() => {
-              refreshing = null;
-            });
+            .finally(() => { refreshing = null; });
         }
         const access = await refreshing;
         if (access) {
@@ -42,7 +41,8 @@ api.interceptors.response.use(
           return api(original);
         }
       } catch {
-        useAuth.getState().logout();
+        logout();
+        window.location.href = "/?sesion=expirada";
       }
     }
     return Promise.reject(error);

@@ -22,6 +22,7 @@ api.interceptors.response.use(
       const { refresh, setTokens, logout } = useAuth.getState();
       if (!refresh) {
         logout();
+        window.location.href = "/?sesion=expirada";
         return Promise.reject(error);
       }
       try {
@@ -42,7 +43,8 @@ api.interceptors.response.use(
           return api(original);
         }
       } catch {
-        useAuth.getState().logout();
+        logout();
+        window.location.href = "/?sesion=expirada";
       }
     }
     return Promise.reject(error);

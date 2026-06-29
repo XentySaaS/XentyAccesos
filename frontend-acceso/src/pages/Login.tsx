@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../store/auth";
 
@@ -8,8 +8,10 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
-  const setTokens = useAuth((s) => s.setTokens);
-  const navigate  = useNavigate();
+  const setTokens   = useAuth((s) => s.setTokens);
+  const navigate    = useNavigate();
+  const [params]    = useSearchParams();
+  const sesionExp   = params.get("sesion") === "expirada";
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,6 +55,12 @@ export default function Login() {
           <h2 className="mb-6 text-base font-bold" style={{ color: "#0F1B2D" }}>
             Iniciar sesión
           </h2>
+
+          {sesionExp && !error && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Tu sesión expiró. Inicia sesión nuevamente.
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
