@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
+from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
 
 from .models import RegistroAcceso
 from .serializers import RegistroAccesoSerializer
@@ -16,11 +16,13 @@ from .services import procesar_escaneo
 
 _SCANNER = [
     *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
-    RequiereRol("guardia", "administrador", "recepcion"),
+    RequiereRol("guardia", "administrador", "recepcion", "usuario"),
+    RequierePermisoPersonalizado("acceso"),
 ]
 _BITACORA = [
     *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
-    RequiereRol("guardia", "administrador", "editor", "recepcion"),
+    RequiereRol("guardia", "administrador", "editor", "recepcion", "usuario"),
+    RequierePermisoPersonalizado("acceso"),
 ]
 
 

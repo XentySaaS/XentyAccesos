@@ -5,7 +5,7 @@ from django.db import connection
 from rest_framework import viewsets
 
 from apps.config.services import AuditViewSetMixin
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
+from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
 
 from .models import Mensaje
 from .serializers import MensajeSerializer
@@ -18,7 +18,8 @@ class MensajeViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = MensajeSerializer
     permission_classes = [
         *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("mensajeria"),
-        RequiereRol("administrador", "editor"),
+        RequiereRol("administrador", "editor", "usuario"),
+        RequierePermisoPersonalizado("mensajeria"),
     ]
     filterset_fields = ["estado", "segmento"]
 

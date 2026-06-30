@@ -102,6 +102,44 @@ class RequiereMembresia(BasePermission):
         return actor_prov == obj_prov
 
 
+def RequierePermisoPersonalizado(modulo: str):
+    """Para rol 'usuario': verifica ``PermisoUsuario`` para el módulo y acción HTTP.
+
+    Para cualquier otro rol siempre retorna ``True`` (la validación de rol ya la hizo
+    ``RequiereRol``). Esto permite añadir esta permission class a cualquier ViewSet sin
+    cambiar el comportamiento para roles preexistentes.
+
+    Mapa HTTP → campo del modelo::
+
+        GET/HEAD/OPTIONS → ver
+        POST             → crear
+        PUT/PATCH        → editar
+        DELETE           → eliminar
+    """
+    _ACCION = {
+        "GET": "ver", "HEAD": "ver", "OPTIONS": "ver",
+        "POST": "crear", "PUT": "editar", "PATCH": "editar", "DELETE": "eliminar",
+    }
+
+    class _RequierePermisoPersonalizado(BasePermission):
+        message = "No tienes permiso para esta acción en este módulo."
+
+        def has_permission(self, request, view):
+            user = getattr(request, "user", None)
+            if not user or not user.is_authenticated:
+                return False
+            if getattr(user, "rol", None) != "usuario":
+                return True  # otros roles: RequiereRol ya validó
+            from apps.accounts.models import PermisoUsuario
+            perm = PermisoUsuario.objects.filter(usuario=user, modulo=modulo).first()
+            if not perm:
+                return False
+            accion = _ACCION.get(request.method, "ver")
+            return bool(getattr(perm, accion, False))
+
+    return _RequierePermisoPersonalizado
+
+
 def PERMISOS_BASE():
     """Permisos por defecto (sesión válida + MFA completa + email verificado).
 

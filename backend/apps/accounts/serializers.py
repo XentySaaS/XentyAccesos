@@ -5,7 +5,7 @@ import secrets
 
 from rest_framework import serializers
 
-from .models import Usuario
+from .models import PermisoUsuario, Usuario
 
 
 class UsuarioListSerializer(serializers.ModelSerializer):
@@ -47,6 +47,14 @@ class UsuarioCreateSerializer(serializers.ModelSerializer):
         # Devuelve el password generado una sola vez para que el admin lo comunique.
         user._password_plain = password
         return user
+
+
+class PermisoUsuarioSerializer(serializers.ModelSerializer):
+    modulo_display = serializers.CharField(source="get_modulo_display", read_only=True)
+
+    class Meta:
+        model = PermisoUsuario
+        fields = ["id", "modulo", "modulo_display", "ver", "crear", "editar", "eliminar"]
 
 
 class UsuarioUpdateSerializer(serializers.ModelSerializer):

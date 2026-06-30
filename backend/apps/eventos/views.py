@@ -15,7 +15,7 @@ from apps.config.services import AuditViewSetMixin
 from apps.documentos.services import cumple_requisitos
 from apps.empleados.models import Empleado
 from apps.gafetes.services import TIPO_EVENTO, TIPO_PARKING, componer_gafete, emitir_qr
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
+from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
 
 from . import services as noti
 from .models import (
@@ -41,7 +41,8 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EventoSerializer
     permission_classes = [
         *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("eventos"),
-        RequiereRol("administrador", "editor", "recepcion"),
+        RequiereRol("administrador", "editor", "recepcion", "usuario"),
+        RequierePermisoPersonalizado("eventos"),
     ]
     filterset_fields = ["estado", "recinto"]
 

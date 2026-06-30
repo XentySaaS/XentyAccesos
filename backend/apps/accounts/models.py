@@ -77,3 +77,38 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+
+
+class PermisoUsuario(models.Model):
+    """Permisos granulares por módulo para usuarios con rol «usuario».
+
+    El administrador los asigna módulo a módulo; el enforcement lo realiza
+    ``RequierePermisoPersonalizado`` en cada ViewSet.
+    """
+
+    class Modulo(models.TextChoices):
+        EVENTOS = "eventos", "Eventos"
+        CITAS = "citas", "Citas"
+        ACCESO = "acceso", "Acceso"
+        RECINTOS = "recintos", "Recintos"
+        PROVEEDORES = "proveedores", "Proveedores"
+        SANCIONES = "sanciones", "Sanciones"
+        MENSAJERIA = "mensajeria", "Mensajería"
+        VERIFICACION = "verificacion", "Verificación"
+
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name="permisos_modulos",
+    )
+    modulo = models.CharField(max_length=30, choices=Modulo.choices)
+    ver = models.BooleanField(default=True)
+    crear = models.BooleanField(default=False)
+    editar = models.BooleanField(default=False)
+    eliminar = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = [("usuario", "modulo")]
+        verbose_name = "permiso personalizado"
+        verbose_name_plural = "permisos personalizados"
+
+    def __str__(self) -> str:
+        return f"{self.usuario.email} — {self.modulo}"

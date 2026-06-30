@@ -17,6 +17,15 @@ interface Usuario {
   creado: string;
 }
 
+interface PermisoModulo {
+  modulo: string;
+  modulo_display: string;
+  ver: boolean;
+  crear: boolean;
+  editar: boolean;
+  eliminar: boolean;
+}
+
 const INK    = "#0F1B2D";
 const SIGNAL = "#2563EB";
 
@@ -50,12 +59,14 @@ function rolBadge(rol: string) {
   );
 }
 
+type Modal = "crear" | "editar" | "permisos" | null;
+
 export default function Usuarios() {
   const [items,    setItems]    = useState<Usuario[]>([]);
   const [recintos, setRecintos] = useState<Recinto[]>([]);
   const [error,    setError]    = useState<string | null>(null);
-  const [creando,  setCreando]  = useState(false);
-  const [editando, setEditando] = useState<Usuario | null>(null);
+  const [modal,    setModal]    = useState<Modal>(null);
+  const [target,   setTarget]   = useState<Usuario | null>(null);
   const [passModal, setPassModal] = useState<{ pass: string; email: string } | null>(null);
 
   // Crear form
@@ -72,6 +83,10 @@ export default function Usuarios() {
   const [eTelefono, setETelefono] = useState("");
   const [eActivo,   setEActivo]   = useState(true);
 
+  // Permisos
+  const [permisos,     setPermisos]     = useState<PermisoModulo[]>([]);
+  const [guardandoPerm, setGuardandoPerm] = useState(false);
+
   async function cargar() {
     const [u, r] = await Promise.all([
       api.get<{ results?: Usuario[] } | Usuario[]>("/api/usuarios/"),
@@ -85,15 +100,26 @@ export default function Usuarios() {
 
   function abrirCrear() {
     setEmail(""); setNombre(""); setRol("editor"); setRecinto(""); setTelefono("");
-    setCreando(true);
+    setModal("crear");
   }
 
   function abrirEditar(u: Usuario) {
     setENombre(u.nombre); setERol(u.rol);
     setERecinto(u.recinto ? String(u.recinto) : "");
     setETelefono(u.telefono ?? ""); setEActivo(u.activo);
-    setEditando(u);
+    setTarget(u); setModal("editar");
   }
+
+  async function abrirPermisos(u: Usuario) {
+    setTarget(u);
+    try {
+      const { data } = await api.get<PermisoModulo[]>(`/api/usuarios/${u.id}/permisos/`);
+      setPermisos(data);
+      setModal("permisos");
+    } catch { setError("No se pudieron cargar los permisos."); }
+  }
+
+  function cerrar() { setModal(null); setTarget(null); setError(null); }
 
   async function crear(e: FormEvent) {
     e.preventDefault(); setError(null);
@@ -106,7 +132,7 @@ export default function Usuarios() {
       if (data.password_temporal) {
         setPassModal({ pass: data.password_temporal, email: data.email });
       }
-      setCreando(false); await cargar();
+      cerrar(); await cargar();
     } catch (err: any) {
       const msg = err?.response?.data?.email?.[0]
         ?? err?.response?.data?.detail
@@ -116,16 +142,32 @@ export default function Usuarios() {
   }
 
   async function editar(e: FormEvent) {
-    e.preventDefault(); if (!editando) return; setError(null);
+    e.preventDefault(); if (!target) return; setError(null);
     try {
-      await api.patch(`/api/usuarios/${editando.id}/`, {
+      await api.patch(`/api/usuarios/${target.id}/`, {
         nombre: eNombre, rol: eRol,
         recinto: eRecinto || null,
         telefono: eTelefono || null,
         activo: eActivo,
       });
-      setEditando(null); await cargar();
+      cerrar(); await cargar();
     } catch { setError("No se pudo actualizar el usuario."); }
+  }
+
+  async function guardarPermisos() {
+    if (!target) return;
+    setGuardandoPerm(true); setError(null);
+    try {
+      await api.put(`/api/usuarios/${target.id}/permisos/`, permisos);
+      cerrar();
+    } catch { setError("No se pudieron guardar los permisos."); }
+    finally { setGuardandoPerm(false); }
+  }
+
+  function togglePerm(modulo: string, campo: keyof Omit<PermisoModulo, "modulo" | "modulo_display">) {
+    setPermisos(prev => prev.map(p =>
+      p.modulo === modulo ? { ...p, [campo]: !p[campo] } : p
+    ));
   }
 
   async function resetearPassword(u: Usuario) {
@@ -137,6 +179,13 @@ export default function Usuarios() {
       setPassModal({ pass: data.password_temporal, email: u.email });
     } catch { setError("No se pudo resetear la contraseña."); }
   }
+
+  const ACCIONES: { key: keyof Omit<PermisoModulo, "modulo" | "modulo_display">; label: string }[] = [
+    { key: "ver",      label: "Ver"      },
+    { key: "crear",    label: "Crear"    },
+    { key: "editar",   label: "Editar"   },
+    { key: "eliminar", label: "Eliminar" },
+  ];
 
   return (
     <div>
@@ -200,11 +249,17 @@ export default function Usuarios() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-1.5 flex-wrap">
                     <button onClick={() => abrirEditar(u)}
                       className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
                       Editar
                     </button>
+                    {u.rol === "usuario" && (
+                      <button onClick={() => abrirPermisos(u)}
+                        className="rounded-lg border border-blue-200 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50">
+                        Permisos
+                      </button>
+                    )}
                     <button onClick={() => resetearPassword(u)}
                       className="rounded-lg border border-amber-200 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50">
                       Reset pass
@@ -220,8 +275,8 @@ export default function Usuarios() {
         </table>
       </div>
 
-      {/* Modal crear */}
-      {creando && (
+      {/* ── Modal crear ─────────────────────────────────────────────────────── */}
+      {modal === "crear" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <form onSubmit={crear} className="w-full max-w-md rounded-modal bg-white p-6 shadow-panel">
             <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>Nuevo usuario</h2>
@@ -264,7 +319,7 @@ export default function Usuarios() {
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setCreando(false)}
+              <button type="button" onClick={cerrar}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                 Cancelar
               </button>
@@ -278,12 +333,12 @@ export default function Usuarios() {
         </div>
       )}
 
-      {/* Modal editar */}
-      {editando && (
+      {/* ── Modal editar ────────────────────────────────────────────────────── */}
+      {modal === "editar" && target && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <form onSubmit={editar} className="w-full max-w-md rounded-modal bg-white p-6 shadow-panel">
             <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>Editar usuario</h2>
-            <p className="mb-4 text-xs text-slate-400">{editando.email}</p>
+            <p className="mb-4 text-xs text-slate-400">{target.email}</p>
 
             <div className="space-y-3">
               <label className="block">
@@ -314,7 +369,6 @@ export default function Usuarios() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
               </label>
 
-              {/* Toggle activo */}
               <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                 <div>
                   <p className="text-sm font-semibold" style={{ color: INK }}>Usuario activo</p>
@@ -332,7 +386,7 @@ export default function Usuarios() {
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setEditando(null)}
+              <button type="button" onClick={cerrar}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
                 Cancelar
               </button>
@@ -346,7 +400,70 @@ export default function Usuarios() {
         </div>
       )}
 
-      {/* Modal contraseña temporal */}
+      {/* ── Modal permisos personalizados ───────────────────────────────────── */}
+      {modal === "permisos" && target && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-xl rounded-modal bg-white p-6 shadow-panel">
+            <div className="mb-4 flex items-start justify-between">
+              <div>
+                <h2 className="text-base font-bold" style={{ color: INK }}>Permisos personalizados</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{target.nombre} · {target.email}</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                Rol: Usuario
+              </span>
+            </div>
+
+            <p className="mb-4 rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+              Activa los módulos y acciones que este usuario podrá realizar. Solo aplica al rol <strong>Usuario</strong>.
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="py-2 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Módulo</th>
+                    {ACCIONES.map(a => (
+                      <th key={a.key} className="py-2 px-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">{a.label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {permisos.map(p => (
+                    <tr key={p.modulo} className="hover:bg-slate-50">
+                      <td className="py-2.5 pr-4 font-medium" style={{ color: INK }}>{p.modulo_display}</td>
+                      {ACCIONES.map(a => (
+                        <td key={a.key} className="py-2.5 px-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={p[a.key]}
+                            onChange={() => togglePerm(p.modulo, a.key)}
+                            className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-600"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={cerrar}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                Cancelar
+              </button>
+              <button onClick={guardarPermisos} disabled={guardandoPerm}
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                style={{ backgroundColor: SIGNAL }}>
+                {guardandoPerm ? "Guardando..." : "Guardar permisos"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal contraseña temporal ────────────────────────────────────────── */}
       {passModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-modal bg-white p-6 shadow-panel text-center">

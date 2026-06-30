@@ -11,7 +11,7 @@ from apps.accounts.models import Usuario
 from apps.config.services import AuditViewSetMixin
 from apps.empleados.models import Empleado
 from apps.ocr.services import obtener_ocr, validar_seccion
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
+from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
 from common.validators import validar_archivo
 
 from .models import AsistenteCita, Cita, Contacto, EmpleadoCita
@@ -23,8 +23,12 @@ from .serializers import (
     ContactoSerializer,
 )
 
-_ROLES = ("administrador", "editor", "recepcion")
-_PERMS = [*PERMISOS_BASE(), ContextoAcceso, RequiereModulo("citas"), RequiereRol(*_ROLES)]
+_ROLES = ("administrador", "editor", "recepcion", "usuario")
+_PERMS = [
+    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("citas"),
+    RequiereRol(*_ROLES),
+    RequierePermisoPersonalizado("citas"),
+]
 
 
 class ContactoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
