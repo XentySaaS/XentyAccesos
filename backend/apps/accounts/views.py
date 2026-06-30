@@ -26,7 +26,7 @@ class UsuarioViewSet(AuditViewSetMixin, ModelViewSet):
 
     queryset = Usuario.objects.select_related("recinto").order_by("nombre")
     permission_classes = _PERMS_ADMIN
-    http_method_names = ["get", "post", "patch", "head", "options"]
+    http_method_names = ["get", "post", "put", "patch", "head", "options"]
 
     def get_serializer_class(self):
         if self.action == "create":
