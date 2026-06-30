@@ -33,22 +33,11 @@ export default function Layout() {
         <div className="flex items-center justify-between px-4 py-5">
           {!collapsed && (
             <div className="flex items-center gap-2">
-              <span
-                style={{ backgroundColor: "#2563EB" }}
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded text-white font-bold text-sm"
-              >
-                +
-              </span>
-              <span className="text-white font-semibold text-sm tracking-tight">Xenty Admin</span>
+              <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="h-6 w-auto" />
             </div>
           )}
           {collapsed && (
-            <span
-              style={{ backgroundColor: "#2563EB" }}
-              className="mx-auto flex h-7 w-7 items-center justify-center rounded text-white font-bold text-sm"
-            >
-              +
-            </span>
+            <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="mx-auto h-5 w-auto" />
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}

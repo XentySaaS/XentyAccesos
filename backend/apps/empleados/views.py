@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from common.permissions import PERMISOS_BASE, ContextoProveedores, RequiereModulo
@@ -16,6 +16,7 @@ from .serializers import EmpleadoSerializer
 class EmpleadoViewSet(viewsets.ModelViewSet):
     serializer_class = EmpleadoSerializer
     permission_classes = [*PERMISOS_BASE(), ContextoProveedores, RequiereModulo("empleados")]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     filterset_fields = ["estado"]
 
     def get_queryset(self):

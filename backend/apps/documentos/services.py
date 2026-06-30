@@ -41,35 +41,58 @@ def cumple_requisitos(empleado, requisitos: Iterable[tuple[int, int]]) -> bool:
 
 
 def _avisar_documento(documento, *, verificado: bool) -> None:
-    """Best-effort: avisa al proveedor (correo + WhatsApp) el resultado de la verificación."""
+    """Best-effort: avisa al proveedor (correo HTML + WhatsApp) el resultado de la verificación."""
     import logging
 
-    from django.core.mail import send_mail
+    from django.db import connection
+
+    from common.email_builder import construir_correo, enviar_correo_html
 
     logger = logging.getLogger(__name__)
     cuenta = getattr(documento.empleado, "proveedor", None)
     if not cuenta:
         return
 
-    estado = "verificado" if verificado else "rechazado"
-    cuerpo = (
-        f"El documento «{documento.tipo_documento}» de {documento.empleado} fue {estado}."
+    nombre_tenant = connection.schema_name
+    estado_txt = "verificado" if verificado else "rechazado"
+    asunto = f"Documento {estado_txt} — {documento.tipo_documento}"
+
+    if verificado:
+        parrafos = [
+            f"El documento <strong>«{documento.tipo_documento}»</strong> "
+            f"de {documento.empleado} fue <strong>verificado</strong> exitosamente.",
+            "Tu empleado ya puede ser asignado a eventos que requieran este documento.",
+        ]
+    else:
+        motivo = documento.motivo_rechazo or "no especificado"
+        parrafos = [
+            f"El documento <strong>«{documento.tipo_documento}»</strong> "
+            f"de {documento.empleado} fue <strong>rechazado</strong>.",
+            f"Motivo: {motivo}.",
+            "Por favor sube un nuevo documento corregido desde el panel de empleados.",
+        ]
+
+    responsable = (getattr(cuenta, "nombre_responsable", "") or getattr(cuenta, "nombre", "") or "").strip().title()
+    texto_plano = (
+        f"{'Hola ' + responsable + ',' if responsable else 'Estimado proveedor,'}\n\n"
+        f"El documento «{documento.tipo_documento}» de {documento.empleado} fue {estado_txt}."
+        + (f" Motivo: {documento.motivo_rechazo}." if not verificado and documento.motivo_rechazo else "")
     )
-    if not verificado:
-        cuerpo += f" Motivo: {documento.motivo_rechazo or 'no especificado'}."
 
     email = getattr(cuenta, "email", None)
-    if email:
-        try:
-            send_mail(f"Documento {estado}", cuerpo, None, [email], fail_silently=True)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Correo de verificación no enviado: %s", exc)
+    html = construir_correo(
+        nombre_tenant=nombre_tenant,
+        saludo=f"Hola {responsable}," if responsable else "Estimado proveedor,",
+        parrafos=parrafos,
+        asunto=asunto,
+    )
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email)
 
     telefono = getattr(documento.empleado, "telefono", None) or getattr(cuenta, "telefono", None)
     if telefono:
         try:
             from apps.mensajeria.services import obtener_whatsapp
-            obtener_whatsapp().enviar(telefono, cuerpo)
+            obtener_whatsapp().enviar(telefono, texto_plano)
         except Exception as exc:  # noqa: BLE001
             logger.warning("WhatsApp de verificación no enviado: %s", exc)
 

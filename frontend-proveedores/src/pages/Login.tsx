@@ -36,16 +36,8 @@ export default function Login() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-2xl font-bold text-white"
-            style={{ backgroundColor: "#2563EB" }}
-          >
-            +
-          </div>
+          <img src={`${import.meta.env.BASE_URL}xenty.png`} alt="Xenty" className="h-12 w-auto" />
           <div className="text-center">
-            <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: "#0F1B2D" }}>
-              Xenty Proveedores
-            </h1>
             <p className="mt-1 text-sm text-slate-500">Autoservicio de empresas proveedoras</p>
           </div>
         </div>

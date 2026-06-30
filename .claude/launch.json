@@ -7,6 +7,13 @@
       "runtimeArgs": ["exec", "xenty-frontend-acceso-1", "echo", "ready"],
       "port": 5174,
       "autoPort": false
+    },
+    {
+      "name": "frontend-proveedores",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": ["exec", "xenty-frontend-proveedores-1", "echo", "ready"],
+      "port": 5175,
+      "autoPort": false
     }
   ]
 }

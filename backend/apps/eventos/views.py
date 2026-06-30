@@ -178,18 +178,30 @@ class EventoProveedorViewSet(viewsets.ModelViewSet):
         """Fin de la vigencia del evento (fin del día) en epoch, para el ``exp`` del QR."""
         return datetime.combine(evento.vigencia_fin, dtime(23, 59, 59), tzinfo=dtz.utc).timestamp()
 
-    def _lineas_evento(self, ep) -> list[str]:
+    def _kwargs_evento(self, ep) -> dict:
         ev = ep.evento
-        lineas = [ev.nombre]
-        if ep.zona_id:
-            lineas.append(f"Zona: {ep.zona.nombre}")
-        if ep.acceso_id:
-            lineas.append(f"Acceso: {ep.acceso.nombre}")
-        fecha = ev.vigencia_inicio.strftime("%d/%m/%Y")
-        if ev.hora_inicio:
-            fecha += f" · {ev.hora_inicio.strftime('%H:%M')}"
-        lineas.append(fecha)
-        return lineas
+        _MESES = {"January":"Ene","February":"Feb","March":"Mar","April":"Abr",
+                  "May":"May","June":"Jun","July":"Jul","August":"Ago",
+                  "September":"Sep","October":"Oct","November":"Nov","December":"Dic"}
+        _DIAS  = {"Monday":"Lun","Tuesday":"Mar","Wednesday":"Mie","Thursday":"Jue",
+                  "Friday":"Vie","Saturday":"Sab","Sunday":"Dom"}
+
+        def _fecha(d):
+            return f"{d.day} {_MESES[d.strftime('%B')]} {d.year}"
+
+        def _hora(d, t):
+            return f"{_DIAS[d.strftime('%A')]} · {t.strftime('%H:%M')} hrs" if t else ""
+
+        return dict(
+            recinto=ev.recinto.nombre if ev.recinto_id else "",
+            zona=ep.zona.nombre if ep.zona_id else "GENERAL",
+            punto_de_acceso=ep.acceso.nombre if ep.acceso_id else "",
+            nombre_evento=ev.nombre,
+            fecha_evento=_fecha(ev.vigencia_inicio),
+            hora_evento=_hora(ev.vigencia_inicio, ev.hora_inicio),
+            vigencia_hasta=_fecha(ev.vigencia_fin),
+            hora_vigencia="",
+        )
 
     @action(detail=True, methods=["get"], url_path="gafete-empleado")
     def gafete_empleado(self, request, pk=None):
@@ -209,28 +221,36 @@ class EventoProveedorViewSet(viewsets.ModelViewSet):
         )
         foto = empleado.foto.read() if empleado.foto else None
         png = componer_gafete(
-            token=token, titulo=empleado.nombre, recinto=ep.evento.recinto.nombre,
-            lineas=self._lineas_evento(ep), foto_bytes=foto, empresa=_tenant_nombre(request),
+            token=token,
+            nombre_invitado=empleado.nombre,
+            foto_bytes=foto,
+            empresa=_tenant_nombre(request),
+            **self._kwargs_evento(ep),
         )
         return HttpResponse(png, content_type="image/png")
 
     @action(detail=True, methods=["get"], url_path="gafete-parking")
     def gafete_parking(self, request, pk=None):
         """Gafete de estacionamiento (QR) de un cajón de esta invitación."""
-        ep = self.get_object()
+        from apps.gafetes.services import componer_gafete_estacionamiento
+        ep    = self.get_object()
         cajon = ep.cajones.filter(id=request.query_params.get("cajon")).first() or ep.cajones.first()
         if cajon is None:
             return Response({"detail": "Esta invitación no tiene cajones de parking."}, status=404)
+        ev    = ep.evento
         token = emitir_qr(
             id=cajon.id, tipo=TIPO_PARKING, tenant=connection.schema_name,
-            exp_epoch=self._exp_epoch(ep.evento), contexto=str(cajon.uuid),
+            exp_epoch=self._exp_epoch(ev), contexto=str(cajon.uuid),
         )
-        lineas = self._lineas_evento(ep)
-        if ep.parking:
-            lineas.append(f"Estacionamiento: {ep.parking}")
-        png = componer_gafete(
-            token=token, titulo=ep.proveedor.nombre, recinto=ep.evento.recinto.nombre,
-            lineas=lineas, empresa=_tenant_nombre(request),
+        png = componer_gafete_estacionamiento(
+            token=token,
+            nombre_empresa=ep.proveedor.nombre,
+            recinto=ev.recinto.nombre if ev.recinto_id else _tenant_nombre(request),
+            evento=ev.nombre,
+            parking=ep.parking or "",
+            cajon=f"C-{cajon.id}",
+            vigencia=ev.vigencia_inicio.strftime("%d/%m/%Y"),
+            empresa=_tenant_nombre(request),
         )
         return HttpResponse(png, content_type="image/png")
 
