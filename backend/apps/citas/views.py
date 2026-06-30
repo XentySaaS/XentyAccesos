@@ -39,6 +39,7 @@ class ContactoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
 
 class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
+    queryset = Cita.objects.none()  # sobreescrito por get_queryset; necesario para el router
     permission_classes = _PERMS
     filterset_fields = ["tipo", "tipo_cita", "estado", "recinto", "proveedor"]
 
