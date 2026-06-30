@@ -116,7 +116,11 @@ export default function Usuarios() {
       const { data } = await api.get<PermisoModulo[]>(`/api/usuarios/${u.id}/permisos/`);
       setPermisos(data);
       setModal("permisos");
-    } catch { setError("No se pudieron cargar los permisos."); }
+    } catch (err: any) {
+      const status = err?.response?.status ?? "?";
+      const detail = err?.response?.data?.detail ?? err?.message ?? "";
+      setError(`Error ${status} al cargar permisos${detail ? `: ${detail}` : "."}`);
+    }
   }
 
   function cerrar() { setModal(null); setTarget(null); setError(null); }
