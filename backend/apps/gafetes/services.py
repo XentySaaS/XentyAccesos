@@ -71,6 +71,7 @@ def generar_png(token: str) -> bytes:
 #  7. Footer oscuro       · texto legal
 
 _STATIC_FONTS = Path(__file__).parent.parent.parent / "static" / "fonts"
+_STATIC       = Path(__file__).parent.parent.parent / "static"
 
 # Paleta
 _C_NAVY    = (7,   17,  31)   # #07111F — fondo principal
@@ -444,12 +445,6 @@ def componer_gafete(
 
     draw.rounded_rectangle([0, 0, W - 1, H - 1], radius=RADIO, fill=(*DEEP, 255))
 
-    # Grilla dorada sutil
-    for xi in range(0, W, 26):
-        draw.line([(xi, 0), (xi, H - 1)], fill=(*GOLD, 6))
-    for yi in range(0, H, 26):
-        draw.line([(0, yi), (W - 1, yi)], fill=(*GOLD, 6))
-
     # ── 1. Barra dorada ───────────────────────────────────────────
     _grad3(draw, 0, BAR_H - 1, GOLD_D, GOLD, GOLD_M)
 
@@ -461,18 +456,17 @@ def componer_gafete(
     rec_str  = (recinto or empresa).upper()
     f_rec    = _inter(12, bold=True) if len(rec_str) > 40 else _inter(14, bold=True)
     _wrap_text(draw, rec_str, PAD, y0 + 30, W - PAD - 52, f_rec, (*WHITE, 255), leading=18)
-    # Ícono
-    ix, iy = W - PAD - 40, y0 + 12
-    draw.rounded_rectangle([ix, iy, ix + 40, iy + 40], radius=8, fill=(*GOLD, 18))
-    draw.rounded_rectangle([ix, iy, ix + 40, iy + 40], radius=8, outline=(*GOLD, 56), width=1)
-    icx, icy = ix + 20, iy + 20
-    draw.ellipse([icx - 10, icy - 10, icx + 10, icy + 10], outline=(*GOLD, 71), width=1)
-    s  = 40 / 44
-    lw = max(2, round(40 * 0.055))
-    draw.line([(round(ix + 13 * s), round(iy + 20 * s)),
-               (round(ix + 18.5 * s), round(iy + 25.5 * s))], fill=(*GOLD, 255), width=lw)
-    draw.line([(round(ix + 18.5 * s), round(iy + 25.5 * s)),
-               (round(ix + 27 * s), round(iy + 14.5 * s))], fill=(*GOLD, 255), width=lw)
+    # Logo Xenty (blanco sobre fondo oscuro)
+    _logo_path = _STATIC / "xenty-white.png"
+    if _logo_path.exists():
+        from PIL import Image as _PIL_Image
+        _logo = _PIL_Image.open(_logo_path).convert("RGBA")
+        _logo_h = 22
+        _logo_w = int(_logo.width * _logo_h / _logo.height)
+        _logo   = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
+        _lx = W - PAD - _logo_w
+        _ly = y0 + (HDR_H - _logo_h) // 2
+        img.paste(_logo, (_lx, _ly), _logo)
 
     # ── 3. Foto + Zona ────────────────────────────────────────────
     y1   = y0 + HDR_H
