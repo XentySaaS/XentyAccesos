@@ -600,7 +600,7 @@ def componer_gafete(
     return buf.getvalue()
 
 
-# ── Gafete de estacionamiento ─────────────────────────────────────────────────
+# ── Gafete de estacionamiento — v2 «Premium Dark · Acento Dorado» ────────────
 
 def componer_gafete_estacionamiento(
     *,
@@ -611,144 +611,206 @@ def componer_gafete_estacionamiento(
     parking: str = "",
     cajon: str = "",
     vigencia: str = "",
-    empresa: str = "XENTY ACCESO",
+    zona: str = "GENERAL",
+    empresa: str = "XENTY ACCESOS",
 ) -> bytes:
-    """Adaptación del diseño 1a para pases de estacionamiento (sin foto, acento naranja)."""
+    """Diseño Premium Dark para pases de estacionamiento.
+
+    Secciones: barra dorada | header título+logo | proveedor | cajón+QR | info | footer.
+    Sin foto de portador. Sin grilla.
+    """
     from io import BytesIO
     from PIL import Image, ImageDraw
 
     W     = 340
     RADIO = 20
+    PAD   = 18
 
-    # Texto que va en el "nombre de zona" (izquierda grande)
-    zona_display = (cajon or parking or "C-1")[:8].upper()
-    sector_label = (parking or "ESTACIONAMIENTO")[:20].upper()
+    GOLD   = (255, 215,   0)
+    GOLD_D = (139, 100,   0)
+    GOLD_M = (255, 162,   0)
+    DEEP   = (  9,   9,  16)
+    WHITE  = (255, 255, 255)
 
-    HEADER_H = 80
-    BAR_H    = 5
-    ICON_H   = 120   # área del ícono P + nombre empresa
-    ZONE_H   = 134
-    SEP_H    = 1
-    INFO_H   = 112
-    FOOT_H   = 56
-    H = HEADER_H + BAR_H + ICON_H + ZONE_H + SEP_H + INFO_H + FOOT_H  # 508
+    _ZONE_COLORS: dict[str, tuple[int, int, int]] = {
+        "GENERAL":   (255, 215,   0),
+        "VIP":       (255, 215,   0),
+        "STAFF":     (255, 109,   0),
+        "PRENSA":    (156,  39, 176),
+        "PROVEEDOR": ( 33, 150, 243),
+    }
+    zkey = zona.upper().split()[0] if zona else "GENERAL"
+    AC = next((v for k, v in _ZONE_COLORS.items() if k in zkey), GOLD)
 
-    stripe_y0 = HEADER_H + BAR_H
-    stripe_y1 = stripe_y0 + ICON_H + ZONE_H
-    sep_y     = stripe_y1
+    cajon_display = (cajon or parking or "C-1").upper()
 
-    # ── Cabecera ──────────────────────────────────────────────────
-    def _header(draw):
-        f_lbl = _inter(8, bold=True)
-        f_rec = _inter(22, bold=True)
-        draw.text((20, 10), "XENTY ACCESOS", font=f_lbl, fill=(*_C_NAVY, 115))
-        draw.text((20, 26), "PASE DE",          font=f_rec, fill=(*_C_NAVY, 255))
-        draw.text((20, 52), "ESTACIONAMIENTO",  font=f_rec, fill=(*_C_NAVY, 255))
-        _xenty_icon(draw, W - 20 - 44, 12, 44)
+    def _cajon_size(c: str) -> int:
+        if len(c) <= 3: return 94
+        if len(c) <= 4: return 78
+        if len(c) <= 6: return 60
+        return 48
 
-    # ── Ícono P + empresa + zona + QR ────────────────────────────
-    def _body(img, draw):
-        # Círculo con «P»
-        cx_p  = W // 2
-        r_p   = 38
-        icon_center_y = stripe_y0 + ICON_H // 2 - 10
-        draw.ellipse(
-            [cx_p - r_p, icon_center_y - r_p, cx_p + r_p, icon_center_y + r_p],
-            fill=(*_C_WHITE, 18), outline=(*_C_WHITE, 40), width=2,
-        )
-        f_p  = _bebas(58)
-        pb   = draw.textbbox((0, 0), "P", font=f_p)
-        draw.text(
-            (cx_p - (pb[2] - pb[0]) // 2, icon_center_y - (pb[3] - pb[1]) // 2 - 2),
-            "P", font=f_p, fill=(*_C_WHITE, 200),
-        )
-        # Nombre de empresa bajo el círculo
-        f_co   = _inter(11, bold=True)
-        co_str = nombre_empresa.upper()[:22]
-        cb     = draw.textbbox((0, 0), co_str, font=f_co)
-        draw.text(
-            ((W - (cb[2] - cb[0])) // 2, icon_center_y + r_p + 8),
-            co_str, font=f_co, fill=(*_C_WHITE, 200),
-        )
+    f_caj_size = _cajon_size(cajon_display)
+    f_caj      = _bebas(f_caj_size)
 
-        # QR (derecha, alineado al fondo)
-        QR_SIZE = 78
-        QR_PAD  = 7
-        QR_TOT  = QR_SIZE + QR_PAD * 2
-        qx = W - 20 - QR_TOT
-        qy = stripe_y1 - 20 - QR_TOT
+    # Helpers locales
+    def _ls(draw, text, x, y, font, fill, ls=2):
+        for ch in text:
+            draw.text((x, y), ch, font=font, fill=fill)
+            bb = draw.textbbox((0, 0), ch, font=font)
+            x += (bb[2] - bb[0]) + ls
 
-        draw.rounded_rectangle(
-            [qx, qy, qx + QR_TOT, qy + QR_TOT],
-            radius=9, fill=(*_C_WHITE, 255),
-        )
-        qr_img = (
-            qrcode.make(token).convert("RGBA")
-            .resize((QR_SIZE, QR_SIZE), Image.NEAREST)
-        )
-        img.paste(qr_img, (qx + QR_PAD, qy + QR_PAD))
+    def _ls_center(draw, text, cx, y, font, fill, ls=2):
+        total = sum(
+            draw.textbbox((0, 0), c, font=font)[2]
+            - draw.textbbox((0, 0), c, font=font)[0] + ls
+            for c in text
+        ) - ls
+        _ls(draw, text, cx - total // 2, y, font, fill, ls)
 
-        f_scan = _inter(8, bold=True)
-        sb = draw.textbbox((0, 0), "ESCANEAR", font=f_scan)
-        draw.text(
-            (qx + (QR_TOT - (sb[2] - sb[0])) // 2, qy + QR_TOT + 3),
-            "ESCANEAR", font=f_scan, fill=(*_C_WHITE, 77),
-        )
+    def _grad3(draw, y0, y1, ca, cb, cc):
+        half = W // 2
+        for i in range(half):
+            t = i / max(half - 1, 1)
+            c = tuple(round(ca[j] + (cb[j] - ca[j]) * t) for j in range(3))
+            draw.line([(i, y0), (i, y1)], fill=(*c, 255))
+        for i in range(half, W):
+            t = (i - half) / max(W - half - 1, 1)
+            c = tuple(round(cb[j] + (cc[j] - cb[j]) * t) for j in range(3))
+            draw.line([(i, y0), (i, y1)], fill=(*c, 255))
 
-        # Número de cajón / lote (izquierda, grande)
-        f_lbl_z = _inter(8, bold=True)
-        f_caj   = _bebas(92)
+    def _sep(draw, y):
+        draw.line([(0, y), (W - 1, y)], fill=(*GOLD, 18))
 
-        max_w = qx - 20 - 8
-        bb    = draw.textbbox((0, 0), zona_display, font=f_caj)
-        if (bb[2] - bb[0]) > max_w:
-            f_caj = _bebas(max(round(92 * max_w / max(bb[2] - bb[0], 1)), 42))
+    BAR_H  = 5
+    HDR_H  = 92
+    PROV_H = 83
+    CAJ_H  = 130
+    INFO_H = 88
+    FOOT_H = 48
+    H = BAR_H + HDR_H + PROV_H + CAJ_H + INFO_H + FOOT_H  # 446
 
-        bb    = draw.textbbox((0, 0), zona_display, font=f_caj)
-        caj_h = bb[3] - bb[1]
-        caj_y = qy + QR_TOT - caj_h + 2
-        draw.text((20, caj_y - 12), "CAJON / LOTE", font=f_lbl_z, fill=(*_C_WHITE, 82))
-        draw.text((20, caj_y),      zona_display,   font=f_caj,   fill=(*_C_ORANGE, 255))
+    img  = Image.new("RGBA", (W, H), (*DEEP, 255))
+    draw = ImageDraw.Draw(img)
+    draw.rounded_rectangle([0, 0, W - 1, H - 1], radius=RADIO, fill=(*DEEP, 255))
 
-    # ── Info blanca ───────────────────────────────────────────────
-    def _info(draw, iy):
-        f_nm = _inter(26, bold=True)
-        f_ev = _inter(11)
-        f_se = _inter(10, bold=True)
-        f_vg = _inter(10)
+    # ── 1. Barra dorada ───────────────────────────────────────────
+    _grad3(draw, 0, BAR_H - 1, GOLD_D, GOLD, GOLD_M)
 
-        emp = (nombre_empresa[:21] + "…") if len(nombre_empresa) > 23 else nombre_empresa
-        draw.text((20, iy + 14), emp, font=f_nm, fill=(*_C_NAVY, 255))
+    # ── 2. Header ─────────────────────────────────────────────────
+    y0 = BAR_H
+    _sep(draw, y0 + HDR_H - 1)
+    _ls(draw, "XENTY ACCESOS", PAD, y0 + 15, _inter(7, bold=True), (*GOLD, 102), ls=2)
+    f_title = _inter(20, bold=True)
+    draw.text((PAD, y0 + 30), "PASE DE",          font=f_title, fill=(*WHITE, 255))
+    draw.text((PAD, y0 + 54), "ESTACIONAMIENTO",  font=f_title, fill=(*WHITE, 255))
+    _logo_path = _STATIC / "xenty-white.png"
+    if _logo_path.exists():
+        from PIL import Image as _PIL_Image
+        _logo   = _PIL_Image.open(_logo_path).convert("RGBA")
+        _logo_h = 22
+        _logo_w = int(_logo.width * _logo_h / _logo.height)
+        _logo   = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
+        img.paste(_logo, (W - PAD - _logo_w, y0 + 20), _logo)
 
-        ev = f"Evento: {evento}"
-        if len(ev) > 46:
-            ev = ev[:44] + "…"
-        draw.text((20, iy + 54), ev, font=f_ev, fill=(*_C_NAVY, 122))
+    # ── 3. Proveedor ──────────────────────────────────────────────
+    y1 = y0 + HDR_H
+    _sep(draw, y1 + PROV_H - 1)
+    ix = PAD
+    iy = y1 + (PROV_H - 52) // 2
+    draw.rounded_rectangle([ix, iy, ix + 52, iy + 52], radius=12,
+                            fill=(*GOLD, 18), outline=(*GOLD, 51), width=1)
+    # Ícono de auto estilizado centrado en el cuadro
+    cx_i = ix + 26
+    cy_i = iy + 26
+    draw.rounded_rectangle([cx_i - 15, cy_i - 2, cx_i + 15, cy_i + 9], radius=3,
+                            fill=(*GOLD, 140))
+    draw.polygon([
+        (cx_i - 12, cy_i - 2), (cx_i - 10, cy_i - 7),
+        (cx_i + 10, cy_i - 7), (cx_i + 12, cy_i - 2),
+    ], fill=(*GOLD, 140))
+    draw.ellipse([cx_i - 12, cy_i + 6, cx_i - 6, cy_i + 12], fill=(*GOLD, 179))
+    draw.ellipse([cx_i +  6, cy_i + 6, cx_i + 12, cy_i + 12], fill=(*GOLD, 179))
 
-        ry = iy + 78
-        draw.ellipse([20, ry + 1, 27, ry + 8], fill=(*_C_ORANGE, 255))
-        draw.text((31, ry), sector_label, font=f_se, fill=(*_C_NAVY, 255))
-        if vigencia:
-            vig_str = f"VIGENCIA: {vigencia[:10]}"
-            vb = draw.textbbox((0, 0), vig_str, font=f_vg)
-            draw.text(
-                (W - 20 - (vb[2] - vb[0]), ry),
-                vig_str, font=f_vg, fill=(*_C_NAVY, 107),
-            )
+    tx = ix + 52 + 14
+    _ls(draw, "PROVEEDOR", tx, iy + 4, _inter(7, bold=True), (*GOLD, 102), ls=2)
+    f_emp_hdr = _inter(14, bold=True)
+    emp_hdr   = nombre_empresa.upper()
+    max_emp_w = W - PAD - tx - 4
+    while len(emp_hdr) > 2:
+        eb = draw.textbbox((0, 0), emp_hdr, font=f_emp_hdr)
+        if (eb[2] - eb[0]) <= max_emp_w:
+            break
+        emp_hdr = emp_hdr[:-1]
+    if emp_hdr != nombre_empresa.upper():
+        emp_hdr = emp_hdr[:-1] + "…"
+    draw.text((tx, iy + 20), emp_hdr, font=f_emp_hdr, fill=(*WHITE, 255))
 
-    return _render_card(
-        W=W, H=H, RADIO=RADIO,
-        header_fn=_header,
-        bar_colors=((255, 100, 0), (255, 180, 0), BAR_H),
-        stripe_y0=stripe_y0,
-        stripe_y1=stripe_y1,
-        body_fn=_body,
-        sep_y=sep_y,
-        info_fn=_info,
-        INFO_H=INFO_H,
-        FOOT_H=FOOT_H,
-        footer_text=(
-            "Los pases de estacionamiento son intransferibles. Válido únicamente para el "
-            "evento y cajón indicados. Xenty Accesos no se responsabiliza por el uso no autorizado."
-        ),
+    # ── 4. Cajón + QR ─────────────────────────────────────────────
+    y2 = y1 + PROV_H
+    _sep(draw, y2 + CAJ_H - 1)
+    QR_BOX   = 100
+    QR_PAD_I = 8
+    QR_SIZE  = QR_BOX - QR_PAD_I * 2
+    qr_bx    = W - PAD - QR_BOX
+    qr_by    = y2 + (CAJ_H - QR_BOX) // 2
+    draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
+                            radius=11, fill=(*WHITE, 255))
+    qr_img = (
+        qrcode.make(token).convert("RGBA")
+        .resize((QR_SIZE, QR_SIZE), Image.NEAREST)
     )
+    img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
+    _ls_center(draw, "ESCANEAR", qr_bx + QR_BOX // 2, qr_by + QR_BOX + 6,
+               _inter(7, bold=True), (*GOLD, 102), ls=2)
+
+    _ls(draw, "CAJÓN / LOTE", PAD, y2 + 14, _inter(7, bold=True), (*GOLD, 102), ls=2)
+    max_caj_w = qr_bx - PAD - 8
+    bb = draw.textbbox((0, 0), cajon_display, font=f_caj)
+    if (bb[2] - bb[0]) > max_caj_w:
+        f_caj = _bebas(max(round(f_caj_size * max_caj_w / max(bb[2] - bb[0], 1)), 36))
+        bb    = draw.textbbox((0, 0), cajon_display, font=f_caj)
+    caj_y = qr_by + QR_BOX - (bb[3] - bb[1])
+    draw.text((PAD, caj_y), cajon_display, font=f_caj, fill=(*AC, 255))
+
+    # ── 5. Info del evento ────────────────────────────────────────
+    y3 = y2 + CAJ_H
+    _sep(draw, y3 + INFO_H - 1)
+    emp_info = nombre_empresa
+    f_emp_info = _inter(18, bold=True)
+    eb2 = draw.textbbox((0, 0), emp_info, font=f_emp_info)
+    if (eb2[2] - eb2[0]) > W - PAD * 2:
+        emp_info = (emp_info[:22] + "…") if len(emp_info) > 23 else emp_info
+    draw.text((PAD, y3 + 14), emp_info, font=f_emp_info, fill=(*WHITE, 255))
+    ev_str = f"Evento: {evento}"
+    if len(ev_str) > 48:
+        ev_str = ev_str[:46] + "…"
+    draw.text((PAD, y3 + 44), ev_str, font=_inter(10), fill=(*WHITE, 102))
+    ry = y3 + 64
+    draw.ellipse([PAD, ry + 1, PAD + 8, ry + 9], fill=(*AC, 255))
+    draw.text((PAD + 12, ry), zona.upper(), font=_inter(10, bold=True), fill=(*WHITE, 255))
+    if vigencia:
+        vig_str = f"VIGENCIA: {vigencia[:10]}"
+        vb      = draw.textbbox((0, 0), vig_str, font=_inter(10))
+        draw.text((W - PAD - (vb[2] - vb[0]), ry), vig_str,
+                  font=_inter(10), fill=(*WHITE, 97))
+
+    # ── 6. Footer ─────────────────────────────────────────────────
+    y4 = y3 + INFO_H
+    draw.rectangle([0, y4, W - 1, H - 1], fill=(*GOLD, 8))
+    _sep(draw, y4)
+    _wrap_text(
+        draw,
+        "Los pases de estacionamiento son intransferibles. "
+        "Válido únicamente para el evento y cajón indicados. "
+        "Xenty Accesos no se responsabiliza por el uso no autorizado.",
+        PAD, y4 + 9, W - PAD * 2, _inter(7), (*WHITE, 41), leading=10,
+    )
+
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, W - 1, H - 1], radius=RADIO, fill=255)
+    img.putalpha(mask)
+
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
