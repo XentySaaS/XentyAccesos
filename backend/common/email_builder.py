@@ -236,6 +236,7 @@ def enviar_correo_html(
     if not destino:
         return
     remitente = from_email or getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@xenty.mx")
+    logger.info("Intentando enviar correo a %s asunto=%r", destino, asunto)
     try:
         msg = EmailMultiAlternatives(
             subject=asunto,
@@ -248,5 +249,6 @@ def enviar_correo_html(
             for nombre_f, datos, ct in adjuntos:
                 msg.attach(nombre_f, datos, ct)
         msg.send(fail_silently=False)
+        logger.info("Correo enviado correctamente a %s", destino)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Correo HTML no enviado a %s: %s", destino, exc)

@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
+import Accesos from "./pages/Accesos";
 import Catalogos from "./pages/Catalogos";
 import Citas from "./pages/Citas";
 import Dashboard from "./pages/Dashboard";
@@ -30,6 +31,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       { path: "/dashboard",   element: <Dashboard /> },
+      { path: "/accesos",     element: <Accesos /> },
       { path: "/recintos",    element: <Recintos /> },
       { path: "/eventos",     element: <Eventos /> },
       { path: "/proveedores", element: <Proveedores /> },

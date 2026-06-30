@@ -97,6 +97,9 @@ class CitaDetailSerializer(serializers.ModelSerializer):
     ubicacion_nombre = serializers.CharField(
         source="ubicacion.nombre", read_only=True, allow_null=True, default=None
     )
+    ubicacion_zona_id = serializers.IntegerField(
+        source="ubicacion.zona_id", read_only=True, allow_null=True, default=None
+    )
     acceso_nombre = serializers.CharField(
         source="acceso.nombre", read_only=True, allow_null=True, default=None
     )
@@ -108,7 +111,7 @@ class CitaDetailSerializer(serializers.ModelSerializer):
             "id", "nombre", "detalles", "fecha", "hora_inicio", "hora_fin", "limite",
             "tipo", "tipo_cita", "estado",
             "recinto", "recinto_nombre",
-            "ubicacion", "ubicacion_nombre",
+            "ubicacion", "ubicacion_nombre", "ubicacion_zona_id",
             "acceso", "acceso_nombre",
             "protocolo", "protocolo_nombre",
             "proveedor", "proveedor_nombre",

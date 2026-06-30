@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.config.services import AuditViewSetMixin
 from common.permissions import PERMISOS_BASE, ContextoProveedores, RequiereModulo
 from common.validators import validar_archivo
 
@@ -13,7 +14,7 @@ from .models import Empleado
 from .serializers import EmpleadoSerializer
 
 
-class EmpleadoViewSet(viewsets.ModelViewSet):
+class EmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EmpleadoSerializer
     permission_classes = [*PERMISOS_BASE(), ContextoProveedores, RequiereModulo("empleados")]
     parser_classes = [JSONParser, MultiPartParser, FormParser]
@@ -28,7 +29,8 @@ class EmpleadoViewSet(viewsets.ModelViewSet):
         return qs.filter(proveedor=actor)
 
     def perform_create(self, serializer):
-        serializer.save(proveedor=self.request.user)
+        serializer.validated_data["proveedor"] = self.request.user
+        super().perform_create(serializer)
 
     @action(detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser])
     def importar(self, request):

@@ -14,16 +14,20 @@ from .models import RegistroAcceso
 from .serializers import RegistroAccesoSerializer
 from .services import procesar_escaneo
 
-_GUARDIA = [
+_SCANNER = [
     *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
-    RequiereRol("guardia", "administrador"),
+    RequiereRol("guardia", "administrador", "recepcion"),
+]
+_BITACORA = [
+    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
+    RequiereRol("guardia", "administrador", "editor", "recepcion"),
 ]
 
 
 class EscanearView(APIView):
     """POST /api/acceso/escanear/ {qr, placa?} — valida y registra el acceso."""
 
-    permission_classes = _GUARDIA
+    permission_classes = _SCANNER
 
     def post(self, request):
         reg, permitido, motivo = procesar_escaneo(
@@ -40,10 +44,20 @@ class EscanearView(APIView):
 class RegistroAccesoViewSet(viewsets.ReadOnlyModelViewSet):
     """Bitácora de accesos (solo lectura) + acción de registrar salida."""
 
-    queryset = RegistroAcceso.objects.all().order_by("-hora_entrada")
     serializer_class = RegistroAccesoSerializer
-    permission_classes = _GUARDIA
-    filterset_fields = ["tipo_acceso", "metodo", "empleado", "evento", "cita"]
+    permission_classes = _BITACORA
+    filterset_fields = ["tipo_acceso", "metodo"]
+
+    def get_queryset(self):
+        qs = RegistroAcceso.objects.select_related(
+            "empleado", "asistente", "evento", "cita"
+        ).order_by("-hora_entrada")
+        p = self.request.query_params
+        if p.get("fecha_desde"):
+            qs = qs.filter(hora_entrada__date__gte=p["fecha_desde"])
+        if p.get("fecha_hasta"):
+            qs = qs.filter(hora_entrada__date__lte=p["fecha_hasta"])
+        return qs
 
     @action(detail=True, methods=["post"])
     def salida(self, request, pk=None):

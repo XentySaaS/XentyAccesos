@@ -11,6 +11,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.accounts.models import Usuario
+from apps.config.services import AuditViewSetMixin
 from apps.documentos.services import cumple_requisitos
 from apps.empleados.models import Empleado
 from apps.gafetes.services import TIPO_EVENTO, TIPO_PARKING, componer_gafete, emitir_qr
@@ -36,11 +37,11 @@ def _base_url(request) -> str:
     return f"{request.scheme}://{request.get_host()}"
 
 
-class EventoViewSet(viewsets.ModelViewSet):
+class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EventoSerializer
     permission_classes = [
         *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("eventos"),
-        RequiereRol("administrador", "editor"),
+        RequiereRol("administrador", "editor", "recepcion"),
     ]
     filterset_fields = ["estado", "recinto"]
 
@@ -52,13 +53,14 @@ class EventoViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(creado_por=self.request.user)
+        serializer.validated_data["creado_por"] = self.request.user
+        super().perform_create(serializer)
 
     def perform_destroy(self, instance):
         # No eliminable si tiene proveedores o empleados asignados (SAR_FUNC §6.1).
         if EventoProveedor.objects.filter(evento=instance).exists():
             raise PermissionDenied("No se puede eliminar un evento con proveedores asignados.")
-        instance.delete()
+        super().perform_destroy(instance)
 
     @action(detail=True, methods=["post"], url_path="requisitos-documentos")
     def requisitos_documentos(self, request, pk=None):
@@ -115,7 +117,7 @@ class EventoViewSet(viewsets.ModelViewSet):
         return Response({"verificadores": list(usuarios.values_list("id", flat=True))})
 
 
-class EventoProveedorViewSet(viewsets.ModelViewSet):
+class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     """Invitaciones de proveedores a un evento.
 
     CRUD lo opera el recinto (contexto acceso, admin/editor). La asignación masiva de empleados la
@@ -156,7 +158,8 @@ class EventoProveedorViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         self._exige_operacion()
-        ep = serializer.save()
+        super().perform_create(serializer)
+        ep = serializer.instance
         self._sync_cajones(ep)
         noti.notificar_invitacion(
             ep, nombre_tenant=_tenant_nombre(self.request), panel_url=_base_url(self.request)
@@ -164,13 +167,14 @@ class EventoProveedorViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         self._exige_operacion()
-        ep = serializer.save()
+        super().perform_update(serializer)
+        ep = serializer.instance
         self._sync_cajones(ep)
 
     def perform_destroy(self, instance):
         self._exige_operacion()
         noti.notificar_invitacion_cancelada(instance, nombre_tenant=_tenant_nombre(self.request))
-        instance.delete()
+        super().perform_destroy(instance)
 
     # ── Gafetes (QR cifrado + tarjeta compuesta) ─────────────────────────────
     @staticmethod

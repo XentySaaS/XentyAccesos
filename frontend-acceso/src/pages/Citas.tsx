@@ -17,7 +17,6 @@ interface Zona      { id: number; nombre: string; recinto: number; }
 interface Ubicacion { id: number; nombre: string; zona: number; }
 interface Acceso    { id: number; nombre: string; recinto: number; }
 interface Protocolo { id: number; nombre: string; }
-interface Proveedor { id: number; nombre: string; }
 interface Usuario   { id: number; nombre: string; email: string; rol: string; }
 
 interface Persona {
@@ -42,7 +41,7 @@ interface CitaRow {
 
 interface CitaDetalle extends CitaRow {
   detalles: string; limite: number | null;
-  ubicacion: number | null; ubicacion_nombre: string | null;
+  ubicacion: number | null; ubicacion_nombre: string | null; ubicacion_zona_id: number | null;
   acceso: number | null; acceso_nombre: string | null;
   protocolo: number | null; protocolo_nombre: string | null;
   asistentes: Asistente[];
@@ -88,10 +87,10 @@ function fmtHora(s: string) {
 const INVITADO_VACIO = { nombre: "", email: "", telefono: "", persona_id: null as number | null, tipo: 0 };
 
 /* ── Formulario vacío ───────────────────────────────────────────────────── */
+// tipo siempre 1 (Directa) — equivalente al hidden del sistema original
 const FORM_VACIO = {
   nombre: "", detalles: "", fecha: "",
   hora_inicio: "", hora_fin: "",
-  tipo: 1 as 0 | 1,
   tipo_cita: "programada",
   estado: "pendiente",
   recinto: "",
@@ -99,22 +98,19 @@ const FORM_VACIO = {
   ubicacion: "",
   acceso: "",
   protocolo: "",
-  proveedor: "",
   asignado_a: "",
-  limite: "",
 };
 
-type ModalMode = "crear" | "detalle" | null;
+type ModalMode = "crear" | "detalle" | "editar" | null;
 
 /* ══════════════════════════════════════════════════════════════════════════
    Componente principal
    ══════════════════════════════════════════════════════════════════════════ */
 export default function Citas() {
   /* catálogos */
-  const [recintos,    setRecintos]    = useState<Recinto[]>([]);
-  const [protocolos,  setProtocolos]  = useState<Protocolo[]>([]);
-  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
-  const [usuarios,    setUsuarios]    = useState<Usuario[]>([]);
+  const [recintos,   setRecintos]   = useState<Recinto[]>([]);
+  const [protocolos, setProtocolos] = useState<Protocolo[]>([]);
+  const [usuarios,   setUsuarios]   = useState<Usuario[]>([]);
 
   /* cascada en formulario */
   const [zonas,      setZonas]      = useState<Zona[]>([]);
@@ -137,6 +133,11 @@ export default function Citas() {
   const [invitados, setInvitados] = useState([{ ...INVITADO_VACIO }]);
   const [saving,   setSaving]   = useState(false);
   const [error,    setError]    = useState("");
+  const [citaEditId, setCitaEditId] = useState<number | null>(null);
+
+  /* reenvío de invitación */
+  const [reenviando,    setReenviando]    = useState<number | null>(null);
+  const [reenviandoMsg, setReenviandoMsg] = useState<{ id: number; tipo: "ok" | "err"; texto: string } | null>(null);
 
   /* autocomplete invitados */
   const [, setQuery]    = useState("");
@@ -149,12 +150,10 @@ export default function Citas() {
     Promise.all([
       api.get("/api/recintos/"),
       api.get("/api/protocolos/"),
-      api.get("/api/proveedores/"),
       api.get("/api/usuarios/"),
-    ]).then(([r, p, prov, u]) => {
+    ]).then(([r, p, u]) => {
       setRecintos(lista(r.data));
       setProtocolos(lista(p.data));
-      setProveedores(lista(prov.data));
       setUsuarios(lista(u.data));
     }).catch(() => {});
   }, []);
@@ -183,22 +182,20 @@ export default function Citas() {
       .then(r => setZonas(lista(r.data))).catch(() => setZonas([]));
     api.get("/api/accesos/", { params: { recinto: form.recinto } })
       .then(r => setAccesos(lista(r.data))).catch(() => setAccesos([]));
-    set("zona_sel", ""); set("ubicacion", ""); set("acceso", "");
   }, [form.recinto]);
 
   useEffect(() => {
     if (!form.zona_sel) { setUbicaciones([]); return; }
     api.get("/api/ubicaciones/", { params: { zona: form.zona_sel } })
       .then(r => setUbicaciones(lista(r.data))).catch(() => setUbicaciones([]));
-    set("ubicacion", "");
   }, [form.zona_sel]);
 
   /* ── Autocomplete invitados ───────────────────────────────────────── */
   const buscarPersonas = (q: string, idx: number) => {
-    setQuery(q);
     setSugIdx(idx);
+    setSugs([]);   // limpiar inmediatamente para no mostrar resultados de otro invitado
     clearTimeout(debRef.current);
-    if (q.length < 2) { setSugs([]); return; }
+    if (q.length < 2) return;
     debRef.current = setTimeout(() => {
       api.get("/api/citas/buscar-personas/", { params: { q } })
         .then(r => setSugs(r.data)).catch(() => setSugs([]));
@@ -243,25 +240,21 @@ export default function Citas() {
     setSaving(true); setError("");
     try {
       const body: Record<string, unknown> = {
-        nombre:      form.nombre,
-        detalles:    form.detalles || null,
-        fecha:       form.fecha,
-        hora_inicio: form.hora_inicio || null,
-        hora_fin:    form.hora_fin    || null,
-        tipo:        form.tipo,
-        tipo_cita:   form.tipo_cita,
-        estado:      form.estado,
-        recinto:     Number(form.recinto),
-        ubicacion:   form.ubicacion   ? Number(form.ubicacion)  : null,
-        acceso:      form.acceso      ? Number(form.acceso)     : null,
-        protocolo:   form.protocolo   ? Number(form.protocolo)  : null,
-        proveedor:   form.proveedor   ? Number(form.proveedor)  : null,
-        asignado_a:  form.asignado_a  ? Number(form.asignado_a) : null,
-        limite:      form.limite      ? Number(form.limite)     : null,
+        nombre:           form.nombre,
+        detalles:         form.detalles || null,
+        fecha:            form.fecha,
+        hora_inicio:      form.hora_inicio || null,
+        hora_fin:         form.hora_fin    || null,
+        tipo:             1,   // siempre Directa
+        tipo_cita:        form.tipo_cita,
+        estado:           form.estado,
+        recinto:          Number(form.recinto),
+        ubicacion:        form.ubicacion  ? Number(form.ubicacion)  : null,
+        acceso:           form.acceso     ? Number(form.acceso)     : null,
+        protocolo:        form.protocolo  ? Number(form.protocolo)  : null,
+        asignado_a:       form.asignado_a ? Number(form.asignado_a) : null,
+        asistentes_input: invitados.filter(i => i.nombre.trim()),
       };
-      if (form.tipo === 1) {
-        body.asistentes_input = invitados.filter(i => i.nombre.trim());
-      }
       await api.post("/api/citas/", body);
       cerrarModal(); cargar();
     } catch (err: unknown) {
@@ -272,24 +265,109 @@ export default function Citas() {
     }
   };
 
-  /* ── Walk-in rápido ───────────────────────────────────────────────── */
-  const crearWalkIn = async () => {
-    const nombre = window.prompt("Nombre o motivo del walk-in:");
-    if (!nombre) return;
-    const recintoId = recintos[0]?.id;
-    if (!recintoId) { alert("No hay recintos configurados."); return; }
-    await api.post("/api/citas/", {
-      nombre, tipo: 1, tipo_cita: "walk_in", estado: "confirmada",
-      fecha: new Date().toISOString().split("T")[0],
-      recinto: recintoId,
-    });
-    cargar();
+  /* ── Walk-in: abre el formulario completo con tipo_cita=walk_in ──── */
+  const crearWalkIn = () => {
+    const hoy = new Date().toISOString().split("T")[0];
+    setForm({ ...FORM_VACIO, tipo_cita: "walk_in", estado: "confirmada", fecha: hoy });
+    setInvitados([{ ...INVITADO_VACIO }]);
+    setError(""); setModal("crear");
+  };
+
+  /* ── Abrir editar ────────────────────────────────────────────────── */
+  const abrirEditar = async (id: number) => {
+    setError(""); setModal("editar"); setDetLoading(true);
+    try {
+      const r = await api.get(`/api/citas/${id}/`);
+      const d: CitaDetalle = r.data;
+      const zona_sel = d.ubicacion_zona_id ? String(d.ubicacion_zona_id) : "";
+      const recintoId = d.recinto ? String(d.recinto) : "";
+
+      // Pre-load cascade data so selects have options when the form opens
+      const [zonasR, accesosR, ubicR] = await Promise.allSettled([
+        recintoId ? api.get("/api/zonas/", { params: { recinto: recintoId } }) : Promise.resolve({ data: [] }),
+        recintoId ? api.get("/api/accesos/", { params: { recinto: recintoId } }) : Promise.resolve({ data: [] }),
+        zona_sel  ? api.get("/api/ubicaciones/", { params: { zona: zona_sel } }) : Promise.resolve({ data: [] }),
+      ]);
+      if (zonasR.status  === "fulfilled") setZonas(lista(zonasR.value.data));
+      if (accesosR.status === "fulfilled") setAccesos(lista(accesosR.value.data));
+      if (ubicR.status   === "fulfilled") setUbicaciones(lista(ubicR.value.data));
+
+      setCitaEditId(d.id);
+      setForm({
+        nombre:      d.nombre     ?? "",
+        detalles:    d.detalles   ?? "",
+        fecha:       d.fecha      ?? "",
+        hora_inicio: d.hora_inicio ? d.hora_inicio.slice(0, 5) : "",
+        hora_fin:    d.hora_fin    ? d.hora_fin.slice(0, 5)    : "",
+        tipo_cita:   d.tipo_cita,
+        estado:      d.estado,
+        recinto:     recintoId,
+        zona_sel,
+        ubicacion:   d.ubicacion  ? String(d.ubicacion)  : "",
+        acceso:      d.acceso     ? String(d.acceso)     : "",
+        protocolo:   d.protocolo  ? String(d.protocolo)  : "",
+        asignado_a:  d.asignado_a ? String(d.asignado_a) : "",
+      });
+    } catch {
+      setModal(null);
+    } finally {
+      setDetLoading(false);
+    }
+  };
+
+  /* ── Editar cita ─────────────────────────────────────────────────── */
+  const editar = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!citaEditId) return;
+    setSaving(true); setError("");
+    try {
+      await api.patch(`/api/citas/${citaEditId}/`, {
+        nombre:     form.nombre,
+        detalles:   form.detalles  || null,
+        fecha:      form.fecha,
+        hora_inicio: form.hora_inicio || null,
+        hora_fin:    form.hora_fin    || null,
+        tipo_cita:   form.tipo_cita,
+        estado:      form.estado,
+        recinto:     Number(form.recinto),
+        ubicacion:   form.ubicacion  ? Number(form.ubicacion)  : null,
+        acceso:      form.acceso     ? Number(form.acceso)     : null,
+        protocolo:   form.protocolo  ? Number(form.protocolo)  : null,
+        asignado_a:  form.asignado_a ? Number(form.asignado_a) : null,
+      });
+      cerrarModal(); cargar();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: unknown } };
+      setError(JSON.stringify(e.response?.data ?? "Error al editar la cita."));
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* ── Cerrar modal ─────────────────────────────────────────────────── */
   const cerrarModal = () => {
     setModal(null); setForm(FORM_VACIO); setInvitados([{ ...INVITADO_VACIO }]);
     setError(""); setSugs([]); setQuery(""); setSugIdx(null);
+    setCitaEditId(null);
+  };
+
+  /* ── Reenviar invitación ──────────────────────────────────────────── */
+  const reenviarInvitacion = async (id: number) => {
+    setReenviando(id);
+    setReenviandoMsg(null);
+    try {
+      const res = await api.post(`/api/citas/${id}/reenviar-invitacion/`);
+      const detail: string = (res.data as { detail?: string }).detail ?? "Invitaciones reenviadas.";
+      setReenviandoMsg({ id, tipo: "ok", texto: detail });
+      setTimeout(() => setReenviandoMsg(m => m?.id === id ? null : m), 4000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      const texto = e.response?.data?.detail ?? "Error al reenviar la invitación.";
+      setReenviandoMsg({ id, tipo: "err", texto });
+      setTimeout(() => setReenviandoMsg(m => m?.id === id ? null : m), 5000);
+    } finally {
+      setReenviando(null);
+    }
   };
 
   /* ══════════════════════════════════════════════════════════════════
@@ -397,6 +475,13 @@ export default function Citas() {
                           className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">
                           Ver
                         </button>
+                        <button onClick={() => abrirEditar(c.id)}
+                          className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
+                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                          </svg>
+                        </button>
                         {c.estado === "pendiente" && (
                           <button onClick={() => cambiarEstado(c.id, "confirmada")}
                             className="rounded-lg px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
@@ -408,6 +493,33 @@ export default function Citas() {
                             className="rounded-lg border border-red-300 px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50">
                             Cancelar
                           </button>
+                        )}
+                        {c.tipo_cita !== "walk_in" && (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <button
+                              onClick={() => reenviarInvitacion(c.id)}
+                              disabled={reenviando === c.id}
+                              title="Reenviar invitación"
+                              className={`rounded-lg border px-2 py-1 text-xs font-semibold transition disabled:opacity-50 ${
+                                reenviandoMsg?.id === c.id && reenviandoMsg.tipo === "ok"
+                                  ? "border-green-300 bg-green-50 text-green-700"
+                                  : reenviandoMsg?.id === c.id && reenviandoMsg.tipo === "err"
+                                  ? "border-red-300 bg-red-50 text-red-600"
+                                  : "border-slate-200 text-slate-500 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50"
+                              }`}>
+                              {reenviando === c.id ? "…" : (
+                                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                  <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                              )}
+                            </button>
+                            {reenviandoMsg?.id === c.id && (
+                              <span className={`text-[10px] font-semibold ${reenviandoMsg.tipo === "ok" ? "text-green-600" : "text-red-500"}`}>
+                                {reenviandoMsg.tipo === "ok" ? "✓ Enviado" : "✗ Error"}
+                              </span>
+                            )}
+                          </div>
                         )}
                         <button onClick={() => eliminar(c.id)}
                           className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-400 hover:text-red-500 hover:border-red-200">
@@ -435,8 +547,14 @@ export default function Citas() {
 
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold" style={{ color: INK }}>Nueva cita</h2>
-                <p className="text-xs text-slate-400">Los campos marcados * son obligatorios.</p>
+                <h2 className="text-base font-bold" style={{ color: INK }}>
+                  {form.tipo_cita === "walk_in" ? "Registro walk-in" : "Nueva cita"}
+                </h2>
+                <p className="text-xs text-slate-400">
+                  {form.tipo_cita === "walk_in"
+                    ? "El acceso se registra al guardar — no se envían notificaciones."
+                    : "Los campos marcados * son obligatorios."}
+                </p>
               </div>
               <button type="button" onClick={cerrarModal}
                 className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
@@ -453,13 +571,6 @@ export default function Citas() {
               <Field label="Nombre / motivo *" span={2}>
                 <Input required value={form.nombre} onChange={v => set("nombre", v)}
                   placeholder="Reunión mensual proveedores…" />
-              </Field>
-
-              <Field label="Tipo">
-                <Select value={form.tipo} onChange={v => set("tipo", Number(v))}>
-                  <option value={1}>Directa</option>
-                  <option value={0}>Proveedor</option>
-                </Select>
               </Field>
 
               <Field label="Tipo de cita">
@@ -499,14 +610,17 @@ export default function Citas() {
             {/* ── Ubicación ────────────────────────────────────────── */}
             <Section label="Ubicación">
               <Field label="Recinto *">
-                <Select required value={form.recinto} onChange={v => set("recinto", v)}>
+                <Select required value={form.recinto}
+                  onChange={v => setForm(f => ({ ...f, recinto: v, zona_sel: "", ubicacion: "", acceso: "" }))}>
                   <option value="">Seleccionar…</option>
                   {recintos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                 </Select>
               </Field>
 
               <Field label="Zona">
-                <Select value={form.zona_sel} onChange={v => set("zona_sel", v)} disabled={!form.recinto}>
+                <Select value={form.zona_sel}
+                  onChange={v => setForm(f => ({ ...f, zona_sel: v, ubicacion: "" }))}
+                  disabled={!form.recinto}>
                   <option value="">Seleccionar…</option>
                   {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
                 </Select>
@@ -534,25 +648,8 @@ export default function Citas() {
               </Field>
             </Section>
 
-            {/* ── Proveedor (solo si tipo=0) ────────────────────────── */}
-            {form.tipo === 0 && (
-              <Section label="Proveedor">
-                <Field label="Proveedor *">
-                  <Select value={form.proveedor} onChange={v => set("proveedor", v)}>
-                    <option value="">Seleccionar…</option>
-                    {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                  </Select>
-                </Field>
-                <Field label="Límite de personas">
-                  <Input type="number" min="1" value={form.limite} onChange={v => set("limite", v)}
-                    placeholder="Sin límite" />
-                </Field>
-              </Section>
-            )}
-
-            {/* ── Invitados (solo si tipo=1) ────────────────────────── */}
-            {form.tipo === 1 && (
-              <Section label="Invitados">
+            {/* ── Invitados ────────────────────────────────────────── */}
+            <Section label="Invitados">
                 {invitados.map((inv, idx) => (
                   <div key={idx} className="col-span-2 rounded-xl border border-slate-200 p-3 relative">
                     <div className="mb-2 flex items-center justify-between">
@@ -616,7 +713,6 @@ export default function Citas() {
                   </button>
                 </div>
               </Section>
-            )}
 
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={cerrarModal}
@@ -718,9 +814,176 @@ export default function Citas() {
                 {detalle.asistentes.length === 0 && (
                   <p className="text-center text-xs text-slate-400 py-4">Sin invitados registrados.</p>
                 )}
+
+                {/* Reenviar invitación */}
+                {detalle.tipo_cita !== "walk_in" && (
+                  <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-600">Reenviar invitación</p>
+                        <p className="text-[11px] text-slate-400">
+                          Envía el correo con el gafete QR a todos los asistentes con email.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => reenviarInvitacion(detalle.id)}
+                        disabled={reenviando === detalle.id}
+                        className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">
+                        {reenviando === detalle.id ? "Enviando…" : (
+                          <>
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                              <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Reenviar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {reenviandoMsg?.id === detalle.id && (
+                      <p className={`mt-2 text-xs font-semibold ${reenviandoMsg.tipo === "ok" ? "text-green-600" : "text-red-500"}`}>
+                        {reenviandoMsg.tipo === "ok" ? "✓" : "✗"} {reenviandoMsg.texto}
+                      </p>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          Modal: EDITAR CITA
+      ══════════════════════════════════════════════════════════════ */}
+      {modal === "editar" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
+          {detLoading ? (
+            <div className="rounded-2xl bg-white p-10 shadow-2xl text-sm text-slate-400">Cargando…</div>
+          ) : (
+            <form onSubmit={editar}
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-bold" style={{ color: INK }}>Editar cita</h2>
+                  <p className="text-xs text-slate-400">Los campos marcados * son obligatorios.</p>
+                </div>
+                <button type="button" onClick={cerrarModal}
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+
+              {error && (
+                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+              )}
+
+              <Section label="General">
+                <Field label="Nombre / motivo *" span={2}>
+                  <Input required value={form.nombre} onChange={v => set("nombre", v)}
+                    placeholder="Reunión mensual proveedores…" />
+                </Field>
+
+                <Field label="Tipo de cita">
+                  <Select value={form.tipo_cita} onChange={v => set("tipo_cita", v)}>
+                    <option value="programada">Programada</option>
+                    <option value="walk_in">Walk-in</option>
+                    <option value="emergencia">Emergencia</option>
+                  </Select>
+                </Field>
+
+                <Field label="Estado">
+                  <Select value={form.estado} onChange={v => set("estado", v)}>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="confirmada">Confirmada</option>
+                    <option value="cancelada">Cancelada</option>
+                  </Select>
+                </Field>
+
+                <Field label="Fecha *">
+                  <Input required type="date" value={form.fecha} onChange={v => set("fecha", v)} />
+                </Field>
+
+                <Field label="Hora inicio">
+                  <Input type="time" value={form.hora_inicio} onChange={v => set("hora_inicio", v)} />
+                </Field>
+
+                <Field label="Hora fin">
+                  <Input type="time" value={form.hora_fin} onChange={v => set("hora_fin", v)} />
+                </Field>
+
+                <Field label="Asignado a">
+                  <Select value={form.asignado_a} onChange={v => set("asignado_a", v)}>
+                    <option value="">Sin asignar</option>
+                    {usuarios.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Detalles" span={2}>
+                  <textarea value={form.detalles} onChange={e => set("detalles", e.target.value)} rows={2}
+                    className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                    placeholder="Observaciones opcionales…" />
+                </Field>
+              </Section>
+
+              <Section label="Ubicación">
+                <Field label="Recinto *">
+                  <Select required value={form.recinto}
+                    onChange={v => setForm(f => ({ ...f, recinto: v, zona_sel: "", ubicacion: "", acceso: "" }))}>
+                    <option value="">Seleccionar…</option>
+                    {recintos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Zona">
+                  <Select value={form.zona_sel}
+                    onChange={v => setForm(f => ({ ...f, zona_sel: v, ubicacion: "" }))}
+                    disabled={!form.recinto}>
+                    <option value="">Seleccionar…</option>
+                    {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Ubicación">
+                  <Select value={form.ubicacion} onChange={v => set("ubicacion", v)} disabled={!form.zona_sel}>
+                    <option value="">Seleccionar…</option>
+                    {ubicaciones.map(u => <option key={u.id} value={u.id}>{u.nombre}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Punto de acceso">
+                  <Select value={form.acceso} onChange={v => set("acceso", v)} disabled={!form.recinto}>
+                    <option value="">Seleccionar…</option>
+                    {accesos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                  </Select>
+                </Field>
+
+                <Field label="Protocolo">
+                  <Select value={form.protocolo} onChange={v => set("protocolo", v)}>
+                    <option value="">Sin protocolo</option>
+                    {protocolos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                  </Select>
+                </Field>
+              </Section>
+
+              <div className="mt-2 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                Al guardar se reenvía la invitación actualizada a todos los invitados con correo.
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2">
+                <button type="button" onClick={cerrarModal}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={saving}
+                  className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
+                  style={{ backgroundColor: SIGNAL }}>
+                  {saving ? "Guardando…" : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
     </div>

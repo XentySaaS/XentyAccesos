@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from apps.config.models import HistorialCambio
+from apps.config.services import AuditViewSetMixin, registrar as _registrar
 from common.permissions import PERMISOS_BASE, RequiereRol
 
 from .models import Usuario
@@ -14,7 +16,7 @@ from .serializers import UsuarioCreateSerializer, UsuarioListSerializer, Usuario
 _PERMS_ADMIN = [*PERMISOS_BASE(), RequiereRol("administrador")]
 
 
-class UsuarioViewSet(ModelViewSet):
+class UsuarioViewSet(AuditViewSetMixin, ModelViewSet):
     """CRUD de usuarios del tenant (solo rol administrador)."""
 
     queryset = Usuario.objects.select_related("recinto").order_by("nombre")
@@ -32,6 +34,13 @@ class UsuarioViewSet(ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         usuario = serializer.save()
+        _registrar(
+            f"Creó Usuario «{usuario}»",
+            usuario=request.user,
+            accion=HistorialCambio.Accion.CREADO,
+            modelo="Usuario",
+            modelo_id=usuario.pk,
+        )
         response_data = UsuarioListSerializer(usuario).data
         # Incluye el password generado una sola vez en la respuesta de creación.
         if hasattr(usuario, "_password_plain"):

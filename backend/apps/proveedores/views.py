@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.config.services import AuditViewSetMixin
 from common.emails import enviar_activacion_proveedor, enviar_invitacion_proveedor
 from common.permissions import PERMISOS_BASE, RequiereModulo, RequiereRol
 from common.signing import VIGENCIA_HORAS, firmar_invitacion, leer_invitacion
@@ -33,7 +34,7 @@ def _base_url_de(request) -> str:
     return f"{request.scheme}://{request.get_host()}"
 
 
-class ProveedorViewSet(viewsets.ModelViewSet):
+class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = Proveedor.objects.all().order_by("id")
     serializer_class = ProveedorSerializer
     permission_classes = [*PERMISOS_BASE(), RequiereModulo("proveedores"), RequiereRol("administrador")]
@@ -41,7 +42,8 @@ class ProveedorViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Guarda el proveedor, registra la verificación 69-B y envía la invitación."""
-        proveedor = serializer.save()
+        super().perform_create(serializer)
+        proveedor = serializer.instance
         # Audita la consulta a la lista 69-B (el bloqueo ya se aplicó al validar el RFC).
         try:
             from apps.cumplimiento.services import validar_69b
@@ -67,7 +69,7 @@ class ProveedorViewSet(viewsets.ModelViewSet):
                 "Solo puedes eliminar proveedores en estado pendiente. "
                 "Para uno confirmado o activo, desactívalo."
             )
-        instance.delete()
+        super().perform_destroy(instance)
 
     @action(detail=True, methods=["post"])
     def invitar(self, request, pk=None):

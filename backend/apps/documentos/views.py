@@ -55,7 +55,7 @@ class ProtocoloViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     filterset_fields = ["estado"]
 
 
-class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
+class DocumentoEmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = DocumentoEmpleadoSerializer
     permission_classes = [*PERMISOS_BASE(), RequiereModulo("documentos")]
     filterset_fields = ["empleado", "estado", "tipo_documento"]
@@ -75,7 +75,7 @@ class DocumentoEmpleadoViewSet(viewsets.ModelViewSet):
         empleado = serializer.validated_data["empleado"]
         if empleado.proveedor.proveedor_id != self.request.user.proveedor_id:
             raise ValidationError({"empleado": "No pertenece a tu empresa."})
-        serializer.save()
+        super().perform_create(serializer)
 
     def _exige_verificador(self):
         if self._ctx() != "acceso" or self.request.user.rol not in ("verificador", "administrador"):

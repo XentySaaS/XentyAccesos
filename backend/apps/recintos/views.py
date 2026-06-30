@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from rest_framework import viewsets
 
+from apps.config.services import AuditViewSetMixin
 from common.permissions import PERMISOS_BASE, RequiereModulo, RequiereRol
 
 from .models import Acceso, AreaAutorizada, Entrada, Protocolo, Recinto, Ubicacion, Zona
@@ -19,7 +20,7 @@ from .serializers import (
 _PERMS = [*PERMISOS_BASE(), RequiereModulo("recintos"), RequiereRol("administrador")]
 
 
-class _BaseViewSet(viewsets.ModelViewSet):
+class _BaseViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     permission_classes = _PERMS
 
 

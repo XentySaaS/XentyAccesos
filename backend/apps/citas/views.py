@@ -7,6 +7,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
+from apps.accounts.models import Usuario
+from apps.config.services import AuditViewSetMixin
 from apps.empleados.models import Empleado
 from apps.ocr.services import obtener_ocr, validar_seccion
 from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
@@ -21,25 +23,28 @@ from .serializers import (
     ContactoSerializer,
 )
 
-_ROLES = ("administrador", "editor", "recepcion", "guardia")
+_ROLES = ("administrador", "editor", "recepcion")
 _PERMS = [*PERMISOS_BASE(), ContextoAcceso, RequiereModulo("citas"), RequiereRol(*_ROLES)]
 
 
-class ContactoViewSet(viewsets.ModelViewSet):
+class ContactoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = Contacto.objects.all().order_by("id")
     serializer_class = ContactoSerializer
     permission_classes = _PERMS
     search_fields = ["nombre", "email"]
 
 
-class CitaViewSet(viewsets.ModelViewSet):
-    queryset = (
-        Cita.objects.select_related(
-            "recinto", "proveedor", "asignado_a", "protocolo", "ubicacion", "acceso"
-        ).order_by("-id")
-    )
+class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     permission_classes = _PERMS
     filterset_fields = ["tipo", "tipo_cita", "estado", "recinto", "proveedor"]
+
+    def get_queryset(self):
+        qs = Cita.objects.select_related(
+            "recinto", "proveedor", "asignado_a", "protocolo", "ubicacion", "acceso"
+        ).order_by("-id")
+        if self.request.user.rol != Usuario.Rol.ADMINISTRADOR:
+            qs = qs.filter(creado_por_usuario=self.request.user)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -49,25 +54,30 @@ class CitaViewSet(viewsets.ModelViewSet):
         return CitaSerializer
 
     def perform_create(self, serializer):
-        cita = serializer.save(creado_por_usuario=self.request.user)
+        serializer.validated_data["creado_por_usuario"] = self.request.user
+        super().perform_create(serializer)
+        cita = serializer.instance
         if cita.tipo_cita == Cita.TipoCita.WALK_IN:
             try:
                 from apps.acceso.services import registrar_walkin
                 registrar_walkin(cita)
             except Exception:  # noqa: BLE001
                 pass
-        try:
-            from .services import enviar_notificacion_cita
-            enviar_notificacion_cita(cita)
-        except Exception:  # noqa: BLE001
-            pass
+        from .services import enviar_notificacion_cita
+        enviar_notificacion_cita(cita)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        cita = serializer.instance
+        from .services import enviar_notificacion_cita
+        enviar_notificacion_cita(cita)
 
     def perform_destroy(self, instance):
         if instance.tipo == Cita.Tipo.PROVEEDOR and EmpleadoCita.objects.filter(cita=instance).exists():
             raise PermissionDenied("La cita de proveedor tiene empleados asignados.")
         if instance.tipo == Cita.Tipo.DIRECTA and instance.asistentes.exists():
             raise PermissionDenied("La cita directa tiene asistentes registrados.")
-        instance.delete()
+        super().perform_destroy(instance)
 
     @action(detail=False, methods=["get"], url_path="buscar-personas")
     def buscar_personas(self, request):
@@ -118,8 +128,29 @@ class CitaViewSet(viewsets.ModelViewSet):
         data = AsistenteCitaSerializer(cita.asistentes.all(), many=True).data
         return Response(data)
 
+    @action(detail=True, methods=["post"], url_path="reenviar-invitacion")
+    def reenviar_invitacion(self, request, pk=None):
+        """Reenvía el correo de invitación (con gafete QR) a todos los asistentes con email."""
+        cita = self.get_object()
+        if cita.tipo_cita == Cita.TipoCita.WALK_IN:
+            return Response(
+                {"detail": "Las citas walk-in no envían invitaciones."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from .services import enviar_notificacion_cita
+        enviados = enviar_notificacion_cita(cita)
+        if enviados == 0:
+            sin_email = cita.asistentes.filter(email__isnull=True).count() + cita.asistentes.filter(email="").count()
+            total = cita.asistentes.count()
+            if total == 0:
+                return Response({"detail": "Esta cita no tiene invitados registrados."}, status=status.HTTP_400_BAD_REQUEST)
+            if sin_email == total:
+                return Response({"detail": "Ningún invitado tiene correo registrado."}, status=status.HTTP_400_BAD_REQUEST)
+        plural = "correo" if enviados == 1 else "correos"
+        return Response({"detail": f"{enviados} {plural} enviado{'s' if enviados != 1 else ''}.", "enviados": enviados})
 
-class AsistenteCitaViewSet(viewsets.ModelViewSet):
+
+class AsistenteCitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = AsistenteCita.objects.all().order_by("id")
     serializer_class = AsistenteCitaSerializer
     permission_classes = _PERMS

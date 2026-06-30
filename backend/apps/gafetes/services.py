@@ -358,6 +358,10 @@ def componer_gafete(
     codigo_acceso: str = "",
     empresa: str = "XENTY ACCESOS",
     accent_color: str | None = None,
+    # Etiquetas sobreescribibles (para reusar el diseño en citas)
+    label_zona: str = "ZONA",
+    label_evento: str = "NOMBRE DEL EVENTO",
+    label_fecha: str = "FECHA DEL EVENTO",
 ) -> bytes:
     """Diseño Premium Dark con acento dorado.
 
@@ -498,7 +502,7 @@ def componer_gafete(
     zx        = px + PHOTO_W + 14
     zone_col_w = W - PAD - zx
 
-    _ls(draw, "ZONA", zx, py, _inter(7, bold=True), (*AC, 102), ls=2)
+    _ls(draw, label_zona, zx, py, _inter(7, bold=True), (*AC, 102), ls=2)
 
     z_display = zona.upper()
     for wd in z_display.split():
@@ -529,7 +533,7 @@ def componer_gafete(
     y2 = y1 + PZ_H
     _gold_line(draw, y2)
     _gold_line(draw, y2 + EVT_H - 1)
-    _ls(draw, "NOMBRE DEL EVENTO", PAD, y2 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
+    _ls(draw, label_evento, PAD, y2 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
     _wrap_text(draw, nombre_evento, PAD, y2 + 27, W - PAD * 2,
                _inter(13, bold=True), (*WHITE, 255), leading=17)
 
@@ -537,7 +541,7 @@ def componer_gafete(
     y3   = y2 + EVT_H
     half = (W - 1) // 2
     _gold_line(draw, y3 + DT_H - 1)
-    _ls(draw, "FECHA DEL EVENTO", PAD, y3 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
+    _ls(draw, label_fecha, PAD, y3 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
     draw.text((PAD, y3 + 26), fecha_evento, font=_inter(13, bold=True), fill=(*WHITE, 255))
     if hora_evento:
         draw.text((PAD, y3 + 44), hora_evento, font=_inter(9), fill=(*WHITE, 77))
