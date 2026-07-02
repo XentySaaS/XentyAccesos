@@ -88,6 +88,17 @@ def _notificar_asistentes(cita) -> int:
         adjuntos = None
         try:
             from apps.gafetes.services import TIPO_CITA, componer_gafete, emitir_qr
+
+            # Foto solo si el asistente es empleado y tiene imagen cargada
+            foto_bytes: bytes | None = None
+            if asistente.tipo == asistente.Tipo.EMPLEADO and asistente.persona is not None:
+                try:
+                    emp = asistente.persona
+                    if getattr(emp, "foto", None) and emp.foto.name:
+                        foto_bytes = emp.foto.read()
+                except Exception:  # noqa: BLE001
+                    foto_bytes = None
+
             token = emitir_qr(
                 id=asistente.id,
                 tipo=TIPO_CITA,
@@ -106,6 +117,7 @@ def _notificar_asistentes(cita) -> int:
                 hora_evento=hora,
                 vigencia_hasta=vigencia_hasta,
                 hora_vigencia=hora_vigencia,
+                foto_bytes=foto_bytes,
                 label_zona="ÁREA",
                 label_evento="NOMBRE DE LA CITA",
                 label_fecha="FECHA DE LA CITA",

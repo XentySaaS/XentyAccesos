@@ -21,6 +21,11 @@ def registrar(
     despues: dict | None = None,
 ) -> HistorialCambio:
     """Inserta un registro de auditoría. Siempre append-only; nunca actualiza."""
+    # HistorialCambio.usuario apunta a accounts.Usuario. Actores de otros contextos
+    # (p. ej. CuentaProveedor) se registran sin FK de usuario para evitar ValueError.
+    from apps.accounts.models import Usuario
+    if usuario is not None and not isinstance(usuario, Usuario):
+        usuario = None
     return HistorialCambio.objects.create(
         descripcion=descripcion,
         usuario=usuario,

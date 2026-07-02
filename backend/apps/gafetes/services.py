@@ -201,19 +201,18 @@ def _xenty_icon(draw, x: int, y: int, size: int = 44) -> None:
 
 
 def _silhouette(draw, px: int, py: int, pw: int, ph: int) -> None:
-    """Silueta de persona (placeholder cuando no hay foto)."""
-    f  = (*_C_WHITE, 51)
+    """Placeholder cuando no hay foto: ícono de persona centrado."""
+    f  = (*_C_WHITE, 90)
     cx = px + pw // 2
-    rh = round(pw * 0.24)
-    hy = py + round(ph * 0.09)
+    # cabeza
+    rh = round(pw * 0.21)
+    hy = py + round(ph * 0.16)
     draw.ellipse([cx - rh, hy, cx + rh, hy + rh * 2], fill=f)
-    bry  = round(ph * 0.83)
-    brx  = round(pw * 0.43)
-    bry2 = round(ph * 0.28)
-    draw.ellipse(
-        [cx - brx, py + bry - bry2, cx + brx, py + bry + bry2],
-        fill=f,
-    )
+    # cuerpo (óvalo centrado en la parte baja)
+    brx  = round(pw * 0.38)
+    bry2 = round(ph * 0.27)
+    by   = py + round(ph * 0.84)
+    draw.ellipse([cx - brx, by - bry2, cx + brx, by + bry2], fill=f)
 
 
 def _wrap_text(draw, text: str, x: int, y: int, max_w: int,
@@ -425,9 +424,12 @@ def componer_gafete(
     def _gold_line(draw, y):
         draw.line([(0, y), (W - 1, y)], fill=(*GOLD, 18))
 
-    # Bebas Neue para zona
+    # Bebas Neue para zona — fuente más grande cuando no hay foto (ancho completo)
     z_len  = len(zona)
-    z_size = 44 if z_len <= 10 else (36 if z_len <= 15 else 30)
+    if foto_bytes:
+        z_size = 44 if z_len <= 10 else (36 if z_len <= 15 else 30)
+    else:
+        z_size = 58 if z_len <= 10 else (50 if z_len <= 15 else 40)
     f_zona = _bebas(z_size)
 
     PHOTO_W   = 90
@@ -435,14 +437,13 @@ def componer_gafete(
 
     BAR_H   = 5
     HDR_H   = 62
-    PZ_H    = 16 + PHOTO_H_I + 16   # 164
+    PZ_H    = (16 + PHOTO_H_I + 16) if foto_bytes else 114  # 164 con foto, 114 sin foto
     EVT_H   = 84
     DT_H    = 62
     GN_H    = 100
     QR_H    = 190
     FT_H    = 33
-    H = BAR_H + HDR_H + PZ_H + EVT_H + DT_H + GN_H + QR_H + FT_H  # 740... will recompute
-    H = 5 + 62 + 164 + 84 + 62 + 100 + 190 + 33   # 700
+    H = BAR_H + HDR_H + PZ_H + EVT_H + DT_H + GN_H + QR_H + FT_H
 
     img  = Image.new("RGBA", (W, H), (*DEEP, 255))
     draw = ImageDraw.Draw(img)
@@ -473,12 +474,14 @@ def componer_gafete(
         img.paste(_logo, (_lx, _ly), _logo)
 
     # ── 3. Foto + Zona ────────────────────────────────────────────
-    y1   = y0 + HDR_H
-    px   = PAD
-    py   = y1 + 16
-    draw.rounded_rectangle([px, py, px + PHOTO_W, py + PHOTO_H_I], radius=10,
-                            fill=(*WHITE, 10), outline=(*AC, 46), width=1)
+    y1 = y0 + HDR_H
+    py = y1 + 16
+
     if foto_bytes:
+        # Con foto: recuadro a la izquierda, zona a la derecha
+        px = PAD
+        draw.rounded_rectangle([px, py, px + PHOTO_W, py + PHOTO_H_I], radius=10,
+                                fill=(18, 26, 46, 255), outline=(*AC, 70), width=1)
         try:
             fimg = Image.open(BytesIO(foto_bytes)).convert("RGBA")
             tgt  = PHOTO_W / PHOTO_H_I
@@ -496,11 +499,12 @@ def componer_gafete(
             img.paste(fimg, (px, py), fmask)
         except Exception:  # noqa: BLE001
             _silhouette(draw, px, py, PHOTO_W, PHOTO_H_I)
+        zx         = px + PHOTO_W + 14
+        zone_col_w = W - PAD - zx
     else:
-        _silhouette(draw, px, py, PHOTO_W, PHOTO_H_I)
-
-    zx        = px + PHOTO_W + 14
-    zone_col_w = W - PAD - zx
+        # Sin foto: zona ocupa todo el ancho
+        zx         = PAD
+        zone_col_w = W - PAD * 2
 
     _ls(draw, label_zona, zx, py, _inter(7, bold=True), (*AC, 102), ls=2)
 

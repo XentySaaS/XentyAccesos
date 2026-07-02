@@ -55,6 +55,7 @@ export default function Empleados() {
   const [editSaving,   setEditSaving]   = useState(false);
   const [editError,    setEditError]    = useState("");
   const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [fotoMsg,      setFotoMsg]      = useState<{ ok: boolean; text: string } | null>(null);
 
   // ── Documentos ─────────────────────────────────────────────
   const [docsModal,    setDocsModal]    = useState<Empleado | null>(null);
@@ -104,6 +105,7 @@ export default function Empleados() {
     setEditModal(emp);
     setEditForm({ email: emp.email ?? "", telefono: emp.telefono ?? "" });
     setEditError("");
+    setFotoMsg(null);
   }
 
   const guardarEdit = async (e: React.FormEvent) => {
@@ -127,6 +129,7 @@ export default function Empleados() {
   async function subirFoto(file: File) {
     if (!editModal) return;
     setSubiendoFoto(true);
+    setFotoMsg(null);
     const fd = new FormData();
     fd.append("foto", file);
     try {
@@ -134,8 +137,15 @@ export default function Empleados() {
       const nuevaFoto: string | null = data.foto ?? null;
       setEditModal(prev => prev ? { ...prev, foto: nuevaFoto } : prev);
       setEmpleados(prev => prev.map(e => e.id === editModal.id ? { ...e, foto: nuevaFoto } : e));
-    } catch { /* best-effort */ }
-    finally { setSubiendoFoto(false); }
+      setFotoMsg({ ok: true, text: "Foto actualizada correctamente." });
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: Record<string, string[]> & { detail?: string } } };
+      const d = e.response?.data;
+      const msg = d?.foto?.[0] ?? d?.detail ?? "No se pudo subir la foto.";
+      setFotoMsg({ ok: false, text: typeof msg === "string" ? msg : JSON.stringify(msg) });
+    } finally {
+      setSubiendoFoto(false);
+    }
   }
 
   // ── Estado ─────────────────────────────────────────────────
@@ -353,6 +363,11 @@ export default function Empleados() {
                   <input type="file" accept="image/*" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) subirFoto(f); }} />
                 </label>
+                {fotoMsg && (
+                  <p className={`mt-1.5 text-[11px] font-medium ${fotoMsg.ok ? "text-green-600" : "text-red-600"}`}>
+                    {fotoMsg.ok ? "✓ " : "✗ "}{fotoMsg.text}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -473,6 +488,7 @@ export default function Empleados() {
 
 function FotoCirculo({ foto, nombre, size }: { foto: string | null; nombre: string; size: number }) {
   const [err, setErr] = useState(false);
+  useEffect(() => { setErr(false); }, [foto]);
   const iniciales = nombre.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
   if (foto && !err) {
     return (
