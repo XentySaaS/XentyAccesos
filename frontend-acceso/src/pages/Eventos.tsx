@@ -4,6 +4,7 @@
  */
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 /* ── Tipos ──────────────────────────────────────────────────────── */
 interface Recinto    { id: number; nombre: string; }
@@ -471,96 +472,139 @@ export default function Eventos() {
               <div className="space-y-5 px-6 py-5">
                 {/* Fila 1 */}
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="col-span-2 block text-sm">
-                    <span className="font-medium text-slate-700">Nombre del evento <span className="text-red-500">*</span></span>
-                    <input required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none focus:ring-1 focus:ring-signal-600"
+                  <div className="col-span-2">
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-nombre" className="text-sm font-medium text-slate-700">
+                        Nombre del evento <span className="text-red-500">*</span>
+                      </label>
+                      <Ayuda>Nombre público del evento: aparece en gafetes, correos de invitación y la bitácora de acceso.</Ayuda>
+                    </div>
+                    <input id="ev-nombre" required value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none focus:ring-1 focus:ring-signal-600"
                       style={{ "--tw-ring-color": "#2563EB" } as any} />
-                  </label>
-                  <label className="col-span-2 block text-sm">
-                    <span className="font-medium text-slate-700">Descripción</span>
-                    <textarea value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})}
+                  </div>
+                  <div className="col-span-2">
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-descripcion" className="text-sm font-medium text-slate-700">Descripción</label>
+                      <Ayuda>Detalle interno del evento para el equipo de operación. No se muestra en el gafete ni al proveedor.</Ayuda>
+                    </div>
+                    <textarea id="ev-descripcion" value={form.descripcion} onChange={e => setForm({...form, descripcion: e.target.value})}
                       rows={2}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none focus:ring-1 focus:ring-signal-600" />
-                  </label>
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none focus:ring-1 focus:ring-signal-600" />
+                  </div>
                 </div>
 
                 {/* Fila 2 */}
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Recinto <span className="text-red-500">*</span></span>
-                    <select required value={form.recinto}
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-recinto" className="text-sm font-medium text-slate-700">
+                        Recinto <span className="text-red-500">*</span>
+                      </label>
+                      <Ayuda>El inmueble donde se realiza el evento. Determina qué zonas, puntos de acceso y áreas autorizadas puedes ofrecer a los proveedores invitados.</Ayuda>
+                    </div>
+                    <select id="ev-recinto" required value={form.recinto}
                       onChange={e => { setForm({...form, recinto: e.target.value}); if(e.target.value) cargarPorRecinto(Number(e.target.value)); }}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none">
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none">
                       <option value="">Seleccione una opción</option>
                       {recintos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                     </select>
-                  </label>
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Fecha del evento <span className="text-red-500">*</span></span>
-                    <input required type="date" value={form.vigencia_inicio}
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-fecha" className="text-sm font-medium text-slate-700">
+                        Fecha del evento <span className="text-red-500">*</span>
+                      </label>
+                      <Ayuda>Día en que se realiza el evento. Es el mismo valor que "Vigencia del acceso desde" — define desde cuándo el escáner acepta los gafetes.</Ayuda>
+                    </div>
+                    <input id="ev-fecha" required type="date" value={form.vigencia_inicio}
                       onChange={e => setForm({...form, vigencia_inicio: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none" />
-                  </label>
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none" />
+                  </div>
                 </div>
 
                 {/* Fila 3 */}
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Vigencia del acceso desde <span className="text-red-500">*</span></span>
-                    <input required type="date" value={form.vigencia_inicio}
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-vig-desde" className="text-sm font-medium text-slate-700">
+                        Vigencia del acceso desde <span className="text-red-500">*</span>
+                      </label>
+                      <Ayuda>Primer día en que los QR de este evento permiten el acceso. Antes de esta fecha, el escáner rechaza cualquier gafete del evento.</Ayuda>
+                    </div>
+                    <input id="ev-vig-desde" required type="date" value={form.vigencia_inicio}
                       onChange={e => setForm({...form, vigencia_inicio: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Vigencia del acceso hasta <span className="text-red-500">*</span></span>
-                    <input required type="date" value={form.vigencia_fin}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-vig-hasta" className="text-sm font-medium text-slate-700">
+                        Vigencia del acceso hasta <span className="text-red-500">*</span>
+                      </label>
+                      <Ayuda>Último día en que los QR de este evento permiten el acceso. Después de esta fecha, el escáner rechaza los gafetes aunque la persona siga invitada.</Ayuda>
+                    </div>
+                    <input id="ev-vig-hasta" required type="date" value={form.vigencia_fin}
                       onChange={e => setForm({...form, vigencia_fin: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                  </div>
                 </div>
 
                 {/* Fila 4 */}
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Hora de inicio</span>
-                    <input type="time" value={form.hora_inicio}
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-hora-inicio" className="text-sm font-medium text-slate-700">Hora de inicio</label>
+                      <Ayuda>Solo informativa: el escáner valida por día de vigencia, no por hora exacta.</Ayuda>
+                    </div>
+                    <input id="ev-hora-inicio" type="time" value={form.hora_inicio}
                       onChange={e => setForm({...form, hora_inicio: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Hora de fin</span>
-                    <input type="time" value={form.hora_fin}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-hora-fin" className="text-sm font-medium text-slate-700">Hora de fin</label>
+                      <Ayuda>Solo informativa: el escáner valida por día de vigencia, no por hora exacta.</Ayuda>
+                    </div>
+                    <input id="ev-hora-fin" type="time" value={form.hora_fin}
                       onChange={e => setForm({...form, hora_fin: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                  </label>
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                  </div>
                 </div>
 
                 {/* Fila 5 */}
                 <div className="grid grid-cols-2 gap-4">
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Protocolo</span>
-                    <select value={form.protocolo} onChange={e => setForm({...form, protocolo: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-protocolo" className="text-sm font-medium text-slate-700">Protocolo</label>
+                      <Ayuda>Protocolo de seguridad u operación del recinto asociado a este evento (p. ej. plan de evacuación o lineamientos de ingreso).</Ayuda>
+                    </div>
+                    <select id="ev-protocolo" value={form.protocolo} onChange={e => setForm({...form, protocolo: e.target.value})}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                       <option value="">Seleccione una opción</option>
                       {protocolos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                     </select>
-                  </label>
-                  <label className="block text-sm">
-                    <span className="font-medium text-slate-700">Estado</span>
-                    <select value={form.estado} onChange={e => setForm({...form, estado: e.target.value})}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  </div>
+                  <div>
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="ev-estado" className="text-sm font-medium text-slate-700">Estado</label>
+                      <Ayuda>Ciclo de vida del evento. "Cancelado" o "Completado" bloquean el acceso en el escáner aunque la vigencia siga activa — normalmente se cambia con los botones Iniciar/Completar/Cancelar de la tabla, no aquí.</Ayuda>
+                    </div>
+                    <select id="ev-estado" value={form.estado} onChange={e => setForm({...form, estado: e.target.value})}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                       <option value="programado">Programado</option>
                       <option value="en_curso">En curso</option>
                       <option value="completado">Completado</option>
                       <option value="cancelado">Cancelado</option>
                     </select>
-                  </label>
+                  </div>
                 </div>
 
                 {/* Verificadores */}
                 <div>
-                  <span className="block text-sm font-medium text-slate-700 mb-2">Verificadores</span>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <span className="text-sm font-medium text-slate-700">Verificadores</span>
+                    <Ayuda>Usuarios que pueden revisar y aprobar los documentos que suben los proveedores invitados a este evento.</Ayuda>
+                  </div>
                   <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 p-3">
                     {usuarios
                       .filter(u => ["administrador","verificador","editor"].includes(u.rol))
@@ -587,7 +631,10 @@ export default function Eventos() {
                 {/* Grupos de documentos */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-700">Grupo de documentos</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-slate-700">Grupo de documentos</span>
+                      <Ayuda>Conjunto de documentos que el proveedor debe subir para este evento (p. ej. seguros, identificaciones, constancias).</Ayuda>
+                    </div>
                     <button type="button" onClick={addGrupo}
                       className="text-xs font-medium hover:underline"
                       style={{ color: "#2563EB" }}>
@@ -601,22 +648,32 @@ export default function Eventos() {
                   )}
                   {gruposReq.map((g, i) => (
                     <div key={i} className="mb-2 grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-                      <label className="block text-xs">
-                        <span className="font-medium text-slate-600">Grupo de documentos <span className="text-red-500">*</span></span>
-                        <select value={g.grupo} onChange={e => updateGrupo(i, "grupo", Number(e.target.value))}
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                      <div>
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <label htmlFor={`ev-grupo-${i}`} className="text-xs font-medium text-slate-600">
+                            Grupo de documentos <span className="text-red-500">*</span>
+                          </label>
+                          <Ayuda>Catálogo de documentos que aplica a esta invitación (definido en Catálogos › Grupos de documentos).</Ayuda>
+                        </div>
+                        <select id={`ev-grupo-${i}`} value={g.grupo} onChange={e => updateGrupo(i, "grupo", Number(e.target.value))}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                           <option value={0}>Seleccione una opción</option>
                           {grupos.map(gr => <option key={gr.id} value={gr.id}>{gr.nombre}</option>)}
                         </select>
-                      </label>
-                      <label className="block text-xs">
-                        <span className="font-medium text-slate-600">Tipo de validación <span className="text-red-500">*</span></span>
-                        <select value={g.type_validation} onChange={e => updateGrupo(i, "type_validation", Number(e.target.value))}
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                      </div>
+                      <div>
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <label htmlFor={`ev-tipoval-${i}`} className="text-xs font-medium text-slate-600">
+                            Tipo de validación <span className="text-red-500">*</span>
+                          </label>
+                          <Ayuda>"Cualquiera que se presente" aprueba con un solo documento del grupo. "Todos los documentos" exige subir todos antes de marcar como cumplido.</Ayuda>
+                        </div>
+                        <select id={`ev-tipoval-${i}`} value={g.type_validation} onChange={e => updateGrupo(i, "type_validation", Number(e.target.value))}
+                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                           <option value={0}>Cualquiera que se presente</option>
                           <option value={1}>Todos los documentos</option>
                         </select>
-                      </label>
+                      </div>
                       <button type="button" onClick={() => removeGrupo(i)}
                         className="mb-0.5 rounded p-1.5 text-red-400 hover:bg-red-50">
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -745,14 +802,19 @@ export default function Eventos() {
                   <input value={eventoSel.nombre} disabled
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400" />
                 </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Proveedor <span className="text-red-500">*</span></span>
-                  <select required value={inv.proveedor} onChange={e => setInv({...inv, proveedor: e.target.value})}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none">
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-proveedor" className="text-sm font-medium text-slate-700">
+                      Proveedor <span className="text-red-500">*</span>
+                    </label>
+                    <Ayuda>Empresa proveedora que recibirá la invitación por correo, con el gafete QR para sus empleados asignados.</Ayuda>
+                  </div>
+                  <select id="inv-proveedor" required value={inv.proveedor} onChange={e => setInv({...inv, proveedor: e.target.value})}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-signal-600 focus:outline-none">
                     <option value="">Seleccione una opción</option>
                     {proveedores.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
-                </label>
+                </div>
                 <label className="block text-sm">
                   <span className="font-medium text-slate-700">Recinto</span>
                   <input value={recintos.find(r => r.id === eventoSel.recinto)?.nombre ?? "—"} disabled
@@ -787,46 +849,69 @@ export default function Eventos() {
                     disabled
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-400" />
                 </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Notas adicionales</span>
-                  <textarea value={inv.notas} onChange={e => setInv({...inv, notas: e.target.value})}
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-notas" className="text-sm font-medium text-slate-700">Notas adicionales</label>
+                    <Ayuda>Instrucciones o comentarios que se incluyen en el correo de invitación que recibe el proveedor.</Ayuda>
+                  </div>
+                  <textarea id="inv-notas" value={inv.notas} onChange={e => setInv({...inv, notas: e.target.value})}
                     rows={3}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                </label>
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                </div>
               </div>
 
               {/* Columna derecha */}
               <div className="space-y-4">
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Zona <span className="text-red-500">*</span></span>
-                  <select value={inv.zona} onChange={e => setInv({...inv, zona: e.target.value})}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-zona" className="text-sm font-medium text-slate-700">
+                      Zona <span className="text-red-500">*</span>
+                    </label>
+                    <Ayuda>Área del recinto a la que el proveedor tendrá acceso (p. ej. Cancha, VIP, Staff). Define el color y la etiqueta del gafete.</Ayuda>
+                  </div>
+                  <select id="inv-zona" value={inv.zona} onChange={e => setInv({...inv, zona: e.target.value})}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecciona una zona</option>
                     {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
                   </select>
-                </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Punto de acceso <span className="text-red-500">*</span></span>
-                  <select value={inv.acceso} onChange={e => setInv({...inv, acceso: e.target.value})}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-acceso" className="text-sm font-medium text-slate-700">
+                      Punto de acceso <span className="text-red-500">*</span>
+                    </label>
+                    <Ayuda>Entrada física por la que el proveedor debe ingresar. Se imprime en el gafete como referencia para el guardia.</Ayuda>
+                  </div>
+                  <select id="inv-acceso" value={inv.acceso} onChange={e => setInv({...inv, acceso: e.target.value})}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecciona un punto de acceso</option>
                     {accesos.map(a => <option key={a.id} value={a.id}>{a.nombre}</option>)}
                   </select>
-                </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Número de personas invitadas <span className="text-red-500">*</span></span>
-                  <input type="number" min={1} value={inv.limite}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-limite" className="text-sm font-medium text-slate-700">
+                      Número de personas invitadas <span className="text-red-500">*</span>
+                    </label>
+                    <Ayuda>Cupo máximo de empleados que este proveedor puede registrar para el evento. Usa 0 para no poner límite.</Ayuda>
+                  </div>
+                  <input id="inv-limite" type="number" min={1} value={inv.limite}
                     onChange={e => setInv({...inv, limite: e.target.value})}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                </label>
-                <label className="block text-sm">
-                  <span className="font-medium text-slate-700">Protocolo <span className="text-red-500">*</span></span>
-                  <select value={inv.protocolo} onChange={e => setInv({...inv, protocolo: e.target.value})}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="inv-protocolo" className="text-sm font-medium text-slate-700">
+                      Protocolo <span className="text-red-500">*</span>
+                    </label>
+                    <Ayuda>Protocolo de seguridad específico para esta invitación, si difiere del protocolo general del evento.</Ayuda>
+                  </div>
+                  <select id="inv-protocolo" value={inv.protocolo} onChange={e => setInv({...inv, protocolo: e.target.value})}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                     <option value="">Selecciona un protocolo</option>
                     {protocolos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
                   </select>
-                </label>
+                </div>
 
                 {/* Toggle estacionamiento */}
                 <div className="flex items-center gap-3">
@@ -842,28 +927,42 @@ export default function Eventos() {
                     }`} />
                   </button>
                   <span className="text-sm font-medium text-slate-700">¿Asignar estacionamiento?</span>
+                  <Ayuda>Actívalo si el proveedor necesita cajones de estacionamiento — se generarán pases con su propio QR, independientes del gafete de acceso peatonal.</Ayuda>
                 </div>
 
                 {inv.requiere_parking && (
                   <>
-                    <label className="block text-sm">
-                      <span className="font-medium text-slate-700">Nombre de estacionamiento <span className="text-red-500">*</span></span>
-                      <input value={inv.parking} onChange={e => setInv({...inv, parking: e.target.value})}
-                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                    </label>
-                    <label className="block text-sm">
-                      <span className="font-medium text-slate-700">Cajones asignados <span className="text-red-500">*</span></span>
-                      <input type="number" min={1} value={inv.cajones_parking}
+                    <div>
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <label htmlFor="inv-parking-nombre" className="text-sm font-medium text-slate-700">
+                          Nombre de estacionamiento <span className="text-red-500">*</span>
+                        </label>
+                        <Ayuda>Nombre del estacionamiento o zona vehicular asignada; se imprime en el pase de estacionamiento.</Ayuda>
+                      </div>
+                      <input id="inv-parking-nombre" value={inv.parking} onChange={e => setInv({...inv, parking: e.target.value})}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <div className="mb-1 flex items-center gap-1.5">
+                        <label htmlFor="inv-cajones" className="text-sm font-medium text-slate-700">
+                          Cajones asignados <span className="text-red-500">*</span>
+                        </label>
+                        <Ayuda>Cantidad de cajones reservados para el proveedor. Se genera un pase QR de estacionamiento independiente por cada cajón.</Ayuda>
+                      </div>
+                      <input id="inv-cajones" type="number" min={1} value={inv.cajones_parking}
                         onChange={e => setInv({...inv, cajones_parking: e.target.value})}
-                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-                    </label>
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+                    </div>
                   </>
                 )}
 
                 {/* Áreas autorizadas (multi) */}
                 <div className="text-sm">
-                  <span className="font-medium text-slate-700">Áreas autorizadas</span>
-                  <div className="mt-1 flex flex-wrap gap-2 rounded-lg border border-slate-200 p-3">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <span className="font-medium text-slate-700">Áreas autorizadas</span>
+                    <Ayuda>Áreas específicas del recinto donde el proveedor puede circular, además de su zona asignada.</Ayuda>
+                  </div>
+                  <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 p-3">
                     {areasAut.length === 0 && (
                       <p className="text-xs text-slate-400">El recinto no tiene áreas autorizadas registradas.</p>
                     )}
