@@ -44,6 +44,9 @@ export default function Sanciones() {
   const [form,       setForm]       = useState(FORM_INIT);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState("");
+  // Severidad y penalidad solo las define el administrador (igual que el original WarningResource);
+  // el guardia únicamente captura empleado, evento y motivo.
+  const [esAdmin,    setEsAdmin]    = useState(false);
 
   const cargar = () =>
     Promise.all([
@@ -55,6 +58,9 @@ export default function Sanciones() {
     }).finally(() => setLoading(false));
 
   useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    api.get("/api/auth/me/").then(r => setEsAdmin(r.data?.rol === "administrador")).catch(() => {});
+  }, []);
 
   const crear = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError("");
@@ -179,11 +185,12 @@ export default function Sanciones() {
                   {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </div>
+              {esAdmin && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
                     <label htmlFor="san-severidad" className="text-xs font-semibold text-slate-600">Severidad</label>
-                    <Ayuda>Gravedad de la falta (Bajo / Medio / Alto). Es informativa para el historial; no bloquea por sí sola el acceso — eso lo define la penalidad.</Ayuda>
+                    <Ayuda>Gravedad de la falta (Bajo / Medio / Alto). Es informativa para el historial; no bloquea por sí sola el acceso — eso lo define la penalidad. Solo el administrador la define.</Ayuda>
                   </div>
                   <select id="san-severidad" value={F.severidad} onChange={e => set("severidad", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
@@ -195,7 +202,7 @@ export default function Sanciones() {
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
                     <label htmlFor="san-penalidad" className="text-xs font-semibold text-slate-600">Penalidad</label>
-                    <Ayuda>Consecuencia aplicada. "Advertencia" no bloquea; "Suspensión" bloquea el acceso dentro del rango de fechas; "Baja" bloquea el acceso de forma permanente.</Ayuda>
+                    <Ayuda>Consecuencia aplicada. "Advertencia" no bloquea; "Suspensión" bloquea el acceso dentro del rango de fechas; "Baja" bloquea el acceso de forma permanente. Solo el administrador la define.</Ayuda>
                   </div>
                   <select id="san-penalidad" value={F.penalidad} onChange={e => set("penalidad", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
@@ -205,6 +212,7 @@ export default function Sanciones() {
                   </select>
                 </div>
               </div>
+              )}
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label htmlFor="san-motivo" className="text-xs font-semibold text-slate-600">Motivo *</label>
@@ -214,7 +222,12 @@ export default function Sanciones() {
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 resize-none"
                   placeholder="Describe el motivo de la sanción…" />
               </div>
-              {F.penalidad === "suspension" && (
+              {!esAdmin && (
+                <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  La severidad y la penalidad las define un administrador después de registrar la amonestación.
+                </p>
+              )}
+              {esAdmin && F.penalidad === "suspension" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="mb-1 flex items-center gap-1.5">
