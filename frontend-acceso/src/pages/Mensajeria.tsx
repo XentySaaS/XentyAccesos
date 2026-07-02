@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface Mensaje {
   id: number;
@@ -188,8 +189,11 @@ export default function Mensajeria() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Segmento de envío *</label>
-                <select value={form.segmento}
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="msg-segmento" className="text-xs font-semibold text-slate-600">Segmento de envío *</label>
+                  <Ayuda>Define quiénes reciben la campaña: un recinto, una zona, un evento concreto, o grupos amplios (todos los recintos/eventos). Solo empleados activos con teléfono registrado.</Ayuda>
+                </div>
+                <select id="msg-segmento" value={form.segmento}
                   onChange={e => setForm({ ...form, segmento: e.target.value, segmento_id: "" })}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                   {Object.entries(SEGMENTO_LABEL).map(([k, v]) => (
@@ -200,10 +204,13 @@ export default function Mensajeria() {
 
               {SEGMENTO_NECESITA_ID.includes(form.segmento) && (
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">
-                    {SEGMENTO_LABEL[form.segmento]} específico *
-                  </label>
-                  <select required value={form.segmento_id}
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="msg-segid" className="text-xs font-semibold text-slate-600">
+                      {SEGMENTO_LABEL[form.segmento]} específico *
+                    </label>
+                    <Ayuda>Elemento concreto del segmento elegido al que se dirige la campaña.</Ayuda>
+                  </div>
+                  <select id="msg-segid" required value={form.segmento_id}
                     onChange={e => setForm({ ...form, segmento_id: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     <option value="">Seleccionar…</option>
@@ -215,11 +222,14 @@ export default function Mensajeria() {
               )}
 
               <div>
-                <label className="mb-1 flex items-center justify-between text-xs font-semibold text-slate-600">
-                  <span>Mensaje *</span>
+                <div className="mb-1 flex items-center justify-between text-xs font-semibold text-slate-600">
+                  <div className="flex items-center gap-1.5">
+                    <label htmlFor="msg-cuerpo">Mensaje *</label>
+                    <Ayuda>Texto que se envía por WhatsApp. Puedes usar {"{nombre}"} para personalizar con el nombre de cada destinatario.</Ayuda>
+                  </div>
                   <span className="font-normal text-slate-400">{form.cuerpo.length} chars</span>
-                </label>
-                <textarea required rows={4} value={form.cuerpo}
+                </div>
+                <textarea id="msg-cuerpo" required rows={4} value={form.cuerpo}
                   onChange={e => setForm({ ...form, cuerpo: e.target.value })}
                   className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   placeholder="Hola {nombre}, te informamos que…" />

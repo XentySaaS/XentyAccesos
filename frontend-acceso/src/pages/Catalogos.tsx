@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 const INK    = "#0F1B2D";
 const SIGNAL = "#2563EB";
@@ -126,16 +127,25 @@ function Grupos() {
       {modal && (
         <Modal title={modal === "nuevo" ? "Nuevo grupo" : "Editar grupo"} onClose={() => setModal(null)}>
           <form onSubmit={guardar} className="space-y-4">
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nombre <span className="text-red-500">*</span></label>
-              <input value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="grp-nombre" className="text-xs font-semibold text-slate-600">Nombre <span className="text-red-500">*</span></label>
+                <Ayuda>Nombre del grupo de documentos (p. ej. "Seguridad social", "Identificaciones"). Agrupa los tipos de documento que se piden juntos a un proveedor en un evento.</Ayuda>
+              </div>
+              <input id="grp-nombre" value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
               <Err msg={errs.nombre}/>
             </div>
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
-              <textarea value={form.descripcion} rows={3} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="grp-desc" className="text-xs font-semibold text-slate-600">Descripción</label>
+                <Ayuda>Detalle interno del grupo (opcional): qué cubre o cuándo aplica.</Ayuda>
+              </div>
+              <textarea id="grp-desc" value={form.descripcion} rows={3} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" id="activo-g" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} className="h-4 w-4 accent-blue-600"/>
               <label htmlFor="activo-g" className="text-sm text-slate-600">Activo</label>
+              <Ayuda>Solo los grupos activos aparecen como opción al configurar los requisitos de documentos de un evento.</Ayuda>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => setModal(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
@@ -241,22 +251,35 @@ function Tipos() {
       {modal && (
         <Modal title={modal === "nuevo" ? "Nuevo tipo de documento" : "Editar tipo"} onClose={() => setModal(null)}>
           <form onSubmit={guardar} className="space-y-4">
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nombre <span className="text-red-500">*</span></label>
-              <input value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}/>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="tip-nombre" className="text-xs font-semibold text-slate-600">Nombre <span className="text-red-500">*</span></label>
+                <Ayuda>Nombre del documento que el proveedor debe subir (p. ej. "INE", "Constancia de situación fiscal", "Póliza de seguro").</Ayuda>
+              </div>
+              <input id="tip-nombre" value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}/>
               <Err msg={errs.nombre}/>
             </div>
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Grupo de documentos</label>
-              <select value={form.grupo} className={inp()} onChange={e => setForm(f => ({ ...f, grupo: e.target.value }))}>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="tip-grupo" className="text-xs font-semibold text-slate-600">Grupo de documentos</label>
+                <Ayuda>Grupo al que pertenece este tipo de documento. Determina con qué otros documentos se solicita y evalúa en conjunto en un evento.</Ayuda>
+              </div>
+              <select id="tip-grupo" value={form.grupo} className={inp()} onChange={e => setForm(f => ({ ...f, grupo: e.target.value }))}>
                 <option value="">Sin grupo</option>
                 {grupos.map(g => <option key={g.id} value={g.id}>{g.nombre}</option>)}
               </select>
             </div>
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
-              <input value={form.descripcion} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}/>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="tip-desc" className="text-xs font-semibold text-slate-600">Descripción</label>
+                <Ayuda>Indicaciones para el proveedor sobre qué debe contener el documento (opcional).</Ayuda>
+              </div>
+              <input id="tip-desc" value={form.descripcion} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}/>
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" id="activo-t" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} className="h-4 w-4 accent-blue-600"/>
               <label htmlFor="activo-t" className="text-sm text-slate-600">Activo</label>
+              <Ayuda>Solo los tipos activos se pueden asignar como requisito en un grupo/evento.</Ayuda>
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={() => setModal(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">Cancelar</button>
@@ -377,15 +400,26 @@ function Protocolos() {
       {modal && (
         <Modal title={modal === "nuevo" ? "Nuevo protocolo" : "Editar protocolo"} onClose={() => setModal(null)}>
           <form onSubmit={guardar} className="space-y-4">
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nombre <span className="text-red-500">*</span></label>
-              <input value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}/>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="prot-nombre" className="text-xs font-semibold text-slate-600">Nombre <span className="text-red-500">*</span></label>
+                <Ayuda>Nombre del protocolo de seguridad u operación (p. ej. "Plan de evacuación", "Lineamientos de ingreso"). Se puede asociar a eventos y citas.</Ayuda>
+              </div>
+              <input id="prot-nombre" value={form.nombre} className={inp(errs.nombre)} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}/>
               <Err msg={errs.nombre}/>
             </div>
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Descripción</label>
-              <textarea value={form.descripcion} rows={3} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}/>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="prot-desc" className="text-xs font-semibold text-slate-600">Descripción</label>
+                <Ayuda>Resumen del contenido del protocolo (opcional).</Ayuda>
+              </div>
+              <textarea id="prot-desc" value={form.descripcion} rows={3} className={inp()} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))}/>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Archivo (PDF / imagen)</label>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Archivo (PDF / imagen)</label>
+                <Ayuda>Documento descargable por los proveedores. PDF, JPG o PNG, máx. 20 MB. El nombre del archivo lo asigna el servidor por seguridad.</Ayuda>
+              </div>
               <div
                 role="button" tabIndex={0}
                 onClick={() => fileRef.current?.click()}
@@ -407,8 +441,12 @@ function Protocolos() {
               <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={e => setArchivoFile(e.target.files?.[0] ?? null)}/>
               <Err msg={errs.archivo}/>
             </div>
-            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Estado</label>
-              <select value={form.estado} className={inp()} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label htmlFor="prot-estado" className="text-xs font-semibold text-slate-600">Estado</label>
+                <Ayuda>Solo los protocolos activos aparecen como opción al configurar eventos y citas.</Ayuda>
+              </div>
+              <select id="prot-estado" value={form.estado} className={inp()} onChange={e => setForm(f => ({ ...f, estado: e.target.value }))}>
                 <option value="activo">Activo</option>
                 <option value="inactivo">Inactivo</option>
               </select>

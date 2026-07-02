@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface Recinto { id: number; nombre: string; }
 
@@ -287,39 +288,54 @@ export default function Usuarios() {
             <p className="mb-4 text-xs text-slate-400">Se generará una contraseña temporal que se mostrará al crear.</p>
 
             <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Correo electrónico *</span>
-                <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="usr-email" className="text-xs font-semibold text-slate-600">Correo electrónico *</label>
+                  <Ayuda>Correo con el que el usuario iniciará sesión. Debe ser único; a esta dirección se envía la verificación de la cuenta.</Ayuda>
+                </div>
+                <input id="usr-email" type="email" required value={email} onChange={e => setEmail(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Nombre completo *</span>
-                <input required value={nombre} onChange={e => setNombre(e.target.value)}
+              </div>
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="usr-nombre" className="text-xs font-semibold text-slate-600">Nombre completo *</label>
+                  <Ayuda>Nombre de la persona; aparece en la bitácora de acceso y en el registro de cambios (auditoría).</Ayuda>
+                </div>
+                <input id="usr-nombre" required value={nombre} onChange={e => setNombre(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Rol *</span>
-                  <select value={rol} onChange={e => setRol(e.target.value)}
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="usr-rol" className="text-xs font-semibold text-slate-600">Rol *</label>
+                    <Ayuda>Define qué módulos ve y qué acciones puede realizar. "Guardia" opera el escáner; "Verificador" revisa documentos; "Usuario" usa permisos granulares configurables aparte.</Ayuda>
+                  </div>
+                  <select id="usr-rol" value={rol} onChange={e => setRol(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Recinto</span>
-                  <select value={recinto} onChange={e => setRecinto(e.target.value)}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="usr-recinto" className="text-xs font-semibold text-slate-600">Recinto</label>
+                    <Ayuda>Recinto al que se asigna el usuario. Opcional; útil cuando el operador trabaja en un solo inmueble.</Ayuda>
+                  </div>
+                  <select id="usr-recinto" value={recinto} onChange={e => setRecinto(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     <option value="">Sin asignar</option>
                     {recintos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                   </select>
-                </label>
+                </div>
               </div>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Teléfono</span>
-                <input value={telefono} onChange={e => setTelefono(e.target.value)}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="usr-tel" className="text-xs font-semibold text-slate-600">Teléfono</label>
+                  <Ayuda>Contacto del usuario (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                </div>
+                <input id="usr-tel" value={telefono} onChange={e => setTelefono(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   placeholder="+52 55..." />
-              </label>
+              </div>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
@@ -345,37 +361,52 @@ export default function Usuarios() {
             <p className="mb-4 text-xs text-slate-400">{target.email}</p>
 
             <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Nombre completo *</span>
-                <input required value={eNombre} onChange={e => setENombre(e.target.value)}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="usr-e-nombre" className="text-xs font-semibold text-slate-600">Nombre completo *</label>
+                  <Ayuda>Nombre de la persona; aparece en la bitácora de acceso y en el registro de cambios (auditoría).</Ayuda>
+                </div>
+                <input id="usr-e-nombre" required value={eNombre} onChange={e => setENombre(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Rol *</span>
-                  <select value={eRol} onChange={e => setERol(e.target.value)}
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="usr-e-rol" className="text-xs font-semibold text-slate-600">Rol *</label>
+                    <Ayuda>Define qué módulos ve y qué acciones puede realizar. "Guardia" opera el escáner; "Verificador" revisa documentos; "Usuario" usa permisos granulares configurables aparte.</Ayuda>
+                  </div>
+                  <select id="usr-e-rol" value={eRol} onChange={e => setERol(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                   </select>
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Recinto</span>
-                  <select value={eRecinto} onChange={e => setERecinto(e.target.value)}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="usr-e-recinto" className="text-xs font-semibold text-slate-600">Recinto</label>
+                    <Ayuda>Recinto al que se asigna el usuario. Opcional; útil cuando el operador trabaja en un solo inmueble.</Ayuda>
+                  </div>
+                  <select id="usr-e-recinto" value={eRecinto} onChange={e => setERecinto(e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     <option value="">Sin asignar</option>
                     {recintos.map(r => <option key={r.id} value={r.id}>{r.nombre}</option>)}
                   </select>
-                </label>
+                </div>
               </div>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Teléfono</span>
-                <input value={eTelefono} onChange={e => setETelefono(e.target.value)}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="usr-e-tel" className="text-xs font-semibold text-slate-600">Teléfono</label>
+                  <Ayuda>Contacto del usuario (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                </div>
+                <input id="usr-e-tel" value={eTelefono} onChange={e => setETelefono(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
+              </div>
 
               <div className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-3">
                 <div>
-                  <p className="text-sm font-semibold" style={{ color: INK }}>Usuario activo</p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-sm font-semibold" style={{ color: INK }}>Usuario activo</p>
+                    <Ayuda>Al desactivar se da de baja lógica al usuario: no podrá iniciar sesión, pero su historial se conserva (no se borra físicamente).</Ayuda>
+                  </div>
                   <p className="text-xs text-slate-400">Desactivar da de baja lógica al usuario.</p>
                 </div>
                 <button type="button" onClick={() => setEActivo(!eActivo)}

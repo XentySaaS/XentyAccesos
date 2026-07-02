@@ -217,6 +217,7 @@ python manage.py migrar_tenant_sar <subdominio> --dry-run
 | Commits | Convencionales: `feat:`, `fix:`, `test:`, `docs:`, `refactor:` |
 | Comentarios | Solo el **por qué** no obvio; nunca el qué |
 | Estados/enums | `TextChoices`/`IntegerChoices` con etiqueta para UI; nunca enums crudos ni IDs hardcodeados |
+| Ayuda contextual | **Todo campo de captura** de un formulario lleva el ícono ⓘ (`<Ayuda>`) junto a su etiqueta, explicando qué es / para qué sirve. Componente: `frontend-acceso/src/components/Ayuda.tsx`; hermano del `Label` (no dentro). Detalle y checklist: [`docs/AYUDA_CONTEXTUAL.md`](docs/AYUDA_CONTEXTUAL.md). NO negociable en formularios nuevos y existentes. |
 
 ---
 

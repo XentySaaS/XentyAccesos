@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface Proveedor {
   id: number;
@@ -351,44 +352,62 @@ export default function Proveedores() {
               {/* Datos empresa */}
               <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Empresa</p>
               <div className="grid grid-cols-2 gap-3">
-                <label className="col-span-2 block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Nombre de la empresa *</span>
-                  <input required value={F.nombre} onChange={e => set("nombre", e.target.value)}
+                <div className="col-span-2">
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="prov-nombre" className="text-xs font-semibold text-slate-600">Nombre de la empresa *</label>
+                    <Ayuda>Nombre comercial de la empresa proveedora. Aparece en invitaciones a eventos, gafetes y la bitácora.</Ayuda>
+                  </div>
+                  <input id="prov-nombre" required value={F.nombre} onChange={e => set("nombre", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Razón social</span>
-                  <input value={F.razon_social} onChange={e => set("razon_social", e.target.value)}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="prov-razon" className="text-xs font-semibold text-slate-600">Razón social</label>
+                    <Ayuda>Nombre legal completo de la empresa, tal como aparece en su constancia fiscal (puede diferir del nombre comercial).</Ayuda>
+                  </div>
+                  <input id="prov-razon" value={F.razon_social} onChange={e => set("razon_social", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">RFC *</span>
-                  <input required value={F.rfc} onChange={e => set("rfc", e.target.value.toUpperCase())}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="prov-rfc" className="text-xs font-semibold text-slate-600">RFC *</label>
+                    <Ayuda>Registro Federal de Contribuyentes de la empresa (12-13 caracteres, p. ej. ABC010101XX9). Se valida su estructura y contra la lista 69-B del SAT antes de dar de alta.</Ayuda>
+                  </div>
+                  <input id="prov-rfc" required value={F.rfc} onChange={e => set("rfc", e.target.value.toUpperCase())}
                     maxLength={13} placeholder="ABC010101XXX"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono uppercase outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                </label>
+                </div>
               </div>
 
               {/* Datos responsable */}
               <p className="mt-1 text-xs font-bold uppercase tracking-wider text-slate-400">Responsable</p>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Nombre del responsable *</span>
-                <input required value={F.nombre_responsable} onChange={e => set("nombre_responsable", e.target.value)}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="prov-resp" className="text-xs font-semibold text-slate-600">Nombre del responsable *</label>
+                  <Ayuda>Persona de contacto de la empresa. Se le crea una cuenta de acceso al portal de proveedores para gestionar sus empleados y documentos.</Ayuda>
+                </div>
+                <input id="prov-resp" required value={F.nombre_responsable} onChange={e => set("nombre_responsable", e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Correo del responsable *</span>
-                  <input required type="email" value={F.email_responsable} onChange={e => set("email_responsable", e.target.value)}
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="prov-email" className="text-xs font-semibold text-slate-600">Correo del responsable *</label>
+                    <Ayuda>Correo con el que el responsable inicia sesión en el portal de proveedores. Debe ser único; ahí recibe las invitaciones a eventos.</Ayuda>
+                  </div>
+                  <input id="prov-email" required type="email" value={F.email_responsable} onChange={e => set("email_responsable", e.target.value)}
                     placeholder="contacto@empresa.com"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Teléfono</span>
-                  <input value={F.telefono} onChange={e => set("telefono", e.target.value)}
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="prov-tel" className="text-xs font-semibold text-slate-600">Teléfono</label>
+                    <Ayuda>Teléfono de contacto del responsable (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                  </div>
+                  <input id="prov-tel" value={F.telefono} onChange={e => set("telefono", e.target.value)}
                     placeholder="+52 55…"
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                </label>
+                </div>
               </div>
             </div>
 

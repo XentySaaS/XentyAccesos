@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
 interface Recinto {
@@ -155,25 +156,37 @@ export default function Recintos() {
               <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
             )}
             <div className="space-y-3">
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Nombre *</span>
-                <input required value={nombre} onChange={e => setNombre(e.target.value)} className={inputCls} />
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Código</span>
-                  <input value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="REC-01" className={inputCls} />
-                </label>
-                <label className="block">
-                  <span className="mb-1 block text-xs font-semibold text-slate-600">Teléfono</span>
-                  <input value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+52 55…" className={inputCls} />
-                </label>
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="rec-nombre" className="text-xs font-semibold text-slate-600">Nombre *</label>
+                  <Ayuda>Nombre del inmueble (estadio, centro de convenciones, etc.). Es la sede que agrupa zonas, puntos de acceso y áreas autorizadas.</Ayuda>
+                </div>
+                <input id="rec-nombre" required value={nombre} onChange={e => setNombre(e.target.value)} className={inputCls} />
               </div>
-              <label className="block">
-                <span className="mb-1 block text-xs font-semibold text-slate-600">Descripción</span>
-                <textarea rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="rec-codigo" className="text-xs font-semibold text-slate-600">Código</label>
+                    <Ayuda>Clave corta interna para identificar el recinto en reportes (p. ej. REC-01). Opcional.</Ayuda>
+                  </div>
+                  <input id="rec-codigo" value={codigo} onChange={e => setCodigo(e.target.value)} placeholder="REC-01" className={inputCls} />
+                </div>
+                <div>
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="rec-tel" className="text-xs font-semibold text-slate-600">Teléfono</label>
+                    <Ayuda>Teléfono de contacto del recinto (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                  </div>
+                  <input id="rec-tel" value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+52 55…" className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="rec-desc" className="text-xs font-semibold text-slate-600">Descripción</label>
+                  <Ayuda>Notas internas sobre el recinto (ubicación, referencias). No se muestra en gafetes.</Ayuda>
+                </div>
+                <textarea id="rec-desc" rows={2} value={descripcion} onChange={e => setDescripcion(e.target.value)}
                   className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-              </label>
+              </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={() => setModal(null)}
@@ -493,9 +506,18 @@ function GestionModal({ recinto, onClose }: { recinto: { id: number; nombre: str
         {/* ── Formulario añadir ─────────────────────────────── */}
         <div className="border-t border-slate-100 bg-slate-50 px-5 py-4">
           {error && <p className="mb-2 text-xs font-medium text-red-600">{error}</p>}
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
-            Agregar {tab === "zonas" ? "zona" : tab === "accesos" ? "punto de acceso" : "área"}
-          </p>
+          <div className="mb-2 flex items-center gap-1.5">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              Agregar {tab === "zonas" ? "zona" : tab === "accesos" ? "punto de acceso" : "área"}
+            </p>
+            <Ayuda>
+              {tab === "zonas"
+                ? "Zona: subdivisión del recinto (Cancha, VIP, Palcos…) que se asigna a los invitados y define el color/etiqueta del gafete. Cada zona agrupa ubicaciones."
+                : tab === "accesos"
+                ? "Punto de acceso: entrada física (portón, torniquete) por la que ingresa el invitado; se imprime en el gafete como referencia para el guardia."
+                : "Área autorizada: espacio específico del recinto donde el invitado puede circular, además de su zona asignada."}
+            </Ayuda>
+          </div>
           <form onSubmit={crear} className="flex items-center gap-2">
             <input required value={nombre} onChange={e => setNombre(e.target.value)}
               placeholder={meta.placeholder}

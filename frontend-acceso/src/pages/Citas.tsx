@@ -10,6 +10,28 @@
  */
 import { FormEvent, ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
+
+/**
+ * Ayuda contextual por etiqueta de campo (ver docs/AYUDA_CONTEXTUAL.md). El componente Field
+ * la resuelve por su `label`, así ambos formularios (crear/editar) heredan la misma ayuda sin
+ * repetir texto en cada uso.
+ */
+const AYUDA_CITA: Record<string, string> = {
+  "Nombre / motivo *": "Título de la cita: identifica la visita en la agenda, el gafete y la bitácora (p. ej. \"Mantenimiento aire acondicionado\").",
+  "Tipo de cita": "Programada: agendada con anticipación. Walk-in: visita sin cita previa registrada al momento. Emergencia: ingreso urgente.",
+  "Estado": "Ciclo de la cita. \"Cancelada\" bloquea el acceso en el escáner aunque el invitado tenga su QR.",
+  "Fecha *": "Día de la visita. El escáner solo permite el acceso ese día exacto (la cita no tiene rango de vigencia).",
+  "Hora inicio": "Hora prevista de llegada. Informativa: el escáner valida por día, no por hora.",
+  "Hora fin": "Hora prevista de salida. Informativa: el escáner valida por día, no por hora.",
+  "Asignado a": "Usuario del recinto responsable de atender la visita.",
+  "Detalles": "Notas internas sobre el objetivo de la visita (opcional).",
+  "Recinto *": "Inmueble donde ocurre la cita. Determina qué zonas, ubicaciones y puntos de acceso puedes elegir abajo.",
+  "Zona": "Área del recinto a la que el invitado tendrá acceso.",
+  "Ubicación": "Punto específico dentro de la zona (oficina, sala) destino de la visita.",
+  "Punto de acceso": "Entrada física por la que ingresa el invitado; se imprime en el gafete como referencia para el guardia.",
+  "Protocolo": "Protocolo de seguridad u operación del recinto aplicable a esta cita.",
+};
 
 /* ── Tipos ──────────────────────────────────────────────────────────────── */
 interface Recinto   { id: number; nombre: string; }
@@ -662,7 +684,10 @@ export default function Citas() {
                     <div className="grid grid-cols-2 gap-2">
                       {/* Nombre con autocomplete */}
                       <div className="relative col-span-2">
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">Nombre *</label>
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <label className="text-xs font-semibold text-slate-600">Nombre *</label>
+                          <Ayuda>Nombre del invitado. Al escribir se buscan empleados y contactos ya registrados; selecciónalo para vincularlo y reusar sus datos.</Ayuda>
+                        </div>
                         <input required value={inv.nombre}
                           onChange={e => {
                             const v = e.target.value;
@@ -688,14 +713,20 @@ export default function Citas() {
                         )}
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">Email</label>
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <label className="text-xs font-semibold text-slate-600">Email</label>
+                          <Ayuda>Correo del invitado. A esta dirección se le envía la invitación con su gafete QR.</Ayuda>
+                        </div>
                         <input type="email" value={inv.email}
                           onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, email: e.target.value } : it))}
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                           placeholder="email@empresa.com" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-semibold text-slate-600">Teléfono</label>
+                        <div className="mb-1 flex items-center gap-1.5">
+                          <label className="text-xs font-semibold text-slate-600">Teléfono</label>
+                          <Ayuda>Teléfono del invitado (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                        </div>
                         <input type="tel" value={inv.telefono}
                           onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, telefono: e.target.value } : it))}
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
@@ -1000,10 +1031,14 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Field({ label, span, children }: { label: string; span?: 1 | 2; children: ReactNode }) {
+function Field({ label, span, help, children }: { label: string; span?: 1 | 2; help?: string; children: ReactNode }) {
+  const ayuda = help ?? AYUDA_CITA[label];
   return (
     <div className={span === 2 ? "col-span-2" : ""}>
-      <label className="mb-1 block text-xs font-semibold text-slate-600">{label}</label>
+      <div className="mb-1 flex items-center gap-1.5">
+        <label className="text-xs font-semibold text-slate-600">{label}</label>
+        {ayuda && <Ayuda>{ayuda}</Ayuda>}
+      </div>
       {children}
     </div>
   );

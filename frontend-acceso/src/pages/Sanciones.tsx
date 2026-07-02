@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface Sancion {
   id: number;
@@ -168,8 +169,11 @@ export default function Sanciones() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Empleado *</label>
-                <select required value={F.empleado} onChange={e => set("empleado", e.target.value)}
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="san-empleado" className="text-xs font-semibold text-slate-600">Empleado *</label>
+                  <Ayuda>Persona sancionada. La sanción bloquea su acceso en el escáner según la penalidad aplicada.</Ayuda>
+                </div>
+                <select id="san-empleado" required value={F.empleado} onChange={e => set("empleado", e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                   <option value="">Seleccionar…</option>
                   {empleados.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
@@ -177,8 +181,11 @@ export default function Sanciones() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Severidad</label>
-                  <select value={F.severidad} onChange={e => set("severidad", e.target.value)}
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="san-severidad" className="text-xs font-semibold text-slate-600">Severidad</label>
+                    <Ayuda>Gravedad de la falta (Bajo / Medio / Alto). Es informativa para el historial; no bloquea por sí sola el acceso — eso lo define la penalidad.</Ayuda>
+                  </div>
+                  <select id="san-severidad" value={F.severidad} onChange={e => set("severidad", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     <option value="bajo">Bajo</option>
                     <option value="medio">Medio</option>
@@ -186,8 +193,11 @@ export default function Sanciones() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600">Penalidad</label>
-                  <select value={F.penalidad} onChange={e => set("penalidad", e.target.value)}
+                  <div className="mb-1 flex items-center gap-1.5">
+                    <label htmlFor="san-penalidad" className="text-xs font-semibold text-slate-600">Penalidad</label>
+                    <Ayuda>Consecuencia aplicada. "Advertencia" no bloquea; "Suspensión" bloquea el acceso dentro del rango de fechas; "Baja" bloquea el acceso de forma permanente.</Ayuda>
+                  </div>
+                  <select id="san-penalidad" value={F.penalidad} onChange={e => set("penalidad", e.target.value)}
                     className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
                     <option value="advertencia">Advertencia</option>
                     <option value="suspension">Suspensión</option>
@@ -196,21 +206,30 @@ export default function Sanciones() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600">Motivo *</label>
-                <textarea required rows={3} value={F.motivo} onChange={e => set("motivo", e.target.value)}
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="san-motivo" className="text-xs font-semibold text-slate-600">Motivo *</label>
+                  <Ayuda>Descripción del incidente que origina la sanción. Queda registrada en el historial del empleado.</Ayuda>
+                </div>
+                <textarea id="san-motivo" required rows={3} value={F.motivo} onChange={e => set("motivo", e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 resize-none"
                   placeholder="Describe el motivo de la sanción…" />
               </div>
               {F.penalidad === "suspension" && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">Fecha inicio *</label>
-                    <input required type="date" value={F.fecha_inicio} onChange={e => set("fecha_inicio", e.target.value)}
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="san-fi" className="text-xs font-semibold text-slate-600">Fecha inicio *</label>
+                      <Ayuda>Primer día de la suspensión. Desde esta fecha el escáner deniega el acceso del empleado.</Ayuda>
+                    </div>
+                    <input id="san-fi" required type="date" value={F.fecha_inicio} onChange={e => set("fecha_inicio", e.target.value)}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
                   </div>
                   <div>
-                    <label className="mb-1 block text-xs font-semibold text-slate-600">Fecha fin *</label>
-                    <input required type="date" value={F.fecha_fin} onChange={e => set("fecha_fin", e.target.value)}
+                    <div className="mb-1 flex items-center gap-1.5">
+                      <label htmlFor="san-ff" className="text-xs font-semibold text-slate-600">Fecha fin *</label>
+                      <Ayuda>Último día de la suspensión. Después de esta fecha el empleado recupera el acceso automáticamente.</Ayuda>
+                    </div>
+                    <input id="san-ff" required type="date" value={F.fecha_fin} onChange={e => set("fecha_fin", e.target.value)}
                       className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
                   </div>
                 </div>
