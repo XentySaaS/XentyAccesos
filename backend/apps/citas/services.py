@@ -144,17 +144,21 @@ def _notificar_asistentes(cita) -> int:
                 "Presenta este correo al llegar para registrar tu acceso.",
             ],
         )
+        texto_plano = (
+            f"Invitado a {cita.nombre} el {fecha} a las {hora}. "
+            f"Recinto: {recinto}. "
+            + ("Presenta el gafete adjunto al llegar." if con_gafete else "Presenta este correo al llegar.")
+        )
         enviar_correo_html(
             asunto=f"Invitación: {cita.nombre or 'cita'}",
-            texto_plano=(
-                f"Invitado a {cita.nombre} el {fecha} a las {hora}. "
-                f"Recinto: {recinto}. "
-                + ("Presenta el gafete adjunto al llegar." if con_gafete else "Presenta este correo al llegar.")
-            ),
+            texto_plano=texto_plano,
             html=html,
             destino=asistente.email,
             adjuntos=adjuntos,
         )
+        # WhatsApp al asistente si tiene teléfono (el gafete va por correo).
+        from apps.mensajeria.services import notificar_whatsapp
+        notificar_whatsapp(asistente.telefono, texto_plano)
         enviados += 1
 
     logger.info("_notificar_asistentes cita pk=%s enviados=%s", cita.pk, enviados)
@@ -187,9 +191,13 @@ def _notificar_proveedor(cita) -> None:
             "Ingresa al panel de proveedores para asignar el personal que asistirá.",
         ],
     )
+    texto_plano = f"Cita {cita.nombre} el {fecha} a las {hora}. Recinto: {recinto}."
     enviar_correo_html(
         asunto=f"Nueva cita: {cita.nombre or 'cita'}",
-        texto_plano=f"Cita {cita.nombre} el {fecha} a las {hora}. Recinto: {recinto}.",
+        texto_plano=texto_plano,
         html=html,
         destino=email,
     )
+    # WhatsApp al responsable del proveedor si tiene teléfono.
+    from apps.mensajeria.services import notificar_whatsapp
+    notificar_whatsapp(getattr(p, "telefono", None), texto_plano)

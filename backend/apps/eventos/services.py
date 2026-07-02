@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 from datetime import datetime, time as _dtime, timezone as _dtz
 
-from apps.mensajeria.services import obtener_whatsapp
 from common.email_builder import construir_correo, enviar_correo_html
 
 logger = logging.getLogger(__name__)
@@ -55,12 +54,8 @@ def _kwargs_gafete(ep) -> dict:
 
 
 def _enviar_whatsapp(telefono: str | None, cuerpo: str) -> None:
-    if not telefono:
-        return
-    try:
-        obtener_whatsapp().enviar(telefono, cuerpo)
-    except Exception as exc:  # noqa: BLE001 — best-effort
-        logger.warning("WhatsApp evento no enviado a %s: %s", telefono, exc)
+    from apps.mensajeria.services import notificar_whatsapp
+    notificar_whatsapp(telefono, cuerpo)
 
 
 def _enviar_correo_simple(

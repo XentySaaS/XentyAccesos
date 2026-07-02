@@ -35,6 +35,26 @@ def obtener_whatsapp():
     return UltraMsgWhatsApp() if settings.ULTRAMSG_TOKEN else SandboxWhatsApp()
 
 
+def notificar_whatsapp(telefono: str | None, cuerpo: str, archivo=None) -> bool:
+    """Envía una notificación por WhatsApp si el destinatario tiene teléfono (best-effort).
+
+    Regla del producto: toda notificación (usuario/proveedor/empleado/asistente) se manda también
+    por WhatsApp cuando la persona tiene número. Punto único para actuales y futuras notificaciones.
+    Nunca propaga errores (no debe bloquear la operación); devuelve True si se intentó el envío.
+    """
+    import logging
+
+    tel = (telefono or "").strip()
+    if not tel:
+        return False
+    try:
+        obtener_whatsapp().enviar(tel, cuerpo, archivo)
+        return True
+    except Exception as exc:  # noqa: BLE001 — best-effort
+        logging.getLogger(__name__).warning("WhatsApp no enviado a %s: %s", tel, exc)
+        return False
+
+
 def resolver_destinatarios(segmento: str, segmento_id=None):
     """Empleados objetivo según el segmento de la campaña."""
     from apps.empleados.models import Empleado

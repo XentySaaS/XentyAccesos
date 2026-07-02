@@ -25,6 +25,14 @@ def _proveedores_url(base_url: str | None = None) -> str:
     return base.rstrip("/")
 
 
+def _notificar_wa(telefono: str | None, cuerpo: str) -> None:
+    """WhatsApp best-effort si el destinatario tiene teléfono (import diferido evita ciclos)."""
+    if not telefono:
+        return
+    from apps.mensajeria.services import notificar_whatsapp
+    notificar_whatsapp(telefono, cuerpo)
+
+
 def enviar_invitacion_proveedor(
     *,
     email_destino: str,
@@ -32,8 +40,9 @@ def enviar_invitacion_proveedor(
     nombre_tenant: str,
     token: str,
     base_url: str | None = None,
+    telefono: str | None = None,
 ) -> None:
-    """Envía el correo de invitación con el link temporal de onboarding al responsable."""
+    """Envía la invitación de onboarding al responsable (correo + WhatsApp si tiene teléfono)."""
     url = f"{_proveedores_url(base_url)}/proveedores/onboarding?token={token}"
     asunto = f"Invitación para registrarte como proveedor de {nombre_tenant}"
     cuerpo = (
@@ -50,6 +59,7 @@ def enviar_invitacion_proveedor(
     except Exception as exc:  # noqa: BLE001
         import logging
         logging.getLogger(__name__).error("Error enviando invitación a %s: %s", email_destino, exc)
+    _notificar_wa(telefono, cuerpo)
 
 
 def enviar_activacion_proveedor(
@@ -59,8 +69,9 @@ def enviar_activacion_proveedor(
     nombre_empresa: str,
     nombre_tenant: str,
     base_url: str | None = None,
+    telefono: str | None = None,
 ) -> None:
-    """Notifica al responsable que su cuenta de proveedor fue activada."""
+    """Notifica al responsable que su cuenta fue activada (correo + WhatsApp si tiene teléfono)."""
     url = f"{_proveedores_url(base_url)}/proveedores"
     asunto = f"Tu acceso como proveedor de {nombre_tenant} está listo"
     cuerpo = (
@@ -76,3 +87,4 @@ def enviar_activacion_proveedor(
     except Exception as exc:  # noqa: BLE001
         import logging
         logging.getLogger(__name__).error("Error enviando activación a %s: %s", email_destino, exc)
+    _notificar_wa(telefono, cuerpo)

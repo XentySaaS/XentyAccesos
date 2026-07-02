@@ -60,6 +60,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 nombre_tenant=nombre_tenant,
                 token=token,
                 base_url=_base_url_de(self.request),
+                telefono=proveedor.telefono,
             )
 
     def perform_destroy(self, instance):
@@ -86,6 +87,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 nombre_tenant=nombre_tenant,
                 token=token,
                 base_url=_base_url_de(request),
+                telefono=proveedor.telefono,
             )
 
         return Response({
@@ -168,6 +170,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 nombre_empresa=proveedor.nombre,
                 nombre_tenant=nombre_tenant,
                 base_url=_base_url_de(request),
+                telefono=getattr(cuenta, "telefono", None) or proveedor.telefono,
             )
 
         return Response({
