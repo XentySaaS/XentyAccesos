@@ -35,3 +35,30 @@ body {
 [class*="font-mono"] {
   font-family: "Geist Mono", "Fira Mono", ui-monospace, monospace;
 }
+
+/* ── Escáner QR (html5-qrcode) ──────────────────────────────────────
+   La librería inyecta un <video> con su tamaño nativo (landscape) que se
+   desborda del recuadro. Se fuerza a llenar el contenedor cuadrado y a
+   recortar con object-fit: cover, para que la cámara quede DENTRO del marco. */
+#qr-reader-camara,
+#san-qr-reader {
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
+}
+#qr-reader-camara video,
+#san-qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: inherit;
+  display: block;
+}
+/* Overlay/canvas que la librería superpone: que no desborde el recuadro. */
+#qr-reader-camara canvas,
+#qr-reader-camara img,
+#san-qr-reader canvas,
+#san-qr-reader img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
