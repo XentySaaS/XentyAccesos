@@ -5,6 +5,7 @@ import Bitacora from "./pages/Bitacora";
 import Calendario from "./pages/Calendario";
 import Catalogos from "./pages/Catalogos";
 import Citas from "./pages/Citas";
+import Cumplimiento from "./pages/Cumplimiento";
 import Dashboard from "./pages/Dashboard";
 import Escaner from "./pages/Escaner";
 import Eventos from "./pages/Eventos";
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
       { path: "/citas",       element: <Citas /> },
       { path: "/sanciones",   element: <Sanciones /> },
       { path: "/verificacion",element: <Verificacion /> },
+      { path: "/cumplimiento",element: <Cumplimiento /> },
       { path: "/mensajeria",  element: <Mensajeria /> },
       { path: "/escaner",     element: <Escaner /> },
       { path: "/usuarios",    element: <Usuarios /> },

@@ -10,7 +10,7 @@ from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, Re
 
 from .models import ResultadoLista69b, SatEfo
 from .serializers import ResultadoLista69bSerializer, SatEfoSerializer
-from .services import validar_69b
+from .services import revalidar_todos, validar_69b
 
 _PERMS = [
     *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("cumplimiento"), RequiereRol("administrador"),
@@ -28,6 +28,53 @@ class ValidarProveedorView(APIView):
             return Response({"detail": "Proveedor no encontrado."}, status=404)
         resultado = validar_69b(proveedor)
         return Response(ResultadoLista69bSerializer(resultado).data)
+
+
+class RevalidarView(APIView):
+    """POST /api/cumplimiento/revalidar/ — revalida a todos los proveedores contra el padrón."""
+
+    permission_classes = _PERMS
+
+    def post(self, request):
+        return Response(revalidar_todos())
+
+
+class ResumenView(APIView):
+    """GET /api/cumplimiento/resumen/ — estado del padrón y proveedores marcados (alerta al tenant)."""
+
+    permission_classes = _PERMS
+
+    def get(self, request):
+        from django.db.models import Max, OuterRef, Subquery
+
+        total_efos = SatEfo.objects.count()
+        ultima = SatEfo.objects.aggregate(f=Max("actualizado"))["f"]
+
+        # Último resultado por proveedor; marcamos los que quedaron ENCONTRADO.
+        ultimos = (
+            ResultadoLista69b.objects.filter(proveedor=OuterRef("pk")).order_by("-creado")
+        )
+        marcados = (
+            Proveedor.objects
+            .annotate(
+                ult_estado=Subquery(ultimos.values("estado")[:1]),
+                ult_rfc=Subquery(ultimos.values("rfc")[:1]),
+            )
+            .filter(ult_estado=ResultadoLista69b.Estado.ENCONTRADO)
+        )
+        sat = {e.rfc: e.situacion for e in SatEfo.objects.filter(rfc__in=[p.ult_rfc for p in marcados])}
+        proveedores = [
+            {"id": p.id, "nombre": p.nombre, "rfc": p.ult_rfc,
+             "situacion": sat.get(p.ult_rfc), "estado": p.estado}
+            for p in marcados
+        ]
+        return Response({
+            "total_efos": total_efos,
+            "ultima_actualizacion": ultima,
+            "padron_cargado": total_efos > 0,
+            "marcados": len(proveedores),
+            "proveedores": proveedores,
+        })
 
 
 class SatEfoViewSet(viewsets.ReadOnlyModelViewSet):

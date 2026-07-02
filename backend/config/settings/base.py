@@ -214,7 +214,11 @@ AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")
 AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")
 AWS_REGION = config("AWS_REGION", default="us-east-1")
 SAT_EFOS_UPDATE_EVERY_MONTHS = config("SAT_EFOS_UPDATE_EVERY_MONTHS", default=1, cast=int)
-SAT_EFOS_CSV_URL = config("SAT_EFOS_CSV_URL", default="")
+# CSV público y gratuito del SAT (padrón 69-B completo). Configurable por si el SAT cambia la URL.
+SAT_EFOS_CSV_URL = config(
+    "SAT_EFOS_CSV_URL",
+    default="http://omawww.sat.gob.mx/cifras_sat/Documents/Listado_Completo_69-B.csv",
+)
 SAT_EFOS_ESTATUS_BLOQUEANTES = config(
     "SAT_EFOS_ESTATUS_BLOQUEANTES", default="Definitivo,Presunto", cast=Csv()
 )

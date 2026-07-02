@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
@@ -21,12 +22,17 @@ function colorBarra(index: number, total: number) {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [me, setMe]    = useState<Me | null>(null);
   const [kpis, setKpis]= useState<Kpis | null>(null);
+  const [marcados69b, setMarcados69b] = useState(0);
 
   useEffect(() => {
     api.get<Me>("/api/auth/me/").then((r) => setMe(r.data)).catch(() => {});
     api.get<Kpis>("/api/reportes/dashboard/").then((r) => setKpis(r.data)).catch(() => {});
+    // Alerta de cumplimiento 69-B (solo admin; para otros roles el endpoint responde 403 y se ignora).
+    api.get<{ marcados: number }>("/api/cumplimiento/resumen/")
+      .then((r) => setMarcados69b(r.data?.marcados ?? 0)).catch(() => {});
   }, []);
 
   const horas = kpis?.accesos_por_hora ?? [];
@@ -58,6 +64,20 @@ export default function Dashboard() {
           + Crear evento
         </button>
       </div>
+
+      {/* Alerta de cumplimiento 69-B */}
+      {marcados69b > 0 && (
+        <button onClick={() => navigate("/cumplimiento")}
+          className="flex w-full items-center gap-3 rounded-lg border border-red-200 bg-[#FEF2F2] px-4 py-3 text-left transition hover:bg-red-50">
+          <svg className="h-5 w-5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span className="flex-1 text-sm font-semibold text-red-700">
+            {marcados69b} proveedor{marcados69b !== 1 ? "es" : ""} aparece{marcados69b !== 1 ? "n" : ""} en la lista 69-B del SAT.
+          </span>
+          <span className="text-xs font-medium text-red-600">Ver cumplimiento →</span>
+        </button>
+      )}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

@@ -42,9 +42,9 @@ class ProveedorSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("RFC inválido (estructura o dígito verificador).")
         # Lista 69-B (SAT): no se permite dar de alta un RFC marcado como EFOS bloqueante.
         from apps.cumplimiento.models import SatEfo
-        from apps.cumplimiento.services import estatus_bloqueantes
+        from apps.cumplimiento.services import situacion_bloqueante
         efo = SatEfo.objects.filter(rfc=rfc).first()
-        if efo and efo.situacion in estatus_bloqueantes():
+        if efo and situacion_bloqueante(efo.situacion):
             raise serializers.ValidationError(
                 f"El RFC aparece en la lista 69-B del SAT (situación: {efo.situacion}). No se puede dar de alta."
             )
