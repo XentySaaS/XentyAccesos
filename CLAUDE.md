@@ -218,6 +218,7 @@ python manage.py migrar_tenant_sar <subdominio> --dry-run
 | Comentarios | Solo el **por qué** no obvio; nunca el qué |
 | Estados/enums | `TextChoices`/`IntegerChoices` con etiqueta para UI; nunca enums crudos ni IDs hardcodeados |
 | Ayuda contextual | **Todo campo de captura** de un formulario lleva el ícono ⓘ (`<Ayuda>`) junto a su etiqueta, explicando qué es / para qué sirve. Componente: `frontend-acceso/src/components/Ayuda.tsx`; hermano del `Label` (no dentro). Detalle y checklist: [`docs/AYUDA_CONTEXTUAL.md`](docs/AYUDA_CONTEXTUAL.md). NO negociable en formularios nuevos y existentes. |
+| Idempotencia | Contra doble-submit (doble clic → registro duplicado): el cliente axios (`src/api/client.ts` de cada SPA) deduplica POST/PUT/PATCH idénticos en vuelo y manda `Idempotency-Key`; el middleware `config.middleware.idempotency.Idempotency` repite la respuesta cacheada (por tenant) en reintentos. **Automático** — no requiere código por formulario. No lo desactives ni mandes peticiones mutadoras fuera del cliente `api`. |
 
 ---
 

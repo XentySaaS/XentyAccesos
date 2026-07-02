@@ -86,6 +86,7 @@ MIDDLEWARE = [
     "config.middleware.enforcement.BloquearTrialExpirado",          # 6. trial vencido
     "config.middleware.enforcement.EnforceModoSoloLectura",         # 7. 423 en dunning
     # Slot 9 (sesión MFA incompleta) -> common.permissions.MFASesionCompleta (DRF)
+    "config.middleware.idempotency.Idempotency",                    # dedup por Idempotency-Key
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
