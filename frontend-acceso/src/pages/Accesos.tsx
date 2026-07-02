@@ -47,11 +47,14 @@ function fmtHora(iso: string) {
   if (!iso) return "—";
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 }
-function fmtFechaHora(iso: string) {
+function fmtFecha(iso: string) {
   if (!iso) return "—";
-  const d = new Date(iso);
-  return d.toLocaleDateString("es-MX", { day: "2-digit", month: "short" })
-    + " " + d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
+}
+function mismoDia(a: string, b: string) {
+  if (!a || !b) return false;
+  const da = new Date(a), db = new Date(b);
+  return da.toDateString() === db.toDateString();
 }
 
 /* ── Opciones de filtro de fecha ─────────────────────────────────────── */
@@ -161,21 +164,21 @@ export default function Accesos() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-left">
-                {["Persona", "Tipo", "Método", "Cita / Evento", "Entrada", "Salida", ""].map(h => (
+                {["Persona", "Tipo", "Método", "Cita / Evento", "Fecha", "Entrada", "Salida", ""].map(h => (
                   <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {loading && (
-                <tr><td colSpan={7} className="px-4 py-10">
+                <tr><td colSpan={8} className="px-4 py-10">
                   <div className="space-y-2">{[1,2,3,4].map(i =>
                     <div key={i} className="h-5 animate-pulse rounded bg-slate-100" />
                   )}</div>
                 </td></tr>
               )}
               {!loading && registros.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-14 text-center">
+                <tr><td colSpan={8} className="px-4 py-14 text-center">
                   <svg className="mx-auto mb-3 h-8 w-8 text-slate-200" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                     <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
                   </svg>
@@ -231,16 +234,24 @@ export default function Accesos() {
                       <p className="text-xs text-slate-400">{TIPO_REG_LABEL[r.tipo_registro] ?? "—"}</p>
                     </td>
 
-                    {/* Hora entrada */}
-                    <td className="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap">
-                      {rango === "todo" ? fmtFechaHora(r.hora_entrada) : fmtHora(r.hora_entrada)}
+                    {/* Fecha del registro */}
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500 whitespace-nowrap">
+                      {fmtFecha(r.hora_entrada)}
                     </td>
 
-                    {/* Hora salida */}
+                    {/* Hora entrada */}
+                    <td className="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap">
+                      {fmtHora(r.hora_entrada)}
+                    </td>
+
+                    {/* Hora salida (si cae otro día, se indica la fecha para no confundir) */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       {r.hora_salida ? (
                         <span className="font-mono text-xs text-slate-600">
-                          {rango === "todo" ? fmtFechaHora(r.hora_salida) : fmtHora(r.hora_salida)}
+                          {!mismoDia(r.hora_entrada, r.hora_salida) && (
+                            <span className="mr-1 text-slate-400">{fmtFecha(r.hora_salida)}</span>
+                          )}
+                          {fmtHora(r.hora_salida)}
                         </span>
                       ) : esEntrada ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-600">
