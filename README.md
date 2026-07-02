@@ -216,11 +216,20 @@ Toda en `docs/` (más `CLAUDE.md` en la raíz):
 | Documento | Contenido |
 |---|---|
 | `CLAUDE.md` | Reglas operativas, stack bloqueado, convenciones, flujo de checkpoint |
-| `PLAYBOOK_SAR_XENTY.md` | Plan maestro por fases F0–F8 |
+| `PLAYBOOK_SAR_XENTY.md` | Plan maestro por fases F0–F8 (numeración oficial) |
 | `MODELO_DATOS_SAR.md` | Esquema destino limpio (modelos, FKs, índices, enums) |
 | `SAR_FUNCIONALIDADES.md` | Catálogo funcional (reglas de negocio, máquinas de estado) |
 | `REMEDIACION_SEGURIDAD_SAR.md` | Hallazgos de seguridad del origen → fix en el destino |
 | `MIGRACION_DATOS_SAR.md` | ETL MySQL→PostgreSQL por tenant |
+
+### Continuar el proyecto en una conversación nueva
+
+Para retomar el desarrollo sin depender del historial del chat, comparte solo:
+**`CLAUDE.md` + `handoffs/HANDOFF_LATEST.md`**. Ese handoff resume estado, últimos cambios,
+issues abiertos y próximos pasos. El resto de `docs/` (`STATUS.md`, `ARCHITECTURE.md`,
+`DECISIONS.md`, `ROADMAP.md`, `TODOS.md`, `KNOWN_ISSUES.md`, `CHANGELOG.md`, `GLOSSARY.md`,
+`PROJECT_CONTEXT.md`) se consulta bajo demanda, no de entrada. Reglas de comportamiento para
+Claude Code en `.claude/{instructions,coding_rules,workflow}.md`.
 
 ---
 
