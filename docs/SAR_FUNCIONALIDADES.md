@@ -181,21 +181,34 @@ Permisos: Administrador, Editor, Recepcionista, Guardia (según el origen para c
 
 ### 9.1 Validación al escanear (guardia web o dispositivo edge)
 
-Al leer un QR:
-1. Descifrar/verificar firma del QR → obtener `id|contexto|tipo`. ⟳ QR inválido/forjado → rechazo.
-2. Verificar **pertenencia** (empleado/asistente pertenece al evento/cita y al tenant ⟳).
-3. Verificar **vigencia** (`vigencia_inicio ≤ hoy ≤ vigencia_fin`).
-4. Verificar `statusdocs = CUMPLE` (para empleados de evento).
-5. Verificar **sin sanciones activas** que bloqueen.
-6. Registrar `RegistroAcceso`: `tipo_acceso = entrada | denegado`; `metodo = qr | placa | manual | tarjeta`.
+Al leer un QR (`POST /api/acceso/escanear/`), primero se revisa si ya existe una entrada del día
+sin salida para ese mismo portador (empleado/asistente/cajón): si existe, el escaneo **alterna a
+salida** (`hora_salida = now()`) sin re-evaluar las reglas de negocio — salir nunca se bloquea.
+Si no hay entrada abierta, se evalúa según el tipo de QR:
 
-### 9.2 Salida y parking
+- **Evento** (`EmpleadoEventoProveedor`): vigencia del evento (`vigencia_inicio ≤ hoy ≤
+  vigencia_fin`), `statusdocs = CUMPLE`, sin sanción activa (`Sancion` BAJA o SUSPENSION vigente).
+- **Cita** (`AsistenteCita`): `Cita.estado ≠ CANCELADA`, `AsistenteCita.estado ≠ CANCELADO`, y
+  `Cita.fecha == hoy` (la cita es de un solo día, sin rango de vigencia).
+- **Parking** (`CajonParking`): vigencia del evento padre (mismo rango que evento).
 
-- **Salida**: acción "Registrar salida" → `hora_salida = now()` + WhatsApp de confirmación.
+La respuesta incluye `nombre`/`empresa`/`foto_url` del portador (cuando aplica) para que el
+guardia coteje visualmente contra la persona frente a él — obligatorio en QR forjados o prestados.
+Se registra `RegistroAcceso` (o `RegistroAccesoParking`): `tipo_acceso = entrada | denegado`;
+`metodo = qr | placa | manual | tarjeta`.
+
+### 9.2 Override del guardia, salida y parking
+
+- **Rechazo manual**: `POST /api/acceso/registros/{id}/rechazar/` — el guardia puede convertir una
+  entrada recién concedida en denegada (con motivo obligatorio) cuando la foto no coincide con
+  quien porta el QR. Solo aplica a una entrada del propio escaneo, sin salida registrada aún; no
+  se puede rechazar dos veces ni revertir una salida.
+- **Salida manual**: acción "Registrar salida" en la Bitácora → `hora_salida = now()` + WhatsApp de
+  confirmación (pendiente de conectar, ver F7).
 - **Parking**: el escáner de parking valida el `CajonParking.uuid` y registra `RegistroAccesoParking`
-  con número de personas y placa.
+  con número de personas y placa; alterna entrada/salida igual que evento/cita.
 
-Permisos: Guardia (escáner). Bitácora y reportes: Administrador.
+Permisos: Guardia (escáner + rechazo). Bitácora y reportes: Administrador.
 
 ---
 

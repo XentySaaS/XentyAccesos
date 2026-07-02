@@ -11,6 +11,8 @@ Autenticación de los dos contextos (F0.2):
 
 F1+ monta las apps de negocio bajo /api/.
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -49,3 +51,8 @@ urlpatterns = [
     path("api/", include("apps.cumplimiento.urls")),  # F7: cumplimiento SAT 69-B
     path("api/", include("apps.config.urls")),  # F8: configuración, auditoría y reportes
 ]
+
+if settings.DEBUG:
+    # Solo campos no-sensibles (p. ej. Empleado.foto) se sirven así; INE/RESPE/SUA/docs
+    # se descargan por acciones autenticadas (ver apps.documentos, apps.proveedores).
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

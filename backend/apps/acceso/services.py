@@ -37,6 +37,25 @@ def _denegar(motivo: str, **kw) -> tuple[RegistroAcceso, bool, str]:
     return reg, False, motivo
 
 
+def _salida_abierta(**filtros):
+    """Entrada concedida del día sin salida registrada (para el toggle entrada/salida al re-escanear)."""
+    hoy = timezone.now().date()
+    return (
+        RegistroAcceso.objects
+        .filter(
+            tipo_acceso=RegistroAcceso.TipoAcceso.ENTRADA,
+            hora_entrada__date=hoy, hora_salida__isnull=True, **filtros,
+        )
+        .order_by("-hora_entrada").first()
+    )
+
+
+def _registrar_salida(reg: RegistroAcceso) -> tuple[RegistroAcceso, bool, str]:
+    reg.hora_salida = timezone.now()
+    reg.save(update_fields=["hora_salida"])
+    return reg, True, "Salida registrada."
+
+
 def procesar_escaneo(qr: str, tenant: str, *, placa: str | None = None):
     """Devuelve ``(registro, permitido, motivo)`` tras validar el QR y las reglas de acceso."""
     from apps.eventos.models import CajonParking, EmpleadoEventoProveedor
@@ -64,6 +83,11 @@ def _escaneo_evento(eep_id, EmpleadoEventoProveedor):
     if eep is None:
         return _denegar("Asignación no encontrada.")
     evento = eep.evento_proveedor.evento
+
+    abierto = _salida_abierta(empleado=eep.empleado, evento=evento)
+    if abierto:
+        return _registrar_salida(abierto)
+
     hoy = timezone.now().date()
     if not (evento.vigencia_inicio <= hoy <= evento.vigencia_fin):
         return _denegar("Fuera de la vigencia del evento.", empleado=eep.empleado, evento=evento)
@@ -81,16 +105,43 @@ def _escaneo_cita(asistente_id):
     asis = AsistenteCita.objects.select_related("cita").filter(id=asistente_id).first()
     if asis is None:
         return _denegar("Asistente no encontrado.")
-    if asis.cita.estado == Cita.Estado.CANCELADA:
-        return _denegar("La cita está cancelada.", cita=asis.cita)
-    reg = _entrada(asistente=asis, cita=asis.cita, metodo=RegistroAcceso.Metodo.QR)
+    cita = asis.cita
+
+    abierto = _salida_abierta(asistente=asis)
+    if abierto:
+        return _registrar_salida(abierto)
+
+    if cita.estado == Cita.Estado.CANCELADA:
+        return _denegar("La cita está cancelada.", asistente=asis, cita=cita)
+    if asis.estado == AsistenteCita.Estado.CANCELADO:
+        return _denegar("El invitado fue dado de baja de la cita.", asistente=asis, cita=cita)
+    hoy = timezone.now().date()
+    if cita.fecha and cita.fecha != hoy:
+        motivo = "aún no ha comenzado" if cita.fecha > hoy else "ha finalizado"
+        return _denegar(f'La cita "{cita.nombre or cita.pk}" {motivo}.', asistente=asis, cita=cita)
+    reg = _entrada(asistente=asis, cita=cita, metodo=RegistroAcceso.Metodo.QR)
     return reg, True, "Acceso concedido."
 
 
 def _escaneo_parking(cajon_id, CajonParking, placa):
-    cajon = CajonParking.objects.filter(id=cajon_id).first()
+    cajon = CajonParking.objects.select_related("evento_proveedor__evento").filter(id=cajon_id).first()
     if cajon is None:
         return _denegar("Cajón de parking no encontrado.")
+    evento = cajon.evento_proveedor.evento
+
+    hoy = timezone.now().date()
+    abierto = (
+        RegistroAccesoParking.objects
+        .filter(cajon=cajon, hora_entrada__date=hoy, hora_salida__isnull=True)
+        .order_by("-hora_entrada").first()
+    )
+    if abierto:
+        abierto.hora_salida = timezone.now()
+        abierto.save(update_fields=["hora_salida"])
+        return abierto, True, "Salida de parking registrada."
+
+    if not (evento.vigencia_inicio <= hoy <= evento.vigencia_fin):
+        return _denegar(f'El evento "{evento.nombre}" no está vigente hoy.', cajon=cajon)
     reg = RegistroAccesoParking.objects.create(
         cajon=cajon, tipo_acceso=RegistroAccesoParking.TipoAcceso.ENTRADA,
         hora_entrada=timezone.now(), placa_vehiculo=placa,

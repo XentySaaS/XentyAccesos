@@ -59,6 +59,32 @@ def generar_png(token: str) -> bytes:
     return buf.getvalue()
 
 
+def _qr_imagen(token: str, target_px: int, *, min_box_size: int = 3):
+    """Genera el bitmap del QR ya al tamaño final deseado.
+
+    Un token Fernet (IV+HMAC+timestamp cifrados en base64) ronda 60-70 módulos incluso con
+    payload mínimo — el overhead de Fernet domina, no el contenido. Renderizar con
+    ``qrcode.make()`` (box_size=10 por defecto) y luego reducir con ``NEAREST`` a un recuadro
+    pequeño del gafete deja <1.5px por módulo: el QR se ve pero deja de ser decodificable por
+    cámara. Aquí se mide el número de módulos primero y se elige un ``box_size`` entero que
+    acerque el render nativo a ``target_px``, evitando esa pérdida.
+    """
+    from PIL import Image
+
+    sonda = qrcode.QRCode(border=4)
+    sonda.add_data(token)
+    sonda.make(fit=True)
+    n_modulos = sonda.modules_count + 2 * sonda.border
+    box_size = max(min_box_size, round(target_px / n_modulos))
+    qr = qrcode.QRCode(border=4, box_size=box_size)
+    qr.add_data(token)
+    qr.make(fit=True)
+    img = qr.make_image().convert("RGBA")
+    if img.size != (target_px, target_px):
+        img = img.resize((target_px, target_px), Image.NEAREST)
+    return img
+
+
 # ── Diseño «Estadio Clásico» (1a) — Design handoff Xenty Accesos ──────────────
 #
 #  Estructura (top → bottom):
@@ -441,7 +467,7 @@ def componer_gafete(
     EVT_H   = 84
     DT_H    = 62
     GN_H    = 100
-    QR_H    = 190
+    QR_H    = 360
     FT_H    = 33
     H = BAR_H + HDR_H + PZ_H + EVT_H + DT_H + GN_H + QR_H + FT_H
 
@@ -564,18 +590,17 @@ def componer_gafete(
                _inter(17, bold=True), (*WHITE, 255), leading=22)
 
     # ── 7. QR ─────────────────────────────────────────────────────
+    # QR_BOX es grande a propósito: un token Fernet ronda 65-70 módulos, así que el recuadro
+    # necesita ~4px por módulo para seguir siendo legible por cámara (ver _qr_imagen()).
     y5      = y4 + GN_H
-    QR_BOX  = 108
-    QR_PAD_I = 8
+    QR_BOX  = 300
+    QR_PAD_I = 10
     QR_SIZE = QR_BOX - QR_PAD_I * 2
     qr_bx   = (W - QR_BOX) // 2
     qr_by   = y5 + 15
     draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
                             radius=12, fill=(*WHITE, 255))
-    qr_img = (
-        qrcode.make(token).convert("RGBA")
-        .resize((QR_SIZE, QR_SIZE), Image.NEAREST)
-    )
+    qr_img = _qr_imagen(token, QR_SIZE)
     img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
     _ls_center(draw, "ESCANEAR PARA VALIDAR", W // 2, qr_by + QR_BOX + 8,
                _inter(7, bold=True), (*AC, 102), ls=2)
@@ -624,7 +649,7 @@ def componer_gafete_estacionamiento(
 ) -> bytes:
     """Diseño Premium Dark para pases de estacionamiento.
 
-    Secciones: barra dorada | header título+logo | proveedor | cajón+QR | info | footer.
+    Secciones: barra dorada | header título+logo | proveedor | cajón | QR | info | footer.
     Sin foto de portador. Sin grilla.
     """
     from io import BytesIO
@@ -693,10 +718,11 @@ def componer_gafete_estacionamiento(
     BAR_H  = 5
     HDR_H  = 92
     PROV_H = 83
-    CAJ_H  = 130
+    CAJ_H  = 90
+    QR_H   = 340
     INFO_H = 88
     FOOT_H = 48
-    H = BAR_H + HDR_H + PROV_H + CAJ_H + INFO_H + FOOT_H  # 446
+    H = BAR_H + HDR_H + PROV_H + CAJ_H + QR_H + INFO_H + FOOT_H
 
     img  = Image.new("RGBA", (W, H), (*DEEP, 255))
     draw = ImageDraw.Draw(img)
@@ -754,35 +780,37 @@ def componer_gafete_estacionamiento(
         emp_hdr = emp_hdr[:-1] + "…"
     draw.text((tx, iy + 20), emp_hdr, font=f_emp_hdr, fill=(*WHITE, 255))
 
-    # ── 4. Cajón + QR ─────────────────────────────────────────────
+    # ── 4. Cajón ──────────────────────────────────────────────────
     y2 = y1 + PROV_H
     _sep(draw, y2 + CAJ_H - 1)
-    QR_BOX   = 100
-    QR_PAD_I = 8
-    QR_SIZE  = QR_BOX - QR_PAD_I * 2
-    qr_bx    = W - PAD - QR_BOX
-    qr_by    = y2 + (CAJ_H - QR_BOX) // 2
-    draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
-                            radius=11, fill=(*WHITE, 255))
-    qr_img = (
-        qrcode.make(token).convert("RGBA")
-        .resize((QR_SIZE, QR_SIZE), Image.NEAREST)
-    )
-    img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
-    _ls_center(draw, "ESCANEAR", qr_bx + QR_BOX // 2, qr_by + QR_BOX + 6,
-               _inter(7, bold=True), (*GOLD, 102), ls=2)
-
     _ls(draw, "CAJÓN / LOTE", PAD, y2 + 14, _inter(7, bold=True), (*GOLD, 102), ls=2)
-    max_caj_w = qr_bx - PAD - 8
+    max_caj_w = W - PAD * 2
     bb = draw.textbbox((0, 0), cajon_display, font=f_caj)
     if (bb[2] - bb[0]) > max_caj_w:
         f_caj = _bebas(max(round(f_caj_size * max_caj_w / max(bb[2] - bb[0], 1)), 36))
         bb    = draw.textbbox((0, 0), cajon_display, font=f_caj)
-    caj_y = qr_by + QR_BOX - (bb[3] - bb[1])
+    caj_y = y2 + CAJ_H - (bb[3] - bb[1]) - 10
     draw.text((PAD, caj_y), cajon_display, font=f_caj, fill=(*AC, 255))
 
+    # ── 4b. QR ────────────────────────────────────────────────────
+    # QR_BOX grande a propósito: un token Fernet ronda 65-70 módulos, necesita ~4px/módulo
+    # para seguir siendo legible por cámara (ver _qr_imagen()).
+    y2b = y2 + CAJ_H
+    _sep(draw, y2b + QR_H - 1)
+    QR_BOX   = 300
+    QR_PAD_I = 10
+    QR_SIZE  = QR_BOX - QR_PAD_I * 2
+    qr_bx    = (W - QR_BOX) // 2
+    qr_by    = y2b + 15
+    draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
+                            radius=12, fill=(*WHITE, 255))
+    qr_img = _qr_imagen(token, QR_SIZE)
+    img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
+    _ls_center(draw, "ESCANEAR PARA VALIDAR", W // 2, qr_by + QR_BOX + 10,
+               _inter(7, bold=True), (*GOLD, 102), ls=2)
+
     # ── 5. Info del evento ────────────────────────────────────────
-    y3 = y2 + CAJ_H
+    y3 = y2b + QR_H
     _sep(draw, y3 + INFO_H - 1)
     emp_info = nombre_empresa
     f_emp_info = _inter(18, bold=True)
