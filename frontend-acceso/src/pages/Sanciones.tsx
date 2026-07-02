@@ -65,6 +65,41 @@ export default function Sanciones() {
   const html5QrRef = useRef<Html5Qrcode | null>(null);
   const resolviendoRef = useRef(false);
 
+  // Asignar/editar penalidad (admin): define severidad/penalidad sobre una sanción existente.
+  const [asignar, setAsignar] = useState<Sancion | null>(null);
+  const [asigForm, setAsigForm] = useState({ severidad: "bajo", penalidad: "advertencia", fecha_inicio: "", fecha_fin: "" });
+  const [asigSaving, setAsigSaving] = useState(false);
+  const [asigError, setAsigError] = useState("");
+
+  function abrirAsignar(s: Sancion) {
+    setAsigForm({
+      severidad: s.severidad || "bajo",
+      penalidad: s.penalidad || "advertencia",
+      fecha_inicio: s.fecha_inicio || "",
+      fecha_fin: s.fecha_fin || "",
+    });
+    setAsigError("");
+    setAsignar(s);
+  }
+
+  async function guardarAsignar(e: React.FormEvent) {
+    e.preventDefault();
+    if (!asignar) return;
+    setAsigSaving(true); setAsigError("");
+    try {
+      await api.patch(`/api/sanciones/${asignar.id}/`, {
+        severidad: asigForm.severidad,
+        penalidad: asigForm.penalidad,
+        fecha_inicio: asigForm.penalidad === "suspension" ? asigForm.fecha_inicio : null,
+        fecha_fin:    asigForm.penalidad === "suspension" ? asigForm.fecha_fin    : null,
+      });
+      setAsignar(null); cargar();
+    } catch (err: unknown) {
+      const x = err as { response?: { data?: unknown } };
+      setAsigError(typeof x.response?.data === "string" ? x.response.data : JSON.stringify(x.response?.data ?? "Error"));
+    } finally { setAsigSaving(false); }
+  }
+
   const cargar = () =>
     api.get("/api/sanciones/")
       .then(r => setSanciones(r.data.results ?? r.data))
@@ -209,16 +244,17 @@ export default function Sanciones() {
               {["Empleado", "Evento", "Motivo", "Severidad", "Penalidad", "Período suspensión", "Fecha"].map(h => (
                 <th key={h} className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-400">{h}</th>
               ))}
+              {esAdmin && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {loading && (
-              <tr><td colSpan={7} className="px-4 py-8">
+              <tr><td colSpan={esAdmin ? 8 : 7} className="px-4 py-8">
                 <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-5 animate-pulse rounded bg-slate-100" />)}</div>
               </td></tr>
             )}
             {!loading && sanciones.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
+              <tr><td colSpan={esAdmin ? 8 : 7} className="px-4 py-10 text-center text-sm text-slate-400">
                 Sin sanciones registradas.
               </td></tr>
             )}
@@ -246,6 +282,15 @@ export default function Sanciones() {
                   <td className="px-4 py-3 font-mono text-xs text-slate-400">
                     {new Date(s.creado).toLocaleDateString("es-MX")}
                   </td>
+                  {esAdmin && (
+                    <td className="px-4 py-3 text-right">
+                      <button onClick={() => abrirAsignar(s)}
+                        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                        style={{ backgroundColor: s.penalidad ? "#64748B" : "#DC2626" }}>
+                        {s.penalidad ? "Editar sanción" : "Asignar sanción"}
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -428,6 +473,78 @@ export default function Sanciones() {
             {scanError && <p className="mt-3 text-center text-sm font-medium text-red-600">{scanError}</p>}
             <p className="mt-3 text-center text-xs text-slate-400">Apunta la cámara al QR del gafete del empleado.</p>
           </div>
+        </div>
+      )}
+
+      {/* Modal asignar / editar penalidad (admin) */}
+      {asignar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <form onSubmit={guardarAsignar} className="w-full max-w-md rounded-modal bg-white p-6 shadow-panel">
+            <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>
+              {asignar.penalidad ? "Editar sanción" : "Asignar sanción"}
+            </h2>
+            <p className="mb-4 text-xs text-slate-400">
+              {asignar.empleado_nombre ?? `Empleado #${asignar.empleado}`}
+              {asignar.motivo ? ` · ${asignar.motivo}` : ""}
+            </p>
+
+            {asigError && (
+              <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{asigError}</div>
+            )}
+
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="asig-sev" className="mb-1 block text-xs font-semibold text-slate-600">Severidad</label>
+                  <select id="asig-sev" value={asigForm.severidad}
+                    onChange={e => setAsigForm(f => ({ ...f, severidad: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
+                    <option value="bajo">Bajo</option>
+                    <option value="medio">Medio</option>
+                    <option value="alto">Alto</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="asig-pen" className="mb-1 block text-xs font-semibold text-slate-600">Penalidad</label>
+                  <select id="asig-pen" value={asigForm.penalidad}
+                    onChange={e => setAsigForm(f => ({ ...f, penalidad: e.target.value }))}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
+                    <option value="advertencia">Advertencia</option>
+                    <option value="suspension">Suspensión</option>
+                    <option value="baja">Baja</option>
+                  </select>
+                </div>
+              </div>
+              {asigForm.penalidad === "suspension" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="asig-fi" className="mb-1 block text-xs font-semibold text-slate-600">Fecha inicio *</label>
+                    <input id="asig-fi" required type="date" value={asigForm.fecha_inicio}
+                      onChange={e => setAsigForm(f => ({ ...f, fecha_inicio: e.target.value }))}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
+                  </div>
+                  <div>
+                    <label htmlFor="asig-ff" className="mb-1 block text-xs font-semibold text-slate-600">Fecha fin *</label>
+                    <input id="asig-ff" required type="date" value={asigForm.fecha_fin}
+                      onChange={e => setAsigForm(f => ({ ...f, fecha_fin: e.target.value }))}
+                      className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setAsignar(null)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
+                Cancelar
+              </button>
+              <button type="submit" disabled={asigSaving}
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{ backgroundColor: "#DC2626" }}>
+                {asigSaving ? "Guardando…" : "Guardar sanción"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
