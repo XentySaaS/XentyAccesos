@@ -76,18 +76,27 @@ export default function Sanciones() {
     api.get("/api/sanciones/eventos/").then(r => setEventos(r.data ?? [])).catch(() => {});
   }, []);
 
-  // Debounce de la búsqueda de empleado.
+  // Debounce de la búsqueda de empleado, acotada al evento seleccionado (flujo evento→empleado).
   useEffect(() => {
-    if (empQuery.trim().length < 2) { setEmpSugs([]); return; }
+    // Con evento: se listan sus asistentes (q opcional). Sin evento: búsqueda general (mín. 2 letras).
+    if (!form.evento && empQuery.trim().length < 2) { setEmpSugs([]); return; }
     setBuscando(true);
     const t = setTimeout(() => {
-      api.get<EmpOpcion[]>("/api/sanciones/buscar-empleados/", { params: { q: empQuery.trim() } })
+      const params: Record<string, string> = { q: empQuery.trim() };
+      if (form.evento) params.evento = form.evento;
+      api.get<EmpOpcion[]>("/api/sanciones/buscar-empleados/", { params })
         .then(r => setEmpSugs(r.data ?? []))
         .catch(() => setEmpSugs([]))
         .finally(() => setBuscando(false));
     }, 300);
     return () => clearTimeout(t);
-  }, [empQuery]);
+  }, [empQuery, form.evento]);
+
+  function seleccionarEvento(id: string) {
+    // Cambiar de evento invalida el empleado elegido (sus asistentes son otros).
+    setForm(f => ({ ...f, evento: id, empleado: "" }));
+    setEmpLabel(""); setEmpQuery(""); setEmpSugs([]);
+  }
 
   function seleccionarEmpleado(e: EmpOpcion) {
     setForm(f => ({ ...f, empleado: String(e.id) }));
@@ -256,11 +265,24 @@ export default function Sanciones() {
             )}
 
             <div className="space-y-3">
-              {/* Empleado: escaneo QR o búsqueda manual */}
+              {/* 1) Evento activo (primero: acota a sus asistentes) */}
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="san-evento" className="text-xs font-semibold text-slate-600">Evento *</label>
+                  <Ayuda>Evento activo en cuyo contexto ocurrió la falta. Selecciónalo primero: la búsqueda de empleado se acota a quienes asisten a ese evento. Se autocompleta al escanear un gafete.</Ayuda>
+                </div>
+                <select id="san-evento" value={F.evento} onChange={e => seleccionarEvento(e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
+                  <option value="">Selecciona un evento…</option>
+                  {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nombre}</option>)}
+                </select>
+              </div>
+
+              {/* 2) Empleado del evento: escaneo QR o búsqueda manual */}
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">Empleado *</label>
-                  <Ayuda>Persona sancionada. Escanea su gafete QR si lo lleva, o búscala por nombre. La sanción bloquea su acceso en el escáner según la penalidad.</Ayuda>
+                  <Ayuda>Persona sancionada, entre los asistentes al evento elegido. Escanea su gafete QR si lo lleva, o búscala por nombre. La sanción bloquea su acceso según la penalidad.</Ayuda>
                 </div>
 
                 {form.empleado ? (
@@ -268,6 +290,10 @@ export default function Sanciones() {
                     <span className="font-medium text-slate-700">{empLabel || `Empleado #${form.empleado}`}</span>
                     <button type="button" onClick={limpiarEmpleado} className="text-xs text-slate-400 hover:text-red-500">Cambiar</button>
                   </div>
+                ) : !form.evento ? (
+                  <p className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400">
+                    Selecciona primero un evento para elegir a un empleado, o escanea su gafete.
+                  </p>
                 ) : (
                   <>
                     <div className="flex gap-2">
@@ -281,12 +307,12 @@ export default function Sanciones() {
                       </button>
                       <div className="relative flex-1">
                         <input value={empQuery} onChange={e => setEmpQuery(e.target.value)}
-                          placeholder="Buscar empleado por nombre…"
+                          placeholder="Empleado del evento (nombre)…"
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                        {(buscando || empSugs.length > 0) && empQuery.trim().length >= 2 && (
+                        {(buscando || empSugs.length > 0) && (
                           <ul className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
                             {buscando && <li className="px-3 py-2 text-xs text-slate-400">Buscando…</li>}
-                            {!buscando && empSugs.length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Sin coincidencias.</li>}
+                            {!buscando && empSugs.length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Sin asistentes que coincidan.</li>}
                             {empSugs.map(o => (
                               <li key={o.id}>
                                 <button type="button" onClick={() => seleccionarEmpleado(o)}
@@ -300,22 +326,9 @@ export default function Sanciones() {
                         )}
                       </div>
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">Escanea el gafete del empleado o escribe su nombre para buscarlo.</p>
+                    <p className="mt-1 text-[11px] text-slate-400">Muestra los asistentes al evento; escribe para filtrar o escanea su gafete.</p>
                   </>
                 )}
-              </div>
-
-              {/* Evento */}
-              <div>
-                <div className="mb-1 flex items-center gap-1.5">
-                  <label htmlFor="san-evento" className="text-xs font-semibold text-slate-600">Evento</label>
-                  <Ayuda>Evento en cuyo contexto ocurrió la falta. Se autocompleta si escaneas el gafete de un evento; puedes dejarlo vacío si no aplica.</Ayuda>
-                </div>
-                <select id="san-evento" value={F.evento} onChange={e => set("evento", e.target.value)}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
-                  <option value="">Sin evento</option>
-                  {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nombre}</option>)}
-                </select>
               </div>
 
               {esAdmin && (

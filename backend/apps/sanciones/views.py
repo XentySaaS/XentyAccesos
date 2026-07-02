@@ -39,29 +39,46 @@ class SancionViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="buscar-empleados")
     def buscar_empleados(self, request):
-        """Autocomplete de empleados activos por nombre (?q=). Evita un select con todos."""
+        """Empleados asignados a un evento (?evento=), opcionalmente filtrados por nombre (?q=).
+
+        El flujo es evento→empleado: no todos los empleados asisten a un evento, así que la
+        búsqueda se acota a los asignados a ese evento. Sin ``evento`` cae a búsqueda general por
+        nombre (mínimo 2 caracteres) como respaldo.
+        """
         from apps.empleados.models import Empleado
+        from apps.eventos.models import EmpleadoEventoProveedor
 
         q = (request.query_params.get("q") or "").strip()
-        if len(q) < 2:
-            return Response([])
-        empleados = (
-            Empleado.objects.filter(nombre__icontains=q, estado=Empleado.Estado.ACTIVO)
-            .select_related("proveedor")[:15]
-        )
+        evento_id = request.query_params.get("evento")
+
+        empleados = Empleado.objects.filter(estado=Empleado.Estado.ACTIVO).select_related("proveedor")
+        if evento_id:
+            ids = (
+                EmpleadoEventoProveedor.objects
+                .filter(evento_proveedor__evento_id=evento_id)
+                .values_list("empleado_id", flat=True)
+            )
+            empleados = empleados.filter(id__in=list(ids))
+            if q:
+                empleados = empleados.filter(nombre__icontains=q)
+        else:
+            if len(q) < 2:
+                return Response([])
+            empleados = empleados.filter(nombre__icontains=q)
+
         return Response([
             {"id": e.id, "nombre": e.nombre, "empresa": _empresa_de(e)}
-            for e in empleados
+            for e in empleados.order_by("nombre")[:50]
         ])
 
     @action(detail=False, methods=["get"])
     def eventos(self, request):
-        """Lista ligera de eventos vigentes/programados para el campo 'evento' de la amonestación."""
+        """Lista ligera de eventos ACTIVOS (programado / en curso) para el campo 'evento'."""
         from apps.eventos.models import Evento
 
         qs = (
             Evento.objects
-            .exclude(estado=Evento.Estado.CANCELADO)
+            .filter(estado__in=[Evento.Estado.PROGRAMADO, Evento.Estado.EN_CURSO])
             .order_by("-vigencia_inicio")[:100]
         )
         return Response([
