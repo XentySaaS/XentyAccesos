@@ -12,13 +12,16 @@ CAMPOS_SOLO_ADMIN = ("severidad", "penalidad", "fecha_inicio", "fecha_fin")
 
 
 class SancionSerializer(serializers.ModelSerializer):
+    empleado_nombre = serializers.CharField(source="empleado.nombre", read_only=True)
+    evento_nombre = serializers.CharField(source="evento.nombre", read_only=True, default=None)
+
     class Meta:
         model = Sancion
         fields = [
-            "id", "empleado", "evento", "cita", "severidad", "penalidad",
-            "motivo", "fecha_inicio", "fecha_fin", "creado",
+            "id", "empleado", "empleado_nombre", "evento", "evento_nombre", "cita",
+            "severidad", "penalidad", "motivo", "fecha_inicio", "fecha_fin", "creado",
         ]
-        read_only_fields = ["creado"]
+        read_only_fields = ["creado", "empleado_nombre", "evento_nombre"]
 
     def _es_admin(self) -> bool:
         user = getattr(self.context.get("request"), "user", None)
