@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Accesos from "./pages/Accesos";
 import Bitacora from "./pages/Bitacora";
+import Calendario from "./pages/Calendario";
 import Catalogos from "./pages/Catalogos";
 import Citas from "./pages/Citas";
 import Dashboard from "./pages/Dashboard";
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "/recintos",    element: <Recintos /> },
       { path: "/eventos",     element: <Eventos /> },
       { path: "/bitacora",    element: <Bitacora /> },
+      { path: "/calendario",  element: <Calendario /> },
       { path: "/proveedores", element: <Proveedores /> },
       { path: "/citas",       element: <Citas /> },
       { path: "/sanciones",   element: <Sanciones /> },

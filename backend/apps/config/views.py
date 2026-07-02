@@ -97,9 +97,11 @@ class DashboardView(APIView):
 
 
 class CalendarioView(APIView):
-    permission_classes = _ADMIN
+    # Disponible para toda la operación (es un módulo del sidebar, no solo admin).
+    permission_classes = [*PERMISOS_BASE(), ContextoAcceso]
 
     def get(self, request):
+        from apps.accounts.models import Usuario
         from apps.citas.models import Cita
         from apps.eventos.models import Evento
 
@@ -107,12 +109,22 @@ class CalendarioView(APIView):
         hasta = request.query_params.get("hasta") or str(date.today())
         eventos = Evento.objects.filter(vigencia_inicio__lte=hasta, vigencia_fin__gte=desde)
         citas = Cita.objects.filter(fecha__range=[desde, hasta])
+
+        # Misma regla de visibilidad que el resto: un no-administrador solo ve lo que él creó.
+        if request.user.rol != Usuario.Rol.ADMINISTRADOR:
+            eventos = eventos.filter(creado_por=request.user)
+            citas = citas.filter(creado_por_usuario=request.user)
+
         return Response({
             "eventos": [
-                {"id": e.id, "nombre": e.nombre, "inicio": e.vigencia_inicio, "fin": e.vigencia_fin}
+                {"id": e.id, "nombre": e.nombre, "inicio": e.vigencia_inicio,
+                 "fin": e.vigencia_fin, "estado": e.estado}
                 for e in eventos
             ],
-            "citas": [{"id": c.id, "nombre": c.nombre, "fecha": c.fecha} for c in citas],
+            "citas": [
+                {"id": c.id, "nombre": c.nombre or f"Cita #{c.id}", "fecha": c.fecha, "estado": c.estado}
+                for c in citas if c.fecha
+            ],
         })
 
 
