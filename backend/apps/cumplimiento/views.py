@@ -50,6 +50,21 @@ class ResumenView(APIView):
         total_efos = SatEfo.objects.count()
         ultima = SatEfo.objects.aggregate(f=Max("actualizado"))["f"]
 
+        # Auto-reparación: si el padrón está vacío, dispara la importación en background una sola
+        # vez (guard en caché por schema) para no depender de que el admin haga nada manual.
+        importando = False
+        if total_efos == 0:
+            from django.core.cache import cache
+            from django.db import connection
+            lock = f"efos_import_pendiente:{connection.schema_name}"
+            if cache.add(lock, "1", timeout=3600):
+                from .tasks import importar_efos_task
+                try:
+                    importar_efos_task.delay(connection.schema_name)
+                except Exception:  # noqa: BLE001 — sin broker (dev): no romper la respuesta.
+                    cache.delete(lock)
+            importando = True
+
         # Último resultado por proveedor; marcamos los que quedaron ENCONTRADO.
         ultimos = (
             ResultadoLista69b.objects.filter(proveedor=OuterRef("pk")).order_by("-creado")
@@ -72,6 +87,7 @@ class ResumenView(APIView):
             "total_efos": total_efos,
             "ultima_actualizacion": ultima,
             "padron_cargado": total_efos > 0,
+            "importando": importando,
             "marcados": len(proveedores),
             "proveedores": proveedores,
         })

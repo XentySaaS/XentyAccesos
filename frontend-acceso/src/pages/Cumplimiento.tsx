@@ -14,6 +14,7 @@ interface Resumen {
   total_efos: number;
   ultima_actualizacion: string | null;
   padron_cargado: boolean;
+  importando: boolean;
   marcados: number;
   proveedores: ProveedorMarcado[];
 }
@@ -100,11 +101,14 @@ export default function Cumplimiento() {
         </div>
       </div>
 
-      {/* Padrón no cargado */}
+      {/* Padrón aún vacío: se actualiza solo (auto-import en background + sincronización mensual). */}
       {resumen && !resumen.padron_cargado && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          El padrón del SAT aún no se ha importado en este tenant. Ejecuta la importación
-          (<code className="font-mono text-xs">manage.py importar_efos</code>) o programa la tarea mensual para validar contra la lista real.
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <svg className="h-4 w-4 flex-shrink-0 animate-spin" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path d="M21 12a9 9 0 11-6.219-8.56" />
+          </svg>
+          El padrón del SAT se está actualizando automáticamente. En unos minutos verás aquí la
+          validación de tus proveedores; el sistema lo mantiene al día por ti (sin acción manual).
         </div>
       )}
 

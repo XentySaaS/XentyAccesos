@@ -21,18 +21,21 @@ function colorBarra(index: number, total: number) {
   return COLORES_BARRA[Math.floor((index / Math.max(total, 1)) * COLORES_BARRA.length)] ?? "#2563EB";
 }
 
+interface Prov69b { id: number; nombre: string; rfc: string | null; situacion: string | null; }
+interface Resumen69b { padron_cargado: boolean; marcados: number; proveedores: Prov69b[]; }
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [me, setMe]    = useState<Me | null>(null);
   const [kpis, setKpis]= useState<Kpis | null>(null);
-  const [marcados69b, setMarcados69b] = useState(0);
+  const [cumpl, setCumpl] = useState<Resumen69b | null>(null);
 
   useEffect(() => {
     api.get<Me>("/api/auth/me/").then((r) => setMe(r.data)).catch(() => {});
     api.get<Kpis>("/api/reportes/dashboard/").then((r) => setKpis(r.data)).catch(() => {});
-    // Alerta de cumplimiento 69-B (solo admin; para otros roles el endpoint responde 403 y se ignora).
-    api.get<{ marcados: number }>("/api/cumplimiento/resumen/")
-      .then((r) => setMarcados69b(r.data?.marcados ?? 0)).catch(() => {});
+    // Cumplimiento 69-B (solo admin; para otros roles el endpoint responde 403 y se ignora).
+    api.get<Resumen69b>("/api/cumplimiento/resumen/")
+      .then((r) => setCumpl(r.data)).catch(() => {});
   }, []);
 
   const horas = kpis?.accesos_por_hora ?? [];
@@ -65,18 +68,45 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Alerta de cumplimiento 69-B */}
-      {marcados69b > 0 && (
-        <button onClick={() => navigate("/cumplimiento")}
-          className="flex w-full items-center gap-3 rounded-lg border border-red-200 bg-[#FEF2F2] px-4 py-3 text-left transition hover:bg-red-50">
-          <svg className="h-5 w-5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span className="flex-1 text-sm font-semibold text-red-700">
-            {marcados69b} proveedor{marcados69b !== 1 ? "es" : ""} aparece{marcados69b !== 1 ? "n" : ""} en la lista 69-B del SAT.
-          </span>
-          <span className="text-xs font-medium text-red-600">Ver cumplimiento →</span>
-        </button>
+      {/* Cumplimiento SAT 69-B — dato importante de primera instancia */}
+      {cumpl && cumpl.marcados > 0 && (
+        <div className="overflow-hidden rounded-card border border-red-200 bg-white shadow-card">
+          <button onClick={() => navigate("/cumplimiento")}
+            className="flex w-full items-center gap-3 border-b border-red-100 bg-[#FEF2F2] px-4 py-3 text-left hover:bg-red-50">
+            <svg className="h-5 w-5 flex-shrink-0 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span className="flex-1 text-sm font-bold text-red-700">
+              {cumpl.marcados} proveedor{cumpl.marcados !== 1 ? "es" : ""} en la lista 69-B del SAT
+            </span>
+            <span className="text-xs font-medium text-red-600">Ver cumplimiento →</span>
+          </button>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                <th className="px-4 py-2">Proveedor</th>
+                <th className="px-4 py-2">RFC</th>
+                <th className="px-4 py-2">Situación SAT</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {cumpl.proveedores.slice(0, 5).map((p) => (
+                <tr key={p.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-2 font-semibold text-ink-900">{p.nombre}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-slate-600">{p.rfc ?? "—"}</td>
+                  <td className="px-4 py-2">
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">{p.situacion ?? "—"}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {cumpl.proveedores.length > 5 && (
+            <div className="px-4 py-2 text-xs text-slate-400">
+              y {cumpl.proveedores.length - 5} más — ver en Cumplimiento.
+            </div>
+          )}
+        </div>
       )}
 
       {/* KPI cards */}
