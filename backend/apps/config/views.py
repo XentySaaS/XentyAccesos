@@ -79,28 +79,70 @@ class CalendarioView(APIView):
 
 
 class ExportarAccesosView(APIView):
-    """GET /api/reportes/accesos.xlsx — exporta la bitácora de accesos a Excel."""
+    """GET /api/reportes/accesos.xlsx — reporte de accesos en Excel (columnas legibles + filtros).
+
+    Reemplaza al ReportAccessResource del origen: mismas columnas (Invitado, Tipo, Evento/Cita,
+    Tipo de acceso, Entrada, Salida, Observaciones) y filtros por rango de fechas (``fecha_desde``
+    /``fecha_hasta``) y ``tipo_acceso`` — alineados con la bitácora de la pantalla de Accesos.
+    """
 
     permission_classes = _ADMIN
+
+    _ACCESO_LABEL = {"entrada": "Entrada", "denegado": "Denegado"}
+    _METODO_LABEL = {"qr": "QR", "placa": "Placa", "manual": "Manual", "tarjeta": "Tarjeta"}
 
     def get(self, request):
         from openpyxl import Workbook
 
         from apps.acceso.models import RegistroAcceso
 
+        qs = (
+            RegistroAcceso.objects
+            .select_related("empleado", "asistente", "evento", "cita")
+            .order_by("-hora_entrada")
+        )
+        p = request.query_params
+        if p.get("fecha_desde"):
+            qs = qs.filter(hora_entrada__date__gte=p["fecha_desde"])
+        if p.get("fecha_hasta"):
+            qs = qs.filter(hora_entrada__date__lte=p["fecha_hasta"])
+        if p.get("tipo_acceso"):
+            qs = qs.filter(tipo_acceso=p["tipo_acceso"])
+
+        def _persona(r):
+            if r.asistente_id:
+                return getattr(r.asistente, "nombre", None) or "—"
+            if r.empleado_id:
+                return getattr(r.empleado, "nombre", None) or "—"
+            return "—"
+
+        def _tipo(r):
+            return "Cita" if r.cita_id else ("Evento" if r.evento_id else "Manual")
+
+        def _titulo(r):
+            if r.cita_id:
+                return getattr(r.cita, "nombre", None) or f"Cita #{r.cita_id}"
+            if r.evento_id:
+                return getattr(r.evento, "nombre", None) or f"Evento #{r.evento_id}"
+            return "—"
+
         wb = Workbook()
         ws = wb.active
         ws.title = "Accesos"
-        ws.append(["ID", "Empleado", "Evento", "Cita", "Tipo", "Método", "Entrada", "Salida"])
-        for r in RegistroAcceso.objects.all().order_by("-hora_entrada")[:5000]:
+        ws.append(["Invitado", "Tipo", "Evento/Cita", "Tipo de acceso", "Método",
+                   "Hora entrada", "Hora salida", "Observaciones"])
+        for r in qs[:10000]:
             ws.append([
-                r.id, r.empleado_id, r.evento_id, r.cita_id, r.tipo_acceso, r.metodo,
-                r.hora_entrada.isoformat() if r.hora_entrada else "",
-                r.hora_salida.isoformat() if r.hora_salida else "",
+                _persona(r), _tipo(r), _titulo(r),
+                self._ACCESO_LABEL.get(r.tipo_acceso, r.tipo_acceso),
+                self._METODO_LABEL.get(r.metodo, r.metodo),
+                r.hora_entrada.strftime("%Y-%m-%d %H:%M") if r.hora_entrada else "",
+                r.hora_salida.strftime("%Y-%m-%d %H:%M") if r.hora_salida else "",
+                r.observaciones or "",
             ])
         resp = HttpResponse(
             content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-        resp["Content-Disposition"] = 'attachment; filename="accesos.xlsx"'
+        resp["Content-Disposition"] = 'attachment; filename="reporte-accesos.xlsx"'
         wb.save(resp)
         return resp

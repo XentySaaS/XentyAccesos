@@ -79,19 +79,45 @@ export default function Accesos() {
   const [filtroTipo, setFiltroTipo] = useState("");
   const [rango,      setRango]      = useState<RangoFecha>("hoy");
   const [saliendo,   setSaliendo]   = useState<number | null>(null);
+  // Exportar a Excel es un reporte de administrador (como el ReportAccessResource del origen).
+  const [esAdmin,    setEsAdmin]    = useState(false);
+  const [exportando, setExportando] = useState(false);
 
-  const cargar = useCallback(() => {
-    setLoading(true);
+  // Filtros actuales como query params (compartidos por la lista y la exportación).
+  const filtroParams = useCallback((): Record<string, string> => {
     const params: Record<string, string> = {};
     if (filtroTipo) params.tipo_acceso = filtroTipo;
     const fechas = rangoFechas(rango);
     if (fechas) { params.fecha_desde = fechas.desde; params.fecha_hasta = fechas.hasta; }
-    api.get("/api/acceso/registros/", { params })
-      .then(r => setRegistros(lista(r.data)))
-      .finally(() => setLoading(false));
+    return params;
   }, [filtroTipo, rango]);
 
+  const cargar = useCallback(() => {
+    setLoading(true);
+    api.get("/api/acceso/registros/", { params: filtroParams() })
+      .then(r => setRegistros(lista(r.data)))
+      .finally(() => setLoading(false));
+  }, [filtroParams]);
+
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => {
+    api.get("/api/auth/me/").then(r => setEsAdmin(r.data?.rol === "administrador")).catch(() => {});
+  }, []);
+
+  const exportar = async () => {
+    setExportando(true);
+    try {
+      const r = await api.get("/api/reportes/accesos.xlsx", {
+        params: filtroParams(), responseType: "blob",
+      });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reporte-accesos.xlsx";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } finally { setExportando(false); }
+  };
 
   const registrarSalida = async (id: number) => {
     setSaliendo(id);
@@ -156,6 +182,18 @@ export default function Accesos() {
             <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
           </svg>
         </button>
+
+        {/* Exportar Excel (reporte de accesos) — solo administrador, respeta los filtros. */}
+        {esAdmin && (
+          <button onClick={exportar} disabled={exportando}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+            style={{ backgroundColor: "#16A34A" }}>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {exportando ? "Exportando…" : "Exportar Excel"}
+          </button>
+        )}
       </div>
 
       {/* ── Tabla ─────────────────────────────────────────────── */}
