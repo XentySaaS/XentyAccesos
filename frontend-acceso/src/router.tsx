@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Accesos from "./pages/Accesos";
+import Bitacora from "./pages/Bitacora";
 import Catalogos from "./pages/Catalogos";
 import Citas from "./pages/Citas";
 import Dashboard from "./pages/Dashboard";
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "/accesos",     element: <Accesos /> },
       { path: "/recintos",    element: <Recintos /> },
       { path: "/eventos",     element: <Eventos /> },
+      { path: "/bitacora",    element: <Bitacora /> },
       { path: "/proveedores", element: <Proveedores /> },
       { path: "/citas",       element: <Citas /> },
       { path: "/sanciones",   element: <Sanciones /> },

@@ -105,6 +105,67 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
             resp.data["notificados"] = notificados
         return resp
 
+    @action(detail=True, methods=["get"])
+    def bitacora(self, request, pk=None):
+        """Dossier de solo lectura del evento: datos + proveedores invitados con su staff.
+
+        Recrea la 'Bitácora' del sistema origen: un resumen consolidado por evento para consulta,
+        sin exponer QR ni permitir edición.
+        """
+        evento = self.get_object()
+        eps = (
+            EventoProveedor.objects
+            .filter(evento=evento)
+            .select_related("proveedor", "zona", "acceso", "protocolo")
+            .order_by("id")
+        )
+        proveedores = []
+        for ep in eps:
+            asignaciones = (
+                EmpleadoEventoProveedor.objects
+                .filter(evento_proveedor=ep)
+                .select_related("empleado")
+                .order_by("empleado__nombre")
+            )
+            empleados = [{
+                "id": a.empleado_id,
+                "nombre": a.empleado.nombre,
+                "email": a.empleado.email,
+                "telefono": a.empleado.telefono,
+                "foto_url": request.build_absolute_uri(a.empleado.foto.url) if a.empleado.foto else None,
+                "statusdocs": a.statusdocs,
+            } for a in asignaciones]
+            proveedores.append({
+                "id": ep.id,
+                "proveedor": ep.proveedor.nombre,
+                "responsable": ep.proveedor.nombre_responsable,
+                "email_responsable": ep.proveedor.email_responsable,
+                "zona": ep.zona.nombre if ep.zona_id else None,
+                "acceso": ep.acceso.nombre if ep.acceso_id else None,
+                "protocolo": ep.protocolo.nombre if ep.protocolo_id else None,
+                "requiere_parking": ep.requiere_parking,
+                "parking": ep.parking,
+                "cajones_parking": ep.cajones_parking,
+                "notas": ep.notas,
+                "empleados": empleados,
+                "total_empleados": len(empleados),
+            })
+        return Response({
+            "evento": {
+                "id": evento.id,
+                "nombre": evento.nombre,
+                "recinto": evento.recinto.nombre if evento.recinto_id else None,
+                "estado": evento.estado,
+                "vigencia_inicio": evento.vigencia_inicio,
+                "vigencia_fin": evento.vigencia_fin,
+                "hora_inicio": evento.hora_inicio,
+                "hora_fin": evento.hora_fin,
+                "protocolo": evento.protocolo.nombre if evento.protocolo_id else None,
+            },
+            "proveedores": proveedores,
+            "total_proveedores": len(proveedores),
+        })
+
     @action(detail=True, methods=["post"])
     def asignar_verificadores(self, request, pk=None):
         """Reemplaza el conjunto de verificadores del evento por los usuarios indicados."""
