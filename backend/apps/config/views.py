@@ -107,22 +107,46 @@ class CalendarioView(APIView):
 
         desde = request.query_params.get("desde") or str(date.today())
         hasta = request.query_params.get("hasta") or str(date.today())
-        eventos = Evento.objects.filter(vigencia_inicio__lte=hasta, vigencia_fin__gte=desde)
-        citas = Cita.objects.filter(fecha__range=[desde, hasta])
+        eventos = (
+            Evento.objects.filter(vigencia_inicio__lte=hasta, vigencia_fin__gte=desde)
+            .select_related("recinto", "protocolo")
+        )
+        citas = (
+            Cita.objects.filter(fecha__range=[desde, hasta])
+            .select_related("recinto", "proveedor")
+        )
 
         # Misma regla de visibilidad que el resto: un no-administrador solo ve lo que él creó.
         if request.user.rol != Usuario.Rol.ADMINISTRADOR:
             eventos = eventos.filter(creado_por=request.user)
             citas = citas.filter(creado_por_usuario=request.user)
 
+        def _hora(t):
+            return t.strftime("%H:%M") if t else None
+
         return Response({
             "eventos": [
-                {"id": e.id, "nombre": e.nombre, "inicio": e.vigencia_inicio,
-                 "fin": e.vigencia_fin, "estado": e.estado}
+                {
+                    "id": e.id, "nombre": e.nombre, "inicio": e.vigencia_inicio,
+                    "fin": e.vigencia_fin, "estado": e.estado,
+                    "recinto": e.recinto.nombre if e.recinto_id else None,
+                    "protocolo": e.protocolo.nombre if e.protocolo_id else None,
+                    "hora_inicio": _hora(e.hora_inicio), "hora_fin": _hora(e.hora_fin),
+                    "descripcion": e.descripcion,
+                    "proveedores": e.proveedores.count(),
+                }
                 for e in eventos
             ],
             "citas": [
-                {"id": c.id, "nombre": c.nombre or f"Cita #{c.id}", "fecha": c.fecha, "estado": c.estado}
+                {
+                    "id": c.id, "nombre": c.nombre or f"Cita #{c.id}", "fecha": c.fecha,
+                    "estado": c.estado, "tipo_cita": c.tipo_cita,
+                    "recinto": c.recinto.nombre if c.recinto_id else None,
+                    "proveedor": c.proveedor.nombre if c.proveedor_id else None,
+                    "hora_inicio": _hora(c.hora_inicio), "hora_fin": _hora(c.hora_fin),
+                    "detalles": c.detalles,
+                    "asistentes": c.asistentes.count(),
+                }
                 for c in citas if c.fecha
             ],
         })

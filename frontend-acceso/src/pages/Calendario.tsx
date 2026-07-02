@@ -7,9 +7,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 
-interface EventoCal { id: number; nombre: string; inicio: string; fin: string; estado: string; }
-interface CitaCal   { id: number; nombre: string; fecha: string; estado: string; }
+interface EventoCal {
+  id: number; nombre: string; inicio: string; fin: string; estado: string;
+  recinto: string | null; protocolo: string | null;
+  hora_inicio: string | null; hora_fin: string | null; descripcion: string | null; proveedores: number;
+}
+interface CitaCal {
+  id: number; nombre: string; fecha: string; estado: string; tipo_cita: string;
+  recinto: string | null; proveedor: string | null;
+  hora_inicio: string | null; hora_fin: string | null; detalles: string | null; asistentes: number;
+}
 interface Resp      { eventos: EventoCal[]; citas: CitaCal[]; }
+type Detalle = { tipo: "evento"; item: EventoCal } | { tipo: "cita"; item: CitaCal };
 
 const INK = "#0F1B2D";
 const AZUL = "#2563EB";   // eventos
@@ -31,6 +40,7 @@ export default function Calendario() {
   const [cursor, setCursor] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [data, setData]     = useState<Resp>({ eventos: [], citas: [] });
   const [cargando, setCargando] = useState(true);
+  const [detalle, setDetalle] = useState<Detalle | null>(null);
 
   // Celdas de la grilla: 6 semanas desde el lunes de la semana del día 1 del mes.
   const celdas = useMemo(() => {
@@ -86,7 +96,13 @@ export default function Calendario() {
   }
 
   function abrirMarca(marca: Marca) {
-    navigate(marca.tipo === "evento" ? "/eventos" : "/citas");
+    if (marca.tipo === "evento") {
+      const ev = data.eventos.find(e => e.id === marca.id);
+      if (ev) setDetalle({ tipo: "evento", item: ev });
+    } else {
+      const c = data.citas.find(x => x.id === marca.id);
+      if (c) setDetalle({ tipo: "cita", item: c });
+    }
   }
 
   return (
@@ -165,6 +181,73 @@ export default function Calendario() {
           })}
         </div>
       </div>
+
+      {/* Modal de detalle de evento / cita */}
+      {detalle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={() => setDetalle(null)}>
+          <div className="w-full max-w-md rounded-modal bg-white p-6 shadow-panel" onClick={e => e.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest"
+                  style={{ color: detalle.tipo === "evento" ? AZUL : VERDE }}>
+                  <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: detalle.tipo === "evento" ? AZUL : VERDE }} />
+                  {detalle.tipo === "evento" ? "Evento" : "Cita"}
+                </span>
+                <h2 className="mt-0.5 text-lg font-extrabold tracking-tight" style={{ color: INK }}>{detalle.item.nombre}</h2>
+              </div>
+              <button onClick={() => setDetalle(null)} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <Dato k="Estado" v={detalle.item.estado} />
+              <Dato k="Recinto" v={detalle.item.recinto ?? "—"} />
+              {detalle.tipo === "evento" ? (
+                <>
+                  <Dato k="Vigencia desde" v={detalle.item.inicio} />
+                  <Dato k="Vigencia hasta" v={detalle.item.fin} />
+                  <Dato k="Horario" v={rango(detalle.item.hora_inicio, detalle.item.hora_fin)} />
+                  <Dato k="Protocolo" v={detalle.item.protocolo ?? "—"} />
+                  <Dato k="Proveedores" v={String(detalle.item.proveedores)} />
+                  {detalle.item.descripcion && <Dato k="Descripción" v={detalle.item.descripcion} span />}
+                </>
+              ) : (
+                <>
+                  <Dato k="Fecha" v={detalle.item.fecha} />
+                  <Dato k="Horario" v={rango(detalle.item.hora_inicio, detalle.item.hora_fin)} />
+                  <Dato k="Tipo" v={detalle.item.tipo_cita} />
+                  <Dato k="Proveedor" v={detalle.item.proveedor ?? "—"} />
+                  <Dato k="Asistentes" v={String(detalle.item.asistentes)} />
+                  {detalle.item.detalles && <Dato k="Detalles" v={detalle.item.detalles} span />}
+                </>
+              )}
+            </dl>
+
+            <div className="mt-5 flex justify-end">
+              <button onClick={() => navigate(detalle.tipo === "evento" ? "/eventos" : "/citas")}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white"
+                style={{ backgroundColor: "#2563EB" }}>
+                Abrir en {detalle.tipo === "evento" ? "Eventos" : "Citas"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function Dato({ k, v, span }: { k: string; v: string; span?: boolean }) {
+  return (
+    <div className={span ? "col-span-2" : ""}>
+      <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{k}</dt>
+      <dd className="text-slate-700">{v}</dd>
+    </div>
+  );
+}
+
+function rango(a: string | null, b: string | null): string {
+  if (a && b) return `${a} – ${b}`;
+  return a || b || "—";
 }
