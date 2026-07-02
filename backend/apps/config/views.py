@@ -33,28 +33,66 @@ class HistorialCambioViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DashboardView(APIView):
-    permission_classes = _ADMIN
+    # El escritorio es la pantalla de inicio de toda la operación, no solo del admin.
+    permission_classes = [*PERMISOS_BASE(), ContextoAcceso]
 
     def get(self, request):
+        from django.db.models import Count
+        from django.db.models.functions import ExtractHour
+
         from apps.acceso.models import RegistroAcceso
         from apps.eventos.models import EmpleadoEventoProveedor, Evento
 
         hoy = date.today()
-        vigentes = (
+        ENTRADA = RegistroAcceso.TipoAcceso.ENTRADA
+
+        eventos_vigentes_qs = (
             Evento.objects.filter(vigencia_inicio__lte=hoy, vigencia_fin__gte=hoy)
-            .exclude(estado=Evento.Estado.CANCELADO).count()
+            .exclude(estado=Evento.Estado.CANCELADO)
         )
         invitados = EmpleadoEventoProveedor.objects.count()
         ingresados = (
-            RegistroAcceso.objects.filter(
-                tipo_acceso=RegistroAcceso.TipoAcceso.ENTRADA, empleado__isnull=False
-            ).values("empleado").distinct().count()
+            RegistroAcceso.objects.filter(tipo_acceso=ENTRADA, empleado__isnull=False)
+            .values("empleado").distinct().count()
         )
+
+        # Accesos por hora (entradas de hoy) — datos reales para la gráfica, ventana operativa 6–22.
+        por_hora = dict(
+            RegistroAcceso.objects
+            .filter(tipo_acceso=ENTRADA, hora_entrada__date=hoy)
+            .annotate(h=ExtractHour("hora_entrada"))
+            .values("h").annotate(c=Count("id")).values_list("h", "c")
+        )
+        accesos_por_hora = [{"hora": f"{h:02d}", "total": por_hora.get(h, 0)} for h in range(6, 23)]
+
+        # Eventos en curso con su avance de ingreso hoy (recrea el widget EventosActuales del origen).
+        eventos_actuales = []
+        for ev in eventos_vigentes_qs.order_by("vigencia_inicio")[:8]:
+            emp_ids = list(
+                EmpleadoEventoProveedor.objects
+                .filter(evento_proveedor__evento=ev).values_list("empleado_id", flat=True)
+            )
+            total = len(emp_ids)
+            dentro = (
+                RegistroAcceso.objects.filter(
+                    evento=ev, tipo_acceso=ENTRADA, empleado_id__in=emp_ids, hora_entrada__date=hoy
+                ).values("empleado").distinct().count()
+            )
+            eventos_actuales.append({
+                "id": ev.id,
+                "nombre": ev.nombre,
+                "total_invitados": total,
+                "total_ingresados": dentro,
+                "porcentaje": round(dentro / total * 100) if total else 0,
+            })
+
         return Response({
-            "eventos_vigentes": vigentes,
+            "eventos_vigentes": eventos_vigentes_qs.count(),
             "invitados": invitados,
             "ingresados": ingresados,
             "pendientes_por_ingresar": max(invitados - ingresados, 0),
+            "accesos_por_hora": accesos_por_hora,
+            "eventos_actuales": eventos_actuales,
         })
 
 

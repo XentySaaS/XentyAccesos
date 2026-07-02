@@ -5,21 +5,19 @@ import {
 import api from "../api/client";
 
 interface Me    { nombre?: string; email?: string; rol?: string; }
-interface Kpis  { eventos_vigentes: number; invitados: number; ingresados: number; pendientes_por_ingresar: number; }
 interface HoraItem { hora: string; total: number; }
-
-/* Datos mock para la gráfica mientras el endpoint de reportes se implementa */
-const HORAS_MOCK: HoraItem[] = [
-  { hora: "07", total: 42 }, { hora: "08", total: 118 }, { hora: "09", total: 195 },
-  { hora: "10", total: 230 }, { hora: "11", total: 178 }, { hora: "12", total: 143 },
-  { hora: "13", total: 89 }, { hora: "14", total: 67 }, { hora: "15", total: 102 },
-  { hora: "16", total: 145 }, { hora: "17", total: 189 }, { hora: "18", total: 74 },
-];
+interface EventoActual {
+  id: number; nombre: string; total_invitados: number; total_ingresados: number; porcentaje: number;
+}
+interface Kpis {
+  eventos_vigentes: number; invitados: number; ingresados: number; pendientes_por_ingresar: number;
+  accesos_por_hora?: HoraItem[]; eventos_actuales?: EventoActual[];
+}
 
 const COLORES_BARRA = ["#DBEAFE","#BFDBFE","#93C5FD","#60A5FA","#3B82F6","#2563EB"];
 
-function colorBarra(index: number) {
-  return COLORES_BARRA[Math.floor((index / HORAS_MOCK.length) * COLORES_BARRA.length)] ?? "#2563EB";
+function colorBarra(index: number, total: number) {
+  return COLORES_BARRA[Math.floor((index / Math.max(total, 1)) * COLORES_BARRA.length)] ?? "#2563EB";
 }
 
 export default function Dashboard() {
@@ -30,6 +28,10 @@ export default function Dashboard() {
     api.get<Me>("/api/auth/me/").then((r) => setMe(r.data)).catch(() => {});
     api.get<Kpis>("/api/reportes/dashboard/").then((r) => setKpis(r.data)).catch(() => {});
   }, []);
+
+  const horas = kpis?.accesos_por_hora ?? [];
+  const sinAccesos = horas.every((h) => h.total === 0);
+  const eventos = kpis?.eventos_actuales ?? [];
 
   const hora = new Date().getHours();
   const saludo = hora < 13 ? "Buenos días" : hora < 19 ? "Buenas tardes" : "Buenas noches";
@@ -89,41 +91,69 @@ export default function Dashboard() {
 
       {/* Gráfica + alertas */}
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        {/* Gráfica accesos por hora */}
+        {/* Gráfica accesos por hora (entradas de hoy, datos reales) */}
         <div className="rounded-card bg-white p-5 shadow-card">
           <p className="mb-4 text-[13px] font-semibold uppercase tracking-widest text-slate-400">
-            Accesos por hora
+            Accesos por hora · hoy
           </p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={HORAS_MOCK} barSize={22} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F1F4F8" vertical={false} />
-              <XAxis dataKey="hora" tick={{ fontSize: 11, fill: "#94A3B8", fontFamily: "Hanken Grotesk" }} axisLine={false} tickLine={false}
-                tickFormatter={(h) => `${h}h`} />
-              <YAxis tick={{ fontSize: 11, fill: "#94A3B8", fontFamily: "Hanken Grotesk" }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ fontSize: 12, borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(15,27,45,.12)" }}
-                formatter={(v: number) => [v, "accesos"]}
-                labelFormatter={(h) => `${h}:00 h`}
-              />
-              <Bar dataKey="total" radius={[4,4,0,0]} fill="#2563EB">
-                {HORAS_MOCK.map((_, i) => (
-                  <Cell key={i} fill={colorBarra(i)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {sinAccesos ? (
+            <div className="flex h-[220px] items-center justify-center text-sm text-slate-400">
+              Aún no hay accesos registrados hoy.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={horas} barSize={18} margin={{ top: 0, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F4F8" vertical={false} />
+                <XAxis dataKey="hora" tick={{ fontSize: 11, fill: "#94A3B8", fontFamily: "Hanken Grotesk" }} axisLine={false} tickLine={false}
+                  tickFormatter={(h) => `${h}h`} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94A3B8", fontFamily: "Hanken Grotesk" }} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(15,27,45,.12)" }}
+                  formatter={(v: number) => [v, "accesos"]}
+                  labelFormatter={(h) => `${h}:00 h`}
+                />
+                <Bar dataKey="total" radius={[4,4,0,0]} fill="#2563EB">
+                  {horas.map((_, i) => (
+                    <Cell key={i} fill={colorBarra(i, horas.length)} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Panel derecho: alertas */}
+        {/* Panel derecho: eventos en curso con avance de ingreso (widget del origen) */}
         <div className="rounded-card bg-white p-5 shadow-card space-y-4">
           <p className="text-[13px] font-semibold uppercase tracking-widest text-slate-400">
-            Avisos del sistema
+            Eventos en curso
           </p>
-          <Alerta tipo="advertencia" texto="2 documentos por vencer en los próximos 3 días." />
-          <Alerta tipo="info"       texto="Dispositivo 'Torniquete Norte' sin respuesta hace 12 min." />
-          <div className="rounded-lg border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-400">
-            Sin más avisos por ahora.
-          </div>
+          {eventos.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+              Sin eventos activos en este momento.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {eventos.map((ev) => (
+                <div key={ev.id}>
+                  <div className="mb-1 flex items-baseline justify-between gap-2">
+                    <span className="truncate text-sm font-semibold text-ink-900">{ev.nombre}</span>
+                    <span className="tabular flex-shrink-0 text-xs text-slate-500">
+                      {ev.total_ingresados}/{ev.total_invitados}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full transition-all"
+                        style={{ width: `${ev.porcentaje}%`, backgroundColor: "#16A34A" }} />
+                    </div>
+                    <span className="tabular w-9 flex-shrink-0 text-right text-xs font-semibold text-slate-500">
+                      {ev.porcentaje}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -144,19 +174,6 @@ function KpiCard({
       <p className={`mt-1 text-[30px] font-extrabold tabular leading-none ${color}`}>
         {value !== undefined ? value.toLocaleString("es-MX") : <Skeleton />}
       </p>
-    </div>
-  );
-}
-
-function Alerta({ tipo, texto }: { tipo: "advertencia" | "info"; texto: string }) {
-  const styles = {
-    advertencia: { bg: "bg-[#FFFBEB]", border: "border-[#FCD34D]", dot: "bg-[#D97706]", text: "text-[#92400E]" },
-    info:        { bg: "bg-[#EFF6FF]", border: "border-[#BFDBFE]", dot: "bg-[#2563EB]", text: "text-[#1E40AF]" },
-  }[tipo];
-  return (
-    <div className={`${styles.bg} ${styles.border} flex items-start gap-2 rounded-lg border px-3 py-2.5`}>
-      <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${styles.dot}`} />
-      <p className={`text-xs ${styles.text}`}>{texto}</p>
     </div>
   );
 }
