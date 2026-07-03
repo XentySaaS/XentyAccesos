@@ -9,6 +9,7 @@ interface Tenant {
   estado: string;
   trial_ends_at: string | null;
   modo_solo_lectura: boolean;
+  gracia_hasta: string | null;
   plan: string | null;
   saldo: number;
 }
@@ -48,6 +49,7 @@ export default function TenantDetalle() {
   const [creditoMsg, setCreditoMsg] = useState<string | null>(null);
   const [planes, setPlanes]     = useState<PlanOpc[]>([]);
   const [planSel, setPlanSel]   = useState<string>("");
+  const [diasGracia, setDiasGracia] = useState("");
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -109,6 +111,20 @@ export default function TenantDetalle() {
       setPlanSel(data.plan ?? "");
     } catch {
       setError("No se pudo asignar el plan.");
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function otorgarGracia(dias: number) {
+    setOcupado("gracia");
+    setError(null);
+    try {
+      const { data } = await api.post<Tenant>(`/api/admin/tenants/${id}/otorgar-gracia/`, { dias });
+      setT(data);
+      setDiasGracia("");
+    } catch {
+      setError("No se pudo actualizar la gracia.");
     } finally {
       setOcupado(null);
     }
@@ -227,6 +243,60 @@ export default function TenantDetalle() {
           )}
         </div>
       </div>
+
+      {/* Gracia (pago externo) */}
+      {(() => {
+        const graciaMs = t.gracia_hasta ? new Date(t.gracia_hasta).getTime() : 0;
+        const activa = graciaMs > Date.now();
+        const dias = activa ? Math.ceil((graciaMs - Date.now()) / (24 * 60 * 60 * 1000)) : 0;
+        return (
+          <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-700">Periodo de gracia</h2>
+              {activa ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "#16A34A" }} />
+                  Vigente · {dias} d
+                </span>
+              ) : (
+                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Sin gracia</span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Acceso manual cuando el cliente paga por fuera y no hay activación automática. Mientras
+              esté vigente, el tenant no se bloquea por trial vencido ni por suspensión.
+              {activa && <> Vence el <span className="font-medium text-slate-600">{fecha(t.gracia_hasta)}</span>.</>}
+            </p>
+            <div className="mt-3 flex flex-wrap items-end gap-2">
+              <label className="text-sm">
+                <span className="mb-1 block font-medium text-slate-700">Días de gracia</span>
+                <input
+                  type="number" min="1" max="365" value={diasGracia}
+                  onChange={(e) => setDiasGracia(e.target.value)}
+                  className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="30"
+                />
+              </label>
+              <button
+                onClick={() => otorgarGracia(Number(diasGracia))}
+                disabled={ocupado !== null || !diasGracia || Number(diasGracia) < 1}
+                className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {ocupado === "gracia" ? "Aplicando…" : activa ? "Extender gracia" : "Otorgar gracia"}
+              </button>
+              {activa && (
+                <button
+                  onClick={() => otorgarGracia(0)}
+                  disabled={ocupado !== null}
+                  className="rounded-lg border border-red-200 px-3.5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  Quitar gracia
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Plan */}
       <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">

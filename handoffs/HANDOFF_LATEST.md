@@ -77,6 +77,7 @@ Todo lo de abajo está commiteado y pusheado a `origin/main`.
 5. **Descarga del SAT**: `SAT_EFOS_CSV_URL` default = CSV público del SAT; requiere salida a internet en prod. En dev el sandbox sí tuvo acceso (importó 14,055).
 6. Migraciones: `migrate_schemas --shared` (apps compartidos, incl. `apps.efos`) y `--tenant`. Nunca `migrate` a secas.
 7. Backend `--noreload`: cada cambio `.py` requiere `docker compose restart backend` (y luego `restart nginx`, ver #1).
+8. **Gracia manual (`Tenant.gracia_hasta`)**: acceso concedido a mano cuando el cliente paga por fuera. Mientras esté vigente, el enforcement exime del bloqueo por **trial vencido** y por **suspensión** (no por cancelado, ni del modo solo-lectura). Se otorga desde el detalle del tenant en frontend-admin. Es acotada en el tiempo (expira sola).
 
 ## Issues abiertos
 

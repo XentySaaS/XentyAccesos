@@ -34,6 +34,9 @@ class Tenant(TenantMixin):
     trial_ends_at = models.DateTimeField(null=True, blank=True)
     # Dunning/retención: el middleware EnforceModoSoloLectura responde 423 cuando está activo.
     modo_solo_lectura = models.BooleanField(default=False)
+    # Gracia manual (pago externo sin activación automática): mientras ``ahora < gracia_hasta`` el
+    # tenant no se bloquea por trial vencido ni por suspensión. El super-admin la otorga acotada.
+    gracia_hasta = models.DateTimeField(null=True, blank=True)
     plan = models.ForeignKey(
         "tenants.Plan", on_delete=models.SET_NULL, null=True, blank=True, related_name="tenants"
     )

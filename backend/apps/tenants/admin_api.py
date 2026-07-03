@@ -1,8 +1,11 @@
 """Control plane (schema public): alta self-service de tenants + administración del super-admin."""
 from __future__ import annotations
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.db.models import ProtectedError
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
 from rest_framework import serializers, status, viewsets
@@ -71,7 +74,7 @@ class TenantAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tenant
         fields = ["id", "schema_name", "nombre", "estado", "trial_ends_at",
-                  "modo_solo_lectura", "plan", "saldo"]
+                  "modo_solo_lectura", "gracia_hasta", "plan", "saldo"]
 
     def get_plan(self, obj):
         return obj.plan.clave if obj.plan_id else None
@@ -84,6 +87,11 @@ class TenantAdminSerializer(serializers.ModelSerializer):
 class AsignarPlanSerializer(serializers.Serializer):
     # Clave del plan a asignar; null/"" desasigna (deja el tenant sin plan).
     plan = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+class OtorgarGraciaSerializer(serializers.Serializer):
+    # Días de gracia desde ahora. 0 (o negativo) revoca la gracia vigente.
+    dias = serializers.IntegerField(min_value=0, max_value=365)
 
 
 class AcreditarCreditosSerializer(serializers.Serializer):
@@ -138,6 +146,18 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             tenant.plan = None
         tenant.save(update_fields=["plan"])
+        tenant.refresh_from_db()
+        return Response(self.get_serializer(tenant).data)
+
+    @action(detail=True, methods=["post"], url_path="otorgar-gracia")
+    def otorgar_gracia(self, request, pk=None):
+        """Concede N días de acceso manual (pago externo) desde ahora. ``dias=0`` revoca la gracia."""
+        tenant = self.get_object()
+        s = OtorgarGraciaSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        dias = s.validated_data["dias"]
+        tenant.gracia_hasta = timezone.now() + timedelta(days=dias) if dias > 0 else None
+        tenant.save(update_fields=["gracia_hasta"])
         tenant.refresh_from_db()
         return Response(self.get_serializer(tenant).data)
 

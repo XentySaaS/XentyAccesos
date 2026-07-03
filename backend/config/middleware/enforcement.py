@@ -31,6 +31,13 @@ def _whitelisted(path: str) -> bool:
     return any(path.startswith(p) for p in WHITELIST_PREFIXES)
 
 
+def _en_gracia(tenant) -> bool:
+    """True si el tenant tiene una gracia manual vigente (pago externo). Exime del bloqueo por
+    trial vencido y por suspensión, no del estado cancelado."""
+    gracia = getattr(tenant, "gracia_hasta", None)
+    return gracia is not None and gracia > timezone.now()
+
+
 def _deny(detail: str, status: int) -> JsonResponse:
     return JsonResponse({"detail": detail}, status=status)
 
@@ -113,7 +120,7 @@ class BloquearTenantsInactivos(_TenantStateMiddleware):
 
         if tenant.estado == Tenant.Estado.CANCELADO:
             return _deny("La cuenta está cancelada.", 403)
-        if tenant.estado == Tenant.Estado.SUSPENDIDO:
+        if tenant.estado == Tenant.Estado.SUSPENDIDO and not _en_gracia(tenant):
             return _deny("Cuenta suspendida. Regulariza tu pago para reactivarla.", 402)
         return None
 
@@ -128,6 +135,7 @@ class BloquearTrialExpirado(_TenantStateMiddleware):
             tenant.estado == Tenant.Estado.TRIAL
             and tenant.trial_ends_at is not None
             and tenant.trial_ends_at < timezone.now()
+            and not _en_gracia(tenant)
         ):
             return _deny("El periodo de prueba terminó. Suscríbete para continuar.", 402)
         return None

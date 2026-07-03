@@ -7,6 +7,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **Periodo de gracia manual por tenant** (pago externo sin activación automática): campo
+  `Tenant.gracia_hasta` (migración `tenants.0002`, SHARED). Mientras `ahora < gracia_hasta` el
+  enforcement **no bloquea** por trial vencido ni por suspensión (sí sigue bloqueando cancelado y el
+  modo solo-lectura de escritura). Acción `otorgar-gracia` en `TenantAdminViewSet`
+  (`/api/admin/tenants/{id}/otorgar-gracia/`, `dias` 1–365; `dias=0` revoca) + sección "Periodo de
+  gracia" en `TenantDetalle.tsx` (otorgar/extender/quitar, muestra días restantes y fecha de vencimiento).
 - **frontend-admin — asignar plan a un tenant** (sección Plan en `TenantDetalle.tsx`): selector de
   plan + "Asignar". Backend: acción `asignar-plan` en `TenantAdminViewSet`
   (`/api/admin/tenants/{id}/asignar-plan/`) que fija/quita `tenant.plan` (gobierna módulos y checkout
