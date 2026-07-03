@@ -6,6 +6,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 
 ## [Sin release] — 2026-07-02
 
+### Cambiado
+- **Lint limpio y bloqueante en CI**: `ruff format` aplicado a todo el backend (172 archivos) +
+  auto-fixes; `ruff check` queda en verde y el CI ahora **bloquea** con `ruff check` + `ruff format
+  --check`. Config: se ignora `E501` (el formatter gobierna el ancho) y `B904` (diferido). En el
+  proceso, ruff detectó y se corrigió un `F821` real (nombre indefinido tras un renombrado). Suite 10/10.
+
 ### Agregado
 - **Mesa de Ayuda (Nivel B) completa** (baseline suite): cliente detrás de interfaz con **modo
   sandbox** (sin red si no está configurada), en `apps/soporte/services.py` — `probar_conexion` y

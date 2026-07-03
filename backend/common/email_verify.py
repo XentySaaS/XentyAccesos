@@ -4,6 +4,7 @@ Token firmado y con expiración (``django.core.signing`` sobre ``SECRET_KEY``, s
 extra) que ata la verificación a un actor y a su tenant. La vista corre en el data plane: valida
 que el token sea de ESTE tenant (anti cross-tenant) y marca ``email_verificado``.
 """
+
 from __future__ import annotations
 
 from django.apps import apps as django_apps
@@ -22,9 +23,7 @@ MAX_AGE = 60 * 60 * 48  # 48 horas
 
 def generar_token(user, ctx: str) -> str:
     """Token de verificación para ``user`` en el schema actual."""
-    return signing.dumps(
-        {"ctx": ctx, "uid": user.pk, "tenant": connection.schema_name}, salt=SALT
-    )
+    return signing.dumps({"ctx": ctx, "uid": user.pk, "tenant": connection.schema_name}, salt=SALT)
 
 
 def build_verify_url(request, slug: str, token: str) -> str:

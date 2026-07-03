@@ -1,4 +1,5 @@
 """Rutas de gestión de usuarios del tenant."""
+
 from rest_framework.routers import DefaultRouter
 
 from .views import UsuarioViewSet

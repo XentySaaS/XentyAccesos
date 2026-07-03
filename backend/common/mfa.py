@@ -3,6 +3,7 @@
 Lógica pura sobre el secreto (base32); los modelos (Usuario/CuentaProveedor/SuperAdmin) guardan
 ``mfa_totp_secret`` cifrado (Fernet) y ``mfa_habilitado``. WebAuthn (passkeys) se añade aparte.
 """
+
 from __future__ import annotations
 
 import pyotp

@@ -4,11 +4,13 @@ F0.5 monta el webhook de Stripe (transiciona el estado del tenant). La gestión 
 creación de sesiones de checkout (acción del super-admin) se montan cuando exista la auth del
 control plane; la lógica ya vive en ``apps.tenants.services`` (billing + stripe_gateway).
 """
-from django.urls import path
 
-from django.urls import include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.ocr.views import ExtraerIneView
+from apps.proveedores.views import OnboardingProveedorView
 from apps.tenants.admin_api import (
     CrearCheckoutView,
     PlanAdminViewSet,
@@ -16,10 +18,6 @@ from apps.tenants.admin_api import (
     SuperAdminLoginView,
     TenantAdminViewSet,
 )
-from rest_framework_simplejwt.views import TokenRefreshView
-
-from apps.ocr.views import ExtraerIneView
-from apps.proveedores.views import OnboardingProveedorView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.health import LivenessView, ReadinessView
@@ -37,7 +35,11 @@ urlpatterns = [
     # OCR público — usada en el onboarding antes de tener cuenta
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine-public"),
     # Onboarding público de proveedores (accesible sin subdominio de tenant)
-    path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor-public"),
+    path(
+        "api/onboarding/proveedor/",
+        OnboardingProveedorView.as_view(),
+        name="onboarding-proveedor-public",
+    ),
     # Alta pública self-service de tenants
     path("api/signup/", SignupView.as_view(), name="signup"),
     # Control plane (super-admin)
@@ -47,7 +49,10 @@ urlpatterns = [
     path("api/admin/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="admin-mfa-enrolar"),
     path("api/admin/mfa/totp/activar/", ActivarTOTPView.as_view(), name="admin-mfa-activar"),
     path("api/admin/mfa/verificar/", VerificarMFAView.as_view(), name="admin-mfa-verificar"),
-    path("api/admin/tenants/<int:tenant_id>/checkout/", CrearCheckoutView.as_view(),
-         name="admin-checkout"),
+    path(
+        "api/admin/tenants/<int:tenant_id>/checkout/",
+        CrearCheckoutView.as_view(),
+        name="admin-checkout",
+    ),
     *router.urls,
 ]

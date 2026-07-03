@@ -3,6 +3,7 @@
 Crea Tenant + schema (auto-migrado por django-tenants) + Domain + SaldoCreditos + trial + usuario
 administrador inicial, todo de forma atómica.
 """
+
 from __future__ import annotations
 
 import re
@@ -24,8 +25,15 @@ class ProvisionError(ValueError):
 
 
 def provisionar_tenant(
-    *, slug: str, dominio: str, nombre: str, admin_email: str, admin_nombre: str,
-    admin_password: str | None = None, plan_clave: str | None = None, trial_dias: int = TRIAL_DIAS,
+    *,
+    slug: str,
+    dominio: str,
+    nombre: str,
+    admin_email: str,
+    admin_nombre: str,
+    admin_password: str | None = None,
+    plan_clave: str | None = None,
+    trial_dias: int = TRIAL_DIAS,
     verificar_email: bool = True,
 ):
     """Aprovisiona el tenant y su admin. Devuelve ``(tenant, password)``.
@@ -47,7 +55,9 @@ def provisionar_tenant(
 
     with transaction.atomic():
         tenant = Tenant.objects.create(  # auto_create_schema migra el schema al guardar
-            schema_name=slug, nombre=nombre, plan=plan,
+            schema_name=slug,
+            nombre=nombre,
+            plan=plan,
             estado=Tenant.Estado.TRIAL,
             trial_ends_at=timezone.now() + timedelta(days=trial_dias),
         )
@@ -59,7 +69,9 @@ def provisionar_tenant(
 
     with schema_context(slug):
         admin = Usuario.objects.create_superuser(
-            email=admin_email, nombre=admin_nombre, password=password,
+            email=admin_email,
+            nombre=admin_nombre,
+            password=password,
         )
         # Provisioning de confianza (CLI): se marca verificado. El alta pública exige doble opt-in
         # (verificar_email=False): el admin confirma su correo por el enlace enviado (common.email_verify).

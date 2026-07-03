@@ -4,6 +4,7 @@ del empleado e historial de accesos, para que el guardia coteje.
 Todo es *best-effort*: cada bloque va en try/except para no tumbar nunca el veredicto del escaneo
 (que es lo crítico). Devuelve estructuras JSON-serializables por DRF.
 """
+
 from __future__ import annotations
 
 from .models import RegistroAcceso, RegistroAccesoParking
@@ -68,8 +69,9 @@ def _detalle_evento(request, reg) -> tuple[dict, list]:
         {"label": "Descripción", "valor": ev.descripcion or "—"},
     ]
     eep = (
-        EmpleadoEventoProveedor.objects
-        .select_related("evento_proveedor__zona", "evento_proveedor__punto_acceso")
+        EmpleadoEventoProveedor.objects.select_related(
+            "evento_proveedor__zona", "evento_proveedor__punto_acceso"
+        )
         .filter(empleado_id=reg.empleado_id, evento_proveedor__evento_id=ev.id)
         .first()
     )
@@ -87,26 +89,29 @@ def _detalle_evento(request, reg) -> tuple[dict, list]:
 
     # Documentos del empleado requeridos por el evento (con enlace autenticado).
     tipo_ids = set(
-        EventoTipoDocumento.objects.filter(evento_id=ev.id).values_list("tipo_documento_id", flat=True)
+        EventoTipoDocumento.objects.filter(evento_id=ev.id).values_list(
+            "tipo_documento_id", flat=True
+        )
     )
-    grupo_ids = EventoGrupoDocumentos.objects.filter(evento_id=ev.id).values_list("grupo_id", flat=True)
+    grupo_ids = EventoGrupoDocumentos.objects.filter(evento_id=ev.id).values_list(
+        "grupo_id", flat=True
+    )
     if grupo_ids:
         tipo_ids.update(
             TipoDocumento.objects.filter(grupo_id__in=list(grupo_ids)).values_list("id", flat=True)
         )
     documentos = []
     if tipo_ids:
-        docs = (
-            DocumentoEmpleado.objects
-            .select_related("tipo_documento")
-            .filter(empleado_id=reg.empleado_id, tipo_documento_id__in=tipo_ids)
+        docs = DocumentoEmpleado.objects.select_related("tipo_documento").filter(
+            empleado_id=reg.empleado_id, tipo_documento_id__in=tipo_ids
         )
         documentos = [
             {
                 "nombre": d.tipo_documento.nombre,
                 "estado": d.get_estado_display(),
                 "url": request.build_absolute_uri(f"/api/documentos/{d.id}/download/")
-                if request is not None else f"/api/documentos/{d.id}/download/",
+                if request is not None
+                else f"/api/documentos/{d.id}/download/",
             }
             for d in docs
         ]
@@ -164,4 +169,9 @@ def construir_contexto(request, reg) -> dict:
             detalle = _detalle_cita(reg)
     except Exception:
         pass
-    return {"contacto": contacto, "detalle": detalle, "documentos": documentos, "historial": historial}
+    return {
+        "contacto": contacto,
+        "detalle": detalle,
+        "documentos": documentos,
+        "historial": historial,
+    }

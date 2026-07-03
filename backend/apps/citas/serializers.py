@@ -6,6 +6,7 @@ Tres capas de serialización:
   - CitaDetailSerializer → detalle con asistentes anidados
   - CitaSerializer       → escritura (create/update) con invitados embebidos
 """
+
 from __future__ import annotations
 
 from django.contrib.contenttypes.models import ContentType
@@ -24,11 +25,15 @@ class ContactoSerializer(serializers.ModelSerializer):
 
 # ── Asistentes ────────────────────────────────────────────────────────────────
 
+
 class AsistenteCitaInputSerializer(serializers.Serializer):
     """Entrada al crear/editar una cita con invitados embebidos."""
+
     nombre = serializers.CharField(max_length=200)
     email = serializers.EmailField(required=False, allow_null=True, allow_blank=True)
-    telefono = serializers.CharField(max_length=30, required=False, allow_null=True, allow_blank=True)
+    telefono = serializers.CharField(
+        max_length=30, required=False, allow_null=True, allow_blank=True
+    )
     persona_id = serializers.IntegerField(required=False, allow_null=True)
     tipo = serializers.IntegerField(default=AsistenteCita.Tipo.CONTACTO)
 
@@ -39,9 +44,18 @@ class AsistenteCitaSerializer(serializers.ModelSerializer):
     class Meta:
         model = AsistenteCita
         fields = [
-            "id", "cita", "nombre", "email", "telefono", "estado", "tipo",
-            "persona_id", "requiere_ine", "ine_capturado",
-            "tipo_identificacion", "estado_adicional",
+            "id",
+            "cita",
+            "nombre",
+            "email",
+            "telefono",
+            "estado",
+            "tipo",
+            "persona_id",
+            "requiere_ine",
+            "ine_capturado",
+            "tipo_identificacion",
+            "estado_adicional",
         ]
         read_only_fields = ["ine_capturado"]
 
@@ -56,8 +70,10 @@ class AsistenteCitaSerializer(serializers.ModelSerializer):
 
 # ── Cita — lectura ────────────────────────────────────────────────────────────
 
+
 class CitaListSerializer(serializers.ModelSerializer):
     """Serializer ligero para la tabla: solo campos necesarios para mostrar filas."""
+
     recinto_nombre = serializers.CharField(source="recinto.nombre", read_only=True)
     proveedor_nombre = serializers.CharField(
         source="proveedor.nombre", read_only=True, allow_null=True, default=None
@@ -70,12 +86,22 @@ class CitaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cita
         fields = [
-            "id", "nombre", "fecha", "hora_inicio", "hora_fin",
-            "tipo", "tipo_cita", "estado",
-            "recinto", "recinto_nombre",
-            "proveedor", "proveedor_nombre",
-            "asignado_a", "asignado_a_nombre",
-            "total_asistentes", "creado",
+            "id",
+            "nombre",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+            "tipo",
+            "tipo_cita",
+            "estado",
+            "recinto",
+            "recinto_nombre",
+            "proveedor",
+            "proveedor_nombre",
+            "asignado_a",
+            "asignado_a_nombre",
+            "total_asistentes",
+            "creado",
         ]
 
     def get_total_asistentes(self, obj) -> int:
@@ -84,6 +110,7 @@ class CitaListSerializer(serializers.ModelSerializer):
 
 class CitaDetailSerializer(serializers.ModelSerializer):
     """Serializer completo para el panel de detalle."""
+
     recinto_nombre = serializers.CharField(source="recinto.nombre", read_only=True)
     proveedor_nombre = serializers.CharField(
         source="proveedor.nombre", read_only=True, allow_null=True, default=None
@@ -108,30 +135,64 @@ class CitaDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cita
         fields = [
-            "id", "nombre", "detalles", "fecha", "hora_inicio", "hora_fin", "limite",
-            "tipo", "tipo_cita", "estado",
-            "recinto", "recinto_nombre",
-            "ubicacion", "ubicacion_nombre", "ubicacion_zona_id",
-            "acceso", "acceso_nombre",
-            "protocolo", "protocolo_nombre",
-            "proveedor", "proveedor_nombre",
-            "asignado_a", "asignado_a_nombre",
-            "asistentes", "creado", "actualizado",
+            "id",
+            "nombre",
+            "detalles",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+            "limite",
+            "tipo",
+            "tipo_cita",
+            "estado",
+            "recinto",
+            "recinto_nombre",
+            "ubicacion",
+            "ubicacion_nombre",
+            "ubicacion_zona_id",
+            "acceso",
+            "acceso_nombre",
+            "protocolo",
+            "protocolo_nombre",
+            "proveedor",
+            "proveedor_nombre",
+            "asignado_a",
+            "asignado_a_nombre",
+            "asistentes",
+            "creado",
+            "actualizado",
         ]
 
 
 # ── Cita — escritura ──────────────────────────────────────────────────────────
 
+
 class CitaSerializer(serializers.ModelSerializer):
     """Serializer de escritura. Acepta lista de invitados embebida en ``asistentes_input``."""
+
     asistentes_input = AsistenteCitaInputSerializer(many=True, required=False, write_only=True)
 
     class Meta:
         model = Cita
         fields = [
-            "id", "nombre", "detalles", "fecha", "hora_inicio", "hora_fin", "limite",
-            "tipo", "tipo_cita", "estado", "creado_por_usuario", "asignado_a", "protocolo",
-            "proveedor", "recinto", "ubicacion", "punto_acceso", "acceso",
+            "id",
+            "nombre",
+            "detalles",
+            "fecha",
+            "hora_inicio",
+            "hora_fin",
+            "limite",
+            "tipo",
+            "tipo_cita",
+            "estado",
+            "creado_por_usuario",
+            "asignado_a",
+            "protocolo",
+            "proveedor",
+            "recinto",
+            "ubicacion",
+            "punto_acceso",
+            "acceso",
             "asistentes_input",
         ]
         read_only_fields = ["creado_por_usuario"]

@@ -1,4 +1,5 @@
 """Serializers de configuración y auditoría."""
+
 from __future__ import annotations
 
 from rest_framework import serializers
@@ -24,7 +25,14 @@ class HistorialCambioSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistorialCambio
         fields = [
-            "id", "descripcion", "modelo", "modelo_id",
-            "usuario", "usuario_nombre", "accion", "creado",
-            "antes", "despues",
+            "id",
+            "descripcion",
+            "modelo",
+            "modelo_id",
+            "usuario",
+            "usuario_nombre",
+            "accion",
+            "creado",
+            "antes",
+            "despues",
         ]

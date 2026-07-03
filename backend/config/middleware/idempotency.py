@@ -13,14 +13,15 @@ El aislamiento por tenant es automático: la caché prefija cada clave con el sc
 Debe ir DESPUÉS de ``TenantMainMiddleware`` (para que el schema ya esté resuelto) y de los
 enforcement (para no cachear un 503/423).
 """
+
 from __future__ import annotations
 
 from django.core.cache import cache
 from django.http import HttpResponse, JsonResponse
 
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH"})
-_TTL = 60 * 10          # ventana de repetición de la respuesta (10 min)
-_LOCK_TTL = 30          # vida del lock mientras la vista corre (segundos)
+_TTL = 60 * 10  # ventana de repetición de la respuesta (10 min)
+_LOCK_TTL = 30  # vida del lock mientras la vista corre (segundos)
 
 
 class Idempotency:
@@ -36,7 +37,8 @@ class Idempotency:
         cached = cache.get(base)
         if cached is not None:
             return HttpResponse(
-                cached["content"], status=cached["status"],
+                cached["content"],
+                status=cached["status"],
                 content_type=cached["content_type"],
             )
 
@@ -57,11 +59,15 @@ class Idempotency:
                     contenido = response.content
                 except Exception:  # noqa: BLE001 — respuesta en streaming u otra no cacheable
                     return response
-                cache.set(base, {
-                    "content": contenido,
-                    "status": response.status_code,
-                    "content_type": response.get("Content-Type", "application/json"),
-                }, _TTL)
+                cache.set(
+                    base,
+                    {
+                        "content": contenido,
+                        "status": response.status_code,
+                        "content_type": response.get("Content-Type", "application/json"),
+                    },
+                    _TTL,
+                )
             return response
         finally:
             cache.delete(f"{base}:lock")

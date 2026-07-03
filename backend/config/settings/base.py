@@ -2,6 +2,7 @@
 Configuración compartida. Toda la lógica vive aquí; dev/prod/control_plane solo ajustan.
 Secretos vía python-decouple (.env). NUNCA hardcodear credenciales (REMEDIACION §C1).
 """
+
 from datetime import timedelta
 from pathlib import Path
 
@@ -10,8 +11,8 @@ from decouple import Csv, config
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ── Seguridad base ───────────────────────────────────────────────────────────
-SECRET_KEY = config("SECRET_KEY")                 # sin default: falla si falta
-SECRET_KEY_FERNET = config("SECRET_KEY_FERNET")   # separada (cifra PII/QR). REMEDIACION §C3
+SECRET_KEY = config("SECRET_KEY")  # sin default: falla si falta
+SECRET_KEY_FERNET = config("SECRET_KEY_FERNET")  # separada (cifra PII/QR). REMEDIACION §C3
 DEBUG = config("DEBUG", default=False, cast=bool)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 # Allowlist de IPs para /admin/ (RestringirAdminPorIP). Vacío = sin restricción (dev).
@@ -22,8 +23,8 @@ TENANT_BASE_DOMAIN = config("TENANT_BASE_DOMAIN", default="localhost")
 # ── Multitenancy (django-tenants) ────────────────────────────────────────────
 SHARED_APPS = [
     "django_tenants",
-    "apps.tenants",                  # F0: Tenant, Domain, Plan, billing, DispositivoEdge…
-    "apps.efos",                     # padrón SAT 69-B global (una copia, schema público)
+    "apps.tenants",  # F0: Tenant, Domain, Plan, billing, DispositivoEdge…
+    "apps.efos",  # padrón SAT 69-B global (una copia, schema público)
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
 ]
@@ -79,15 +80,15 @@ DATABASES = {
 
 # ── Middleware (orden crítico — CLAUDE.md §6) ────────────────────────────────
 MIDDLEWARE = [
-    "django_tenants.middleware.main.TenantMainMiddleware",          # 1. resuelve request.tenant
-    "config.middleware.enforcement.RestringirAdminPorIP",           # 2. /admin/ por IP
-    "config.middleware.enforcement.EnforceMantenimiento",           # 3. 503 en mantenimiento
-    "config.middleware.enforcement.BloquearTenantsInactivos",       # 4. suspendido/cancelado
+    "django_tenants.middleware.main.TenantMainMiddleware",  # 1. resuelve request.tenant
+    "config.middleware.enforcement.RestringirAdminPorIP",  # 2. /admin/ por IP
+    "config.middleware.enforcement.EnforceMantenimiento",  # 3. 503 en mantenimiento
+    "config.middleware.enforcement.BloquearTenantsInactivos",  # 4. suspendido/cancelado
     # Slot 5 (email no verificado) -> common.permissions.EmailVerificado (DRF, requiere actor JWT)
-    "config.middleware.enforcement.BloquearTrialExpirado",          # 6. trial vencido
-    "config.middleware.enforcement.EnforceModoSoloLectura",         # 7. 423 en dunning
+    "config.middleware.enforcement.BloquearTrialExpirado",  # 6. trial vencido
+    "config.middleware.enforcement.EnforceModoSoloLectura",  # 7. 423 en dunning
     # Slot 9 (sesión MFA incompleta) -> common.permissions.MFASesionCompleta (DRF)
-    "config.middleware.idempotency.Idempotency",                    # dedup por Idempotency-Key
+    "config.middleware.idempotency.Idempotency",  # dedup por Idempotency-Key
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -139,8 +140,8 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
-        "common.permissions.MFASesionCompleta",   # §6 slot 9: sesión MFA incompleta -> 403
-        "common.permissions.EmailVerificado",     # §6 slot 5: email no verificado -> 403
+        "common.permissions.MFASesionCompleta",  # §6 slot 9: sesión MFA incompleta -> 403
+        "common.permissions.EmailVerificado",  # §6 slot 5: email no verificado -> 403
     ),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
     # Convierte Ratelimited → 429 (REMEDIACION §A4); el resto usa el manejo estándar de DRF.
@@ -151,8 +152,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME":  timedelta(hours=config("JWT_ACCESS_HOURS",  default=8,  cast=int)),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=config("JWT_REFRESH_DAYS",   default=30, cast=int)),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=config("JWT_ACCESS_HOURS", default=8, cast=int)),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=config("JWT_REFRESH_DAYS", default=30, cast=int)),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
@@ -227,8 +228,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ── Integraciones (claves vía .env; nunca hardcodear — REMEDIACION §C2) ──────
 ANTHROPIC_API_KEY = config("ANTHROPIC_API_KEY", default="")
-STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")          # vacío → modo sandbox
-STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")   # firma del webhook (prod)
+STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")  # vacío → modo sandbox
+STRIPE_WEBHOOK_SECRET = config("STRIPE_WEBHOOK_SECRET", default="")  # firma del webhook (prod)
 STRIPE_SUCCESS_URL = config("STRIPE_SUCCESS_URL", default="https://app.xenty.mx/billing/ok")
 STRIPE_CANCEL_URL = config("STRIPE_CANCEL_URL", default="https://app.xenty.mx/billing/cancel")
 ULTRAMSG_TOKEN = config("ULTRAMSG_TOKEN", default="")

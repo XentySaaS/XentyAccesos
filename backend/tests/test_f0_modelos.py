@@ -3,6 +3,7 @@
 Requieren PostgreSQL (django-tenants). Verifican: cifrado Fernet de PII en reposo, ledger de
 créditos append-only y reglas básicas del Usuario (login exige activo, baja lógica).
 """
+
 import pytest
 from django.db import connection
 

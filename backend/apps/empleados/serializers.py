@@ -1,4 +1,5 @@
 """Serializer de Empleado (el proveedor lo asigna el servidor según el actor)."""
+
 from __future__ import annotations
 
 from rest_framework import serializers

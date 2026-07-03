@@ -1,4 +1,5 @@
 """Rutas REST de mensajería."""
+
 from rest_framework.routers import DefaultRouter
 
 from .views import MensajeViewSet

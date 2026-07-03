@@ -3,6 +3,7 @@
 Corrige C6 (filtro por dispositivo en pull/ack) y C7 (la validación corre en el tenant del
 dispositivo; un QR de otro tenant se rechaza).
 """
+
 from __future__ import annotations
 
 from django_tenants.utils import get_public_schema_name, schema_context

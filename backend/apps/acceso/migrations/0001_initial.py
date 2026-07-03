@@ -5,44 +5,126 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('citas', '0001_initial'),
-        ('empleados', '0001_initial'),
-        ('eventos', '0002_empleadoeventoproveedor_eventoproveedor_and_more'),
+        ("citas", "0001_initial"),
+        ("empleados", "0001_initial"),
+        ("eventos", "0002_empleadoeventoproveedor_eventoproveedor_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='RegistroAcceso',
+            name="RegistroAcceso",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tipo_acceso', models.CharField(choices=[('entrada', 'Entrada'), ('denegado', 'Denegado')], default='entrada', max_length=10)),
-                ('metodo', models.CharField(choices=[('qr', 'QR'), ('placa', 'Placa'), ('manual', 'Manual'), ('tarjeta', 'Tarjeta')], default='qr', max_length=10)),
-                ('placa_vehiculo', models.CharField(blank=True, max_length=20, null=True)),
-                ('hora_entrada', models.DateTimeField(db_index=True)),
-                ('hora_salida', models.DateTimeField(blank=True, db_index=True, null=True)),
-                ('observaciones', models.TextField(blank=True, null=True)),
-                ('asistente', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='citas.asistentecita')),
-                ('cajon', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='eventos.cajonparking')),
-                ('cita', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='citas.cita')),
-                ('empleado', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='empleados.empleado')),
-                ('evento', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='eventos.evento')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "tipo_acceso",
+                    models.CharField(
+                        choices=[("entrada", "Entrada"), ("denegado", "Denegado")],
+                        default="entrada",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "metodo",
+                    models.CharField(
+                        choices=[
+                            ("qr", "QR"),
+                            ("placa", "Placa"),
+                            ("manual", "Manual"),
+                            ("tarjeta", "Tarjeta"),
+                        ],
+                        default="qr",
+                        max_length=10,
+                    ),
+                ),
+                ("placa_vehiculo", models.CharField(blank=True, max_length=20, null=True)),
+                ("hora_entrada", models.DateTimeField(db_index=True)),
+                ("hora_salida", models.DateTimeField(blank=True, db_index=True, null=True)),
+                ("observaciones", models.TextField(blank=True, null=True)),
+                (
+                    "asistente",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="citas.asistentecita",
+                    ),
+                ),
+                (
+                    "cajon",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="eventos.cajonparking",
+                    ),
+                ),
+                (
+                    "cita",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="citas.cita",
+                    ),
+                ),
+                (
+                    "empleado",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="empleados.empleado",
+                    ),
+                ),
+                (
+                    "evento",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="eventos.evento",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='RegistroAccesoParking',
+            name="RegistroAccesoParking",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('tipo_acceso', models.CharField(choices=[('entrada', 'Entrada'), ('denegado', 'Denegado')], default='entrada', max_length=10)),
-                ('hora_entrada', models.DateTimeField(db_index=True)),
-                ('hora_salida', models.DateTimeField(blank=True, null=True)),
-                ('personas', models.IntegerField(default=1)),
-                ('placa_vehiculo', models.CharField(blank=True, max_length=20, null=True)),
-                ('observaciones', models.TextField(blank=True, null=True)),
-                ('cajon', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='registros', to='eventos.cajonparking')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "tipo_acceso",
+                    models.CharField(
+                        choices=[("entrada", "Entrada"), ("denegado", "Denegado")],
+                        default="entrada",
+                        max_length=10,
+                    ),
+                ),
+                ("hora_entrada", models.DateTimeField(db_index=True)),
+                ("hora_salida", models.DateTimeField(blank=True, null=True)),
+                ("personas", models.IntegerField(default=1)),
+                ("placa_vehiculo", models.CharField(blank=True, max_length=20, null=True)),
+                ("observaciones", models.TextField(blank=True, null=True)),
+                (
+                    "cajon",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="registros",
+                        to="eventos.cajonparking",
+                    ),
+                ),
             ],
         ),
     ]

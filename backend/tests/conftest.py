@@ -6,6 +6,7 @@ prueba escribe sus datos DENTRO de un schema vía ``schema_context`` y esos dato
 transacción de ``django_db`` de cada test. Los tenants viven fuera de esa transacción (se crean con
 ``django_db_blocker.unblock``) y se limpian en el teardown del fixture.
 """
+
 import pytest
 from django.db import connection
 

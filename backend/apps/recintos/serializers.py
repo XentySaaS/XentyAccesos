@@ -1,4 +1,5 @@
 """Serializers de la topología de recintos."""
+
 from __future__ import annotations
 
 from rest_framework import serializers

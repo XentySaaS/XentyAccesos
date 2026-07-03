@@ -5,6 +5,7 @@ El estado del documento es entero 0/1/2 (el origen tenía drift boolean/int): la
 
 Referencia: MODELO_DATOS_SAR §6.5 · SAR_FUNCIONALIDADES §5.
 """
+
 from __future__ import annotations
 
 from django.db import models
@@ -39,14 +40,14 @@ class Protocolo(models.Model):  # protocols
     """Protocolo operativo del recinto (PDF descargable por el proveedor en su portal)."""
 
     class Estado(models.TextChoices):
-        ACTIVO   = "activo",   "Activo"
+        ACTIVO = "activo", "Activo"
         INACTIVO = "inactivo", "Inactivo"
 
-    nombre      = models.CharField(max_length=200)
+    nombre = models.CharField(max_length=200)
     descripcion = models.TextField(null=True, blank=True)
-    archivo     = models.FileField(upload_to="protocolos/", null=True, blank=True)
-    estado      = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
-    creado      = models.DateTimeField(auto_now_add=True)
+    archivo = models.FileField(upload_to="protocolos/", null=True, blank=True)
+    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ACTIVO)
+    creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
@@ -65,9 +66,7 @@ class DocumentoEmpleado(models.Model):  # employee_documents
     tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.PROTECT)
     archivo = models.FileField(upload_to="empleados/documentos/")  # storage PRIVADO por schema
     tipo_archivo = models.CharField(max_length=60, null=True, blank=True)
-    estado = models.IntegerField(
-        choices=Estado.choices, default=Estado.PENDIENTE, db_index=True
-    )
+    estado = models.IntegerField(choices=Estado.choices, default=Estado.PENDIENTE, db_index=True)
     motivo_rechazo = models.TextField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)

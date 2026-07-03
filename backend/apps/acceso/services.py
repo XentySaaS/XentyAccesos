@@ -3,6 +3,7 @@
 Al leer un QR: descifra/verifica firma → pertenencia → vigencia → ``statusdocs`` → sin sanción
 activa → registra entrada o denegado. También el auto-registro de walk-in.
 """
+
 from __future__ import annotations
 
 from django.utils import timezone
@@ -32,7 +33,9 @@ def _entrada(**kw) -> RegistroAcceso:
 def _denegar(motivo: str, **kw) -> tuple[RegistroAcceso, bool, str]:
     reg = RegistroAcceso.objects.create(
         tipo_acceso=RegistroAcceso.TipoAcceso.DENEGADO,
-        hora_entrada=timezone.now(), observaciones=motivo, **kw,
+        hora_entrada=timezone.now(),
+        observaciones=motivo,
+        **kw,
     )
     return reg, False, motivo
 
@@ -41,12 +44,14 @@ def _salida_abierta(**filtros):
     """Entrada concedida del día sin salida registrada (para el toggle entrada/salida al re-escanear)."""
     hoy = timezone.now().date()
     return (
-        RegistroAcceso.objects
-        .filter(
+        RegistroAcceso.objects.filter(
             tipo_acceso=RegistroAcceso.TipoAcceso.ENTRADA,
-            hora_entrada__date=hoy, hora_salida__isnull=True, **filtros,
+            hora_entrada__date=hoy,
+            hora_salida__isnull=True,
+            **filtros,
         )
-        .order_by("-hora_entrada").first()
+        .order_by("-hora_entrada")
+        .first()
     )
 
 
@@ -77,8 +82,9 @@ def procesar_escaneo(qr: str, tenant: str, *, placa: str | None = None):
 
 def _escaneo_evento(eep_id, EmpleadoEventoProveedor):
     eep = (
-        EmpleadoEventoProveedor.objects
-        .select_related("evento_proveedor__evento", "empleado").filter(id=eep_id).first()
+        EmpleadoEventoProveedor.objects.select_related("evento_proveedor__evento", "empleado")
+        .filter(id=eep_id)
+        .first()
     )
     if eep is None:
         return _denegar("Asignación no encontrada.")
@@ -124,16 +130,20 @@ def _escaneo_cita(asistente_id):
 
 
 def _escaneo_parking(cajon_id, CajonParking, placa):
-    cajon = CajonParking.objects.select_related("evento_proveedor__evento").filter(id=cajon_id).first()
+    cajon = (
+        CajonParking.objects.select_related("evento_proveedor__evento").filter(id=cajon_id).first()
+    )
     if cajon is None:
         return _denegar("Cajón de parking no encontrado.")
     evento = cajon.evento_proveedor.evento
 
     hoy = timezone.now().date()
     abierto = (
-        RegistroAccesoParking.objects
-        .filter(cajon=cajon, hora_entrada__date=hoy, hora_salida__isnull=True)
-        .order_by("-hora_entrada").first()
+        RegistroAccesoParking.objects.filter(
+            cajon=cajon, hora_entrada__date=hoy, hora_salida__isnull=True
+        )
+        .order_by("-hora_entrada")
+        .first()
     )
     if abierto:
         abierto.hora_salida = timezone.now()
@@ -143,8 +153,10 @@ def _escaneo_parking(cajon_id, CajonParking, placa):
     if not (evento.vigencia_inicio <= hoy <= evento.vigencia_fin):
         return _denegar(f'El evento "{evento.nombre}" no está vigente hoy.', cajon=cajon)
     reg = RegistroAccesoParking.objects.create(
-        cajon=cajon, tipo_acceso=RegistroAccesoParking.TipoAcceso.ENTRADA,
-        hora_entrada=timezone.now(), placa_vehiculo=placa,
+        cajon=cajon,
+        tipo_acceso=RegistroAccesoParking.TipoAcceso.ENTRADA,
+        hora_entrada=timezone.now(),
+        placa_vehiculo=placa,
     )
     return reg, True, "Acceso de parking concedido."
 

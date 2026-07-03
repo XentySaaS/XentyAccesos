@@ -5,86 +5,85 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('recintos', '0001_initial'),
+        ("recintos", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='acceso',
-            name='actualizado',
+            model_name="acceso",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='acceso',
-            name='creado',
+            model_name="acceso",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='areaautorizada',
-            name='actualizado',
+            model_name="areaautorizada",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='areaautorizada',
-            name='creado',
+            model_name="areaautorizada",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='entrada',
-            name='actualizado',
+            model_name="entrada",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='entrada',
-            name='creado',
+            model_name="entrada",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='protocolo',
-            name='actualizado',
+            model_name="protocolo",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='protocolo',
-            name='creado',
+            model_name="protocolo",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='recinto',
-            name='actualizado',
+            model_name="recinto",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='recinto',
-            name='creado',
+            model_name="recinto",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='ubicacion',
-            name='actualizado',
+            model_name="ubicacion",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='ubicacion',
-            name='creado',
+            model_name="ubicacion",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='zona',
-            name='actualizado',
+            model_name="zona",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='zona',
-            name='creado',
+            model_name="zona",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

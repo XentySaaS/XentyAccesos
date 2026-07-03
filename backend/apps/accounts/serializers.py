@@ -1,4 +1,5 @@
 """Serializers del contexto acceso (``Usuario``)."""
+
 from __future__ import annotations
 
 import secrets
@@ -14,9 +15,17 @@ class UsuarioListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         fields = [
-            "id", "email", "nombre", "rol", "activo",
-            "recinto", "recinto_nombre", "telefono",
-            "email_verificado", "mfa_habilitado", "creado",
+            "id",
+            "email",
+            "nombre",
+            "rol",
+            "activo",
+            "recinto",
+            "recinto_nombre",
+            "telefono",
+            "email_verificado",
+            "mfa_habilitado",
+            "creado",
         ]
         read_only_fields = ["id", "email_verificado", "mfa_habilitado", "creado"]
 
@@ -66,6 +75,7 @@ class UsuarioUpdateSerializer(serializers.ModelSerializer):
         # Baja lógica: registra fecha cuando se desactiva.
         if "activo" in attrs and not attrs["activo"] and self.instance and self.instance.activo:
             from django.utils import timezone
+
             attrs["fecha_baja"] = timezone.now()
         elif attrs.get("activo") and self.instance and not self.instance.activo:
             attrs["fecha_baja"] = None

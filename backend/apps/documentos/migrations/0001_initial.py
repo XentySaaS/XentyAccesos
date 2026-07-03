@@ -5,44 +5,86 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('empleados', '0001_initial'),
+        ("empleados", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='GrupoDocumentos',
+            name="GrupoDocumentos",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=160)),
-                ('descripcion', models.TextField(blank=True, null=True)),
-                ('activo', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=160)),
+                ("descripcion", models.TextField(blank=True, null=True)),
+                ("activo", models.BooleanField(default=True)),
             ],
         ),
         migrations.CreateModel(
-            name='TipoDocumento',
+            name="TipoDocumento",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=160)),
-                ('descripcion', models.CharField(blank=True, max_length=255, null=True)),
-                ('activo', models.BooleanField(default=True)),
-                ('grupo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='tipos', to='documentos.grupodocumentos')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=160)),
+                ("descripcion", models.CharField(blank=True, max_length=255, null=True)),
+                ("activo", models.BooleanField(default=True)),
+                (
+                    "grupo",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="tipos",
+                        to="documentos.grupodocumentos",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DocumentoEmpleado',
+            name="DocumentoEmpleado",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('archivo', models.FileField(upload_to='empleados/documentos/')),
-                ('tipo_archivo', models.CharField(blank=True, max_length=60, null=True)),
-                ('estado', models.IntegerField(choices=[(0, 'Pendiente'), (1, 'Verificado'), (2, 'Rechazado')], db_index=True, default=0)),
-                ('motivo_rechazo', models.TextField(blank=True, null=True)),
-                ('creado', models.DateTimeField(auto_now_add=True)),
-                ('empleado', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='documentos', to='empleados.empleado')),
-                ('tipo_documento', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='documentos.tipodocumento')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("archivo", models.FileField(upload_to="empleados/documentos/")),
+                ("tipo_archivo", models.CharField(blank=True, max_length=60, null=True)),
+                (
+                    "estado",
+                    models.IntegerField(
+                        choices=[(0, "Pendiente"), (1, "Verificado"), (2, "Rechazado")],
+                        db_index=True,
+                        default=0,
+                    ),
+                ),
+                ("motivo_rechazo", models.TextField(blank=True, null=True)),
+                ("creado", models.DateTimeField(auto_now_add=True)),
+                (
+                    "empleado",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="documentos",
+                        to="empleados.empleado",
+                    ),
+                ),
+                (
+                    "tipo_documento",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT, to="documentos.tipodocumento"
+                    ),
+                ),
             ],
         ),
     ]

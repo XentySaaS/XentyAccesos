@@ -9,6 +9,7 @@ Cada token lleva tres claims propios:
 Refresh con rotación + blacklist se delegan en SimpleJWT (``TokenRefreshView``): el refresh
 preserva los claims al rotar y ``blacklist()`` opera por ``jti`` (válido para ambos contextos).
 """
+
 from __future__ import annotations
 
 from django.apps import apps as django_apps

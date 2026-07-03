@@ -5,6 +5,7 @@ Los admins del tenant son usuarios casi finales: no deben importar ni programar 
 del SAT UNA vez y lo importa + revalida en cada tenant. ``importar_efos_task`` cubre un solo tenant
 (p. ej. auto-reparación diferida cuando un tenant abre Cumplimiento con el padrón vacío).
 """
+
 from __future__ import annotations
 
 import logging

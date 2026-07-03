@@ -1,4 +1,5 @@
 """Tareas Celery de mensajería. Toda tarea con modelos de tenant corre en ``tenant_context``."""
+
 from __future__ import annotations
 
 from celery import shared_task

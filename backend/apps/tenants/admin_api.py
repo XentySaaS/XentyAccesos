@@ -1,4 +1,5 @@
 """Control plane (schema public): alta self-service de tenants + administración del super-admin."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -31,7 +32,7 @@ class SuperAdminLoginView(BaseLoginView):
 
 # ── Alta pública self-service de tenants ─────────────────────────────────────
 class SignupSerializer(serializers.Serializer):
-    nombre = serializers.CharField(max_length=200)         # razón comercial
+    nombre = serializers.CharField(max_length=200)  # razón comercial
     subdominio = serializers.SlugField(max_length=31)
     admin_email = serializers.EmailField()
     admin_nombre = serializers.CharField(max_length=160)
@@ -54,9 +55,13 @@ class SignupView(APIView):
         dominio = f"{slug}.{settings.TENANT_BASE_DOMAIN}"
         try:
             tenant, _ = provisionar_tenant(
-                slug=slug, dominio=dominio, nombre=d["nombre"],
-                admin_email=d["admin_email"], admin_nombre=d["admin_nombre"],
-                admin_password=d["admin_password"], plan_clave=d.get("plan") or None,
+                slug=slug,
+                dominio=dominio,
+                nombre=d["nombre"],
+                admin_email=d["admin_email"],
+                admin_nombre=d["admin_nombre"],
+                admin_password=d["admin_password"],
+                plan_clave=d.get("plan") or None,
                 verificar_email=False,  # alta pública: doble opt-in por correo
             )
         except ProvisionError as exc:
@@ -73,12 +78,16 @@ class SignupView(APIView):
             admin = Usuario.objects.get(email=d["admin_email"].lower())
             token = generar_token(admin, "acceso")
         enviar_verificacion_email(
-            email_destino=d["admin_email"], nombre=d["admin_nombre"],
-            nombre_tenant=d["nombre"], url=build_verify_url(request, slug, token),
+            email_destino=d["admin_email"],
+            nombre=d["admin_nombre"],
+            nombre_tenant=d["nombre"],
+            url=build_verify_url(request, slug, token),
         )
         return Response(
             {
-                "tenant": tenant.schema_name, "dominio": dominio, "estado": tenant.estado,
+                "tenant": tenant.schema_name,
+                "dominio": dominio,
+                "estado": tenant.estado,
                 "verificacion_requerida": True,
                 "detail": "Registro creado. Revisa tu correo para confirmar tu cuenta.",
             },
@@ -93,8 +102,17 @@ class TenantAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Tenant
-        fields = ["id", "schema_name", "nombre", "estado", "trial_ends_at",
-                  "modo_solo_lectura", "gracia_hasta", "plan", "saldo"]
+        fields = [
+            "id",
+            "schema_name",
+            "nombre",
+            "estado",
+            "trial_ends_at",
+            "modo_solo_lectura",
+            "gracia_hasta",
+            "plan",
+            "saldo",
+        ]
 
     def get_plan(self, obj):
         return obj.plan.clave if obj.plan_id else None
@@ -188,7 +206,9 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
         s = AcreditarCreditosSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         billing.acreditar_creditos(
-            tenant, s.validated_data["cantidad"], s.validated_data["motivo"],
+            tenant,
+            s.validated_data["cantidad"],
+            s.validated_data["motivo"],
             referencia=f"admin:{request.user.pk}",
         )
         tenant.refresh_from_db()
@@ -198,8 +218,17 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
 class PlanAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Plan
-        fields = ["id", "clave", "nombre", "descripcion", "precio_mensual",
-                  "stripe_price_id", "modulos", "limites", "activo"]
+        fields = [
+            "id",
+            "clave",
+            "nombre",
+            "descripcion",
+            "precio_mensual",
+            "stripe_price_id",
+            "modulos",
+            "limites",
+            "activo",
+        ]
 
 
 class PlanAdminViewSet(viewsets.ModelViewSet):
@@ -216,8 +245,10 @@ class PlanAdminViewSet(viewsets.ModelViewSet):
             return super().destroy(request, *args, **kwargs)
         except ProtectedError:
             return Response(
-                {"detail": "No se puede eliminar: hay suscripciones que usan este plan. "
-                           "Desactívalo en su lugar."},
+                {
+                    "detail": "No se puede eliminar: hay suscripciones que usan este plan. "
+                    "Desactívalo en su lugar."
+                },
                 status=status.HTTP_409_CONFLICT,
             )
 

@@ -7,6 +7,7 @@ Uso:
     python manage.py migrar_tenant_sar <subdominio> --dry-run
     python manage.py migrar_tenant_sar <subdominio> [--solo recintos,eventos]
 """
+
 from __future__ import annotations
 
 from decouple import config
@@ -48,7 +49,11 @@ class Command(BaseCommand):
             self.stdout.write(f"  {i}. {bloque}")
 
         if opts["dry_run"]:
-            self.stdout.write(self.style.SUCCESS("Dry-run: no se escribió nada. TRANSFORM listo en etl.transformers."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Dry-run: no se escribió nada. TRANSFORM listo en etl.transformers."
+                )
+            )
             return
 
         dsn = config("MYSQL_SAR_DSN", default="")

@@ -4,6 +4,7 @@ El nombre lo asigna el servidor (nunca ``getClientOriginalName``). El MIME se va
 python-magic cuando libmagic está disponible (sí en el contenedor); si no, degrada a
 extensión+tamaño para no romper en entornos sin la librería nativa.
 """
+
 from __future__ import annotations
 
 import os
@@ -32,6 +33,7 @@ def rfc_valido(rfc: str) -> bool:
     if not _RFC_RE.match(rfc):
         return False
     return _digito_verificador_rfc(rfc[:-1]) == rfc[-1]
+
 
 # Firmas MIME aceptadas por extensión.
 MIME_POR_EXT = {

@@ -1,4 +1,5 @@
 """Serializer de Evento (estado y creador gobernados por el servidor)."""
+
 from __future__ import annotations
 
 from rest_framework import serializers
@@ -22,8 +23,19 @@ class EventoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Evento
         fields = [
-            "id", "nombre", "descripcion", "creado_por", "recinto", "recinto_nombre", "protocolo",
-            "vigencia_inicio", "vigencia_fin", "hora_inicio", "hora_fin", "estado", "verificadores",
+            "id",
+            "nombre",
+            "descripcion",
+            "creado_por",
+            "recinto",
+            "recinto_nombre",
+            "protocolo",
+            "vigencia_inicio",
+            "vigencia_fin",
+            "hora_inicio",
+            "hora_fin",
+            "estado",
+            "verificadores",
             "grupos_documentos",
         ]
         read_only_fields = ["creado_por", "estado", "verificadores"]
@@ -65,18 +77,42 @@ class EventoProveedorSerializer(serializers.ModelSerializer):
     protocolo_nombre = serializers.SerializerMethodField()
     areas_nombres = serializers.SerializerMethodField()
     areas_autorizadas = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=AreaAutorizada.objects.all(), required=False,
+        many=True,
+        queryset=AreaAutorizada.objects.all(),
+        required=False,
     )
 
     class Meta:
         model = EventoProveedor
         fields = [
-            "id", "evento", "evento_nombre", "evento_estado", "evento_descripcion",
-            "vigencia_inicio", "vigencia_fin", "hora_inicio", "hora_fin",
-            "recinto_nombre", "proveedor", "proveedor_nombre", "protocolo", "protocolo_nombre",
-            "zona", "zona_nombre", "acceso", "acceso_nombre", "ubicacion", "punto_acceso", "limite",
-            "requiere_parking", "parking", "cajones_parking", "notas",
-            "areas_autorizadas", "areas_nombres", "asignados",
+            "id",
+            "evento",
+            "evento_nombre",
+            "evento_estado",
+            "evento_descripcion",
+            "vigencia_inicio",
+            "vigencia_fin",
+            "hora_inicio",
+            "hora_fin",
+            "recinto_nombre",
+            "proveedor",
+            "proveedor_nombre",
+            "protocolo",
+            "protocolo_nombre",
+            "zona",
+            "zona_nombre",
+            "acceso",
+            "acceso_nombre",
+            "ubicacion",
+            "punto_acceso",
+            "limite",
+            "requiere_parking",
+            "parking",
+            "cajones_parking",
+            "notas",
+            "areas_autorizadas",
+            "areas_nombres",
+            "asignados",
         ]
 
     def get_asignados(self, obj) -> int:

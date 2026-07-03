@@ -54,7 +54,10 @@
 ### Entrega
 - [x] **CI/CD pipeline** — HECHO (2026-07-03): `.github/workflows/ci.yml` (backend pytest + frontend
       build de las 4 SPAs). `ruff` advisory hasta limpiar los 348 hallazgos (ver abajo)
-- [ ] **Limpiar lint (ruff)** — 348 hallazgos (E501, orden de imports); luego hacer `ruff` bloqueante en CI
+- [x] **Limpiar lint (ruff)** — HECHO (2026-07-03): `ruff format` (172 archivos) + fixes; `ruff check`
+      limpio y **bloqueante en CI** (+ `ruff format --check`). Config: se ignora `E501` (el formatter
+      gobierna el ancho) y `B904` (encadenar excepciones — deuda de estilo diferida). Suite verde (10/10).
+- [ ] **Encadenar excepciones (B904)** — reactivar la regla y agregar `raise ... from` en ~10 puntos
 - [ ] Deploy a producción (Nginx prod, secrets por entorno, `DEBUG=False`)
 - [ ] `requirements-dev.txt` reproducible en la imagen (hoy `pytest` se instala a mano)
 

@@ -3,6 +3,7 @@
 Nunca ejecuta cómputo de dominio ni consume créditos (CLAUDE.md §9). Útil para que soporte
 diagnostique un tenant sin tocar sus datos operativos.
 """
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -48,14 +49,18 @@ def probar_conexion(tenant) -> dict:
     """Verifica conectividad con la Mesa de Ayuda (Nivel B). Solo lectura; sin datos de dominio."""
     cfg = _config_mesa(tenant)
     if es_sandbox(cfg):
-        return {"sandbox": True, "conectado": False,
-                "detalle": "Mesa de Ayuda no configurada o deshabilitada."}
+        return {
+            "sandbox": True,
+            "conectado": False,
+            "detalle": "Mesa de Ayuda no configurada o deshabilitada.",
+        }
     import requests
 
     try:
         r = requests.get(
             f"{cfg.base_url.rstrip('/')}/health",
-            headers={"Authorization": f"Bearer {cfg.api_key}"}, timeout=5,
+            headers={"Authorization": f"Bearer {cfg.api_key}"},
+            timeout=5,
         )
         return {"sandbox": False, "conectado": r.ok, "status": r.status_code}
     except requests.RequestException as exc:
@@ -67,14 +72,20 @@ def enviar_diagnostico(tenant) -> dict:
     cfg = _config_mesa(tenant)
     payload = diagnostico_configuracion(tenant)
     if es_sandbox(cfg):
-        return {"sandbox": True, "enviado": False,
-                "detalle": "Mesa de Ayuda no configurada.", "diagnostico": payload}
+        return {
+            "sandbox": True,
+            "enviado": False,
+            "detalle": "Mesa de Ayuda no configurada.",
+            "diagnostico": payload,
+        }
     import requests
 
     try:
         r = requests.post(
             f"{cfg.base_url.rstrip('/')}/diagnosticos",
-            json=payload, headers={"Authorization": f"Bearer {cfg.api_key}"}, timeout=8,
+            json=payload,
+            headers={"Authorization": f"Bearer {cfg.api_key}"},
+            timeout=8,
         )
         return {"sandbox": False, "enviado": r.ok, "status": r.status_code}
     except requests.RequestException as exc:

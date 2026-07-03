@@ -6,6 +6,7 @@ capa DRF, donde la autenticación JWT ya resolvió ``request.user`` / ``request.
 
 Endpoints que deben quedar exentos (login, verificación MFA) fijan su propio ``permission_classes``.
 """
+
 from __future__ import annotations
 
 from rest_framework.exceptions import APIException
@@ -117,8 +118,13 @@ def RequierePermisoPersonalizado(modulo: str):
         DELETE           → eliminar
     """
     _ACCION = {
-        "GET": "ver", "HEAD": "ver", "OPTIONS": "ver",
-        "POST": "crear", "PUT": "editar", "PATCH": "editar", "DELETE": "eliminar",
+        "GET": "ver",
+        "HEAD": "ver",
+        "OPTIONS": "ver",
+        "POST": "crear",
+        "PUT": "editar",
+        "PATCH": "editar",
+        "DELETE": "eliminar",
     }
 
     class _RequierePermisoPersonalizado(BasePermission):
@@ -131,6 +137,7 @@ def RequierePermisoPersonalizado(modulo: str):
             if getattr(user, "rol", None) != "usuario":
                 return True  # otros roles: RequiereRol ya validó
             from apps.accounts.models import PermisoUsuario
+
             perm = PermisoUsuario.objects.filter(usuario=user, modulo=modulo).first()
             if not perm:
                 return False

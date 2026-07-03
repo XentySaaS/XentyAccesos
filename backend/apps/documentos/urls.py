@@ -1,4 +1,5 @@
 """Rutas REST del módulo de documentos."""
+
 from rest_framework.routers import DefaultRouter
 
 from .views import (

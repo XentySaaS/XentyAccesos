@@ -5,59 +5,58 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('citas', '0002_areaautorizadacita_cita_areas_autorizadas'),
+        ("citas", "0002_areaautorizadacita_cita_areas_autorizadas"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='areaautorizadacita',
-            name='creado',
+            model_name="areaautorizadacita",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='asistentecita',
-            name='actualizado',
+            model_name="asistentecita",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='asistentecita',
-            name='creado',
+            model_name="asistentecita",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='cita',
-            name='actualizado',
+            model_name="cita",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='cita',
-            name='creado',
+            model_name="cita",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='contacto',
-            name='actualizado',
+            model_name="contacto",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='contacto',
-            name='creado',
+            model_name="contacto",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='empleadocita',
-            name='actualizado',
+            model_name="empleadocita",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='empleadocita',
-            name='creado',
+            model_name="empleadocita",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

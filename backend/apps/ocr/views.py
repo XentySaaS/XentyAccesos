@@ -1,4 +1,5 @@
 """Endpoint público de OCR de INE — acepta imagen como multipart/form-data."""
+
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator

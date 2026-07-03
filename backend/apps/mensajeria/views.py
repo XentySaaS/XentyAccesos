@@ -1,4 +1,5 @@
 """ViewSet de campañas: crea, segmenta y dispara el envío por Celery."""
+
 from __future__ import annotations
 
 from django.db import connection
@@ -6,7 +7,13 @@ from rest_framework import viewsets
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
 from apps.config.services import AuditViewSetMixin
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
+from common.permissions import (
+    PERMISOS_BASE,
+    ContextoAcceso,
+    RequiereModulo,
+    RequierePermisoPersonalizado,
+    RequiereRol,
+)
 
 from .models import Mensaje
 from .serializers import MensajeSerializer
@@ -20,7 +27,9 @@ class MensajeViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     # Multipart para permitir adjuntar un archivo a la campaña (además de JSON sin adjunto).
     parser_classes = [JSONParser, MultiPartParser, FormParser]
     permission_classes = [
-        *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("mensajeria"),
+        *PERMISOS_BASE(),
+        ContextoAcceso,
+        RequiereModulo("mensajeria"),
         RequiereRol("administrador", "editor", "usuario"),
         RequierePermisoPersonalizado("mensajeria"),
     ]

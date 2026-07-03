@@ -5,81 +5,80 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('eventos', '0003_areaautorizadaevento_evento_areas_autorizadas_and_more'),
+        ("eventos", "0003_areaautorizadaevento_evento_areas_autorizadas_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cajonparking',
-            name='actualizado',
+            model_name="cajonparking",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='cajonparking',
-            name='creado',
+            model_name="cajonparking",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='empleadoeventoproveedor',
-            name='actualizado',
+            model_name="empleadoeventoproveedor",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='empleadoeventoproveedor',
-            name='creado',
+            model_name="empleadoeventoproveedor",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='evento',
-            name='actualizado',
+            model_name="evento",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='evento',
-            name='creado',
+            model_name="evento",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='eventogrupodocumentos',
-            name='actualizado',
+            model_name="eventogrupodocumentos",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='eventogrupodocumentos',
-            name='creado',
+            model_name="eventogrupodocumentos",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='eventoproveedor',
-            name='actualizado',
+            model_name="eventoproveedor",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='eventoproveedor',
-            name='creado',
+            model_name="eventoproveedor",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='eventotipodocumento',
-            name='actualizado',
+            model_name="eventotipodocumento",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='eventotipodocumento',
-            name='creado',
+            model_name="eventotipodocumento",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='verificadorevento',
-            name='creado',
+            model_name="verificadorevento",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

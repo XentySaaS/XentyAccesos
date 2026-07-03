@@ -2,6 +2,7 @@
 
 Referencia: MODELO_DATOS_SAR §6.12 · SAR_FUNCIONALIDADES §14.2/14.3.
 """
+
 from __future__ import annotations
 
 from django.db import models

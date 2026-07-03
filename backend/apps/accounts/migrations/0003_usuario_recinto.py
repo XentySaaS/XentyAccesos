@@ -5,16 +5,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_usuario_mfa_habilitado_usuario_mfa_totp_secret'),
-        ('recintos', '0001_initial'),
+        ("accounts", "0002_usuario_mfa_habilitado_usuario_mfa_totp_secret"),
+        ("recintos", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='usuario',
-            name='recinto',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='usuarios', to='recintos.recinto'),
+            model_name="usuario",
+            name="recinto",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="usuarios",
+                to="recintos.recinto",
+            ),
         ),
     ]

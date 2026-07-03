@@ -2,6 +2,7 @@
 
 Va en la whitelist de enforcement: el cobro y sus eventos nunca se bloquean.
 """
+
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator

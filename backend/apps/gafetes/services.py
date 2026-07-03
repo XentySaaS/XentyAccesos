@@ -4,6 +4,7 @@ Reemplaza el AES-128-ECB con clave fija en git del origen por un token **cifrado
 Fernet** (AES-128-CBC + HMAC) que embebe ``id|contexto|tipo`` + ``jti`` único + ``exp`` (vigencia)
 + ``tenant``. Sin la ``SECRET_KEY_FERNET`` del servidor el QR no se puede forjar ni alterar.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,9 +18,9 @@ from cryptography.fernet import InvalidToken
 from common.crypto import get_fernet
 
 # Códigos de contexto que van en el QR.
-TIPO_EVENTO   = "01"
-TIPO_PARKING  = "02"
-TIPO_CITA     = "03"
+TIPO_EVENTO = "01"
+TIPO_PARKING = "02"
+TIPO_CITA = "03"
 
 
 class QRInvalido(Exception):
@@ -29,8 +30,12 @@ class QRInvalido(Exception):
 def emitir_qr(*, id: int, tipo: str, tenant: str, exp_epoch: float, contexto: str = "") -> str:
     """Emite un token QR firmado/cifrado con identificador único y vigencia."""
     payload = {
-        "id": id, "tipo": tipo, "ctx": contexto or tipo,
-        "jti": uuid.uuid4().hex, "exp": int(exp_epoch), "tenant": tenant,
+        "id": id,
+        "tipo": tipo,
+        "ctx": contexto or tipo,
+        "jti": uuid.uuid4().hex,
+        "exp": int(exp_epoch),
+        "tenant": tenant,
     }
     return get_fernet().encrypt(json.dumps(payload).encode()).decode()
 
@@ -53,6 +58,7 @@ def verificar_qr(token: str, *, tenant: str | None = None) -> dict:
 def generar_png(token: str) -> bytes:
     """Genera un PNG simple con el QR del token (sin diseño de gafete)."""
     from io import BytesIO
+
     img = qrcode.make(token)
     buf = BytesIO()
     img.save(buf, format="PNG")
@@ -97,25 +103,25 @@ def _qr_imagen(token: str, target_px: int, *, min_box_size: int = 3):
 #  7. Footer oscuro       · texto legal
 
 _STATIC_FONTS = Path(__file__).parent.parent.parent / "static" / "fonts"
-_STATIC       = Path(__file__).parent.parent.parent / "static"
+_STATIC = Path(__file__).parent.parent.parent / "static"
 
 # Paleta
-_C_NAVY    = (7,   17,  31)   # #07111F — fondo principal
-_C_STRIPE  = (12,  30,  52)   # #0C1E34 — raya alternada
-_C_DARKEST = (3,   10,  19)   # #030A13 — footer
-_C_GREEN   = (0,   200, 83)   # #00C853 — acento
-_C_GREEN_D = (0,   178, 72)   # #00B248
-_C_GREEN_L = (0,   230, 118)  # #00E676
-_C_ORANGE  = (255, 109, 0)    # #FF6D00 — estacionamiento
-_C_WHITE   = (255, 255, 255)
+_C_NAVY = (7, 17, 31)  # #07111F — fondo principal
+_C_STRIPE = (12, 30, 52)  # #0C1E34 — raya alternada
+_C_DARKEST = (3, 10, 19)  # #030A13 — footer
+_C_GREEN = (0, 200, 83)  # #00C853 — acento
+_C_GREEN_D = (0, 178, 72)  # #00B248
+_C_GREEN_L = (0, 230, 118)  # #00E676
+_C_ORANGE = (255, 109, 0)  # #FF6D00 — estacionamiento
+_C_WHITE = (255, 255, 255)
 
 # Colores de zona (accent bar + dot sector)
 _ZONA_ACCENT: dict[str, tuple[int, int, int]] = {
-    "CANCHA":   (0,   200, 83),
-    "VIP":      (255, 215, 0),
-    "PRENSA":   (156, 39,  176),
-    "STAFF":    (255, 109, 0),
-    "GENERAL":  (33,  150, 243),
+    "CANCHA": (0, 200, 83),
+    "VIP": (255, 215, 0),
+    "PRENSA": (156, 39, 176),
+    "STAFF": (255, 109, 0),
+    "GENERAL": (33, 150, 243),
 }
 
 
@@ -129,8 +135,10 @@ def _accent_zona(zona: str) -> tuple[int, int, int]:
 
 # ── Fuentes ──────────────────────────────────────────────────────────────────
 
+
 def _try_font(paths: list, size: int):
     from PIL import ImageFont
+
     for p in paths:
         try:
             return ImageFont.truetype(str(p), size)
@@ -141,31 +149,43 @@ def _try_font(paths: list, size: int):
 
 def _inter(size: int, bold: bool = False):
     w = "Bold" if bold else "Regular"
-    return _try_font([
-        _STATIC_FONTS / f"Inter-{w}.ttf",
-        f"/usr/share/fonts/truetype/inter/Inter-{w}.ttf",
-        ("/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold
-         else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
-        ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold
-         else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-    ], size)
+    return _try_font(
+        [
+            _STATIC_FONTS / f"Inter-{w}.ttf",
+            f"/usr/share/fonts/truetype/inter/Inter-{w}.ttf",
+            (
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+                if bold
+                else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            ),
+            (
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+                if bold
+                else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            ),
+        ],
+        size,
+    )
 
 
 def _bebas(size: int):
     """Bebas Neue condensed (display). Paquete Debian instala .otf en opentype/."""
-    return _try_font([
-        _STATIC_FONTS / "BebasNeue-Regular.ttf",
-        "/usr/share/fonts/opentype/bebas-neue/BebasNeue-Regular.otf",
-        "/usr/share/fonts/truetype/bebas-neue/BebasNeue-Regular.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    ], size)
+    return _try_font(
+        [
+            _STATIC_FONTS / "BebasNeue-Regular.ttf",
+            "/usr/share/fonts/opentype/bebas-neue/BebasNeue-Regular.otf",
+            "/usr/share/fonts/truetype/bebas-neue/BebasNeue-Regular.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        ],
+        size,
+    )
 
 
 # ── Primitivas de dibujo ─────────────────────────────────────────────────────
 
-def _grad_h(draw, x0: int, y0: int, x1: int, y1: int,
-            c0: tuple, c1: tuple) -> None:
+
+def _grad_h(draw, x0: int, y0: int, x1: int, y1: int, c0: tuple, c1: tuple) -> None:
     """Gradiente horizontal sólido entre dos colores RGB."""
     w = x1 - x0
     if w <= 0:
@@ -186,17 +206,18 @@ def _grad_h(draw, x0: int, y0: int, x1: int, y1: int,
 def _rayas_bg(img, x0: int, y0: int, x1: int, y1: int) -> None:
     """Fondo de rayas diagonales navy (replica CSS repeating-linear-gradient(-45deg))."""
     from PIL import ImageDraw
+
     d = ImageDraw.Draw(img)
     d.rectangle([x0, y0, x1 - 1, y1 - 1], fill=(*_C_NAVY, 255))
-    S = 18   # semi-periodo de la raya
+    S = 18  # semi-periodo de la raya
     h = y1 - y0
     w = x1 - x0
     for start in range(-(h + S * 2), w + h + S * 2, S * 2):
         pts = [
-            (x0 + start,         y1 - 1),
-            (x0 + start + h,     y0),
+            (x0 + start, y1 - 1),
+            (x0 + start + h, y0),
             (x0 + start + h + S, y0),
-            (x0 + start + S,     y1 - 1),
+            (x0 + start + S, y1 - 1),
         ]
         d.polygon(pts, fill=(*_C_STRIPE, 255))
 
@@ -209,7 +230,7 @@ def _xenty_icon(draw, x: int, y: int, size: int = 44) -> None:
         fill=(*_C_NAVY, 255),
     )
     cx, cy = x + size // 2, y + size // 2
-    r  = round(size * 0.296)
+    r = round(size * 0.296)
     sw = max(1, round(size * 0.042))
     for i in range(sw + 1):
         draw.ellipse(
@@ -217,10 +238,10 @@ def _xenty_icon(draw, x: int, y: int, size: int = 44) -> None:
             outline=(*_C_GREEN, 255),
         )
     # Checkmark M15 22 l5.5 5.5 8.5-11 (coordenadas en viewBox 44px)
-    s  = size / 44
-    p1 = (round(x + 15   * s), round(y + 22   * s))
+    s = size / 44
+    p1 = (round(x + 15 * s), round(y + 22 * s))
     p2 = (round(x + 20.5 * s), round(y + 27.5 * s))
-    p3 = (round(x + 29   * s), round(y + 16.5 * s))
+    p3 = (round(x + 29 * s), round(y + 16.5 * s))
     lw = max(2, round(size * 0.052))
     draw.line([p1, p2], fill=(*_C_GREEN, 255), width=lw)
     draw.line([p2, p3], fill=(*_C_GREEN, 255), width=lw)
@@ -228,24 +249,23 @@ def _xenty_icon(draw, x: int, y: int, size: int = 44) -> None:
 
 def _silhouette(draw, px: int, py: int, pw: int, ph: int) -> None:
     """Placeholder cuando no hay foto: ícono de persona centrado."""
-    f  = (*_C_WHITE, 90)
+    f = (*_C_WHITE, 90)
     cx = px + pw // 2
     # cabeza
     rh = round(pw * 0.21)
     hy = py + round(ph * 0.16)
     draw.ellipse([cx - rh, hy, cx + rh, hy + rh * 2], fill=f)
     # cuerpo (óvalo centrado en la parte baja)
-    brx  = round(pw * 0.38)
+    brx = round(pw * 0.38)
     bry2 = round(ph * 0.27)
-    by   = py + round(ph * 0.84)
+    by = py + round(ph * 0.84)
     draw.ellipse([cx - brx, by - bry2, cx + brx, by + bry2], fill=f)
 
 
-def _wrap_text(draw, text: str, x: int, y: int, max_w: int,
-               font, fill, leading: int = 10) -> None:
+def _wrap_text(draw, text: str, x: int, y: int, max_w: int, font, fill, leading: int = 10) -> None:
     """Dibuja texto con salto de línea automático."""
     words = text.split()
-    line  = ""
+    line = ""
     for word in words:
         trial = (line + " " + word).strip()
         bb = draw.textbbox((0, 0), trial, font=font)
@@ -270,10 +290,13 @@ def _text_ls(draw, text: str, x: int, y: int, font, fill, ls: int = 2) -> None:
 
 def _text_ls_center(draw, text: str, cx: int, y: int, font, fill, ls: int = 2) -> None:
     """Igual que _text_ls pero centrado en cx."""
-    total = sum(
-        draw.textbbox((0, 0), c, font=font)[2] - draw.textbbox((0, 0), c, font=font)[0] + ls
-        for c in text
-    ) - ls
+    total = (
+        sum(
+            draw.textbbox((0, 0), c, font=font)[2] - draw.textbbox((0, 0), c, font=font)[0] + ls
+            for c in text
+        )
+        - ls
+    )
     _text_ls(draw, text, cx - total // 2, y, font, fill, ls)
 
 
@@ -303,22 +326,23 @@ def _render_card(
     W: int,
     H: int,
     RADIO: int,
-    header_fn,        # callable(draw) → dibuja el interior del header
+    header_fn,  # callable(draw) → dibuja el interior del header
     bar_colors: tuple,  # (c_start, c_end) o None para verde
     stripe_y0: int,
     stripe_y1: int,
-    body_fn,          # callable(img, draw) → dibuja el área de rayas
+    body_fn,  # callable(img, draw) → dibuja el área de rayas
     sep_y: int,
-    info_fn,          # callable(draw) → dibuja la sección info blanca
+    info_fn,  # callable(draw) → dibuja la sección info blanca
     INFO_H: int,
     FOOT_H: int,
     footer_text: str,
 ) -> bytes:
     """Renderiza la estructura común de tarjeta y devuelve PNG bytes."""
     from io import BytesIO
+
     from PIL import Image, ImageDraw
 
-    img  = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     # Base navy (toda la tarjeta)
@@ -329,7 +353,7 @@ def _render_card(
 
     # Cabecera blanca
     HEADER_H = stripe_y0 - (bar_colors[2] if bar_colors else 5)  # altura barra
-    BAR_H    = bar_colors[2] if bar_colors else 5
+    BAR_H = bar_colors[2] if bar_colors else 5
     HEADER_H = stripe_y0 - BAR_H
     draw.rectangle([0, 0, W, HEADER_H], fill=(*_C_WHITE, 255))
     header_fn(draw)
@@ -367,6 +391,7 @@ def _render_card(
 
 # ── Gafete de acceso — v2 «Premium Dark · Acento Dorado» ─────────────────────
 
+
 def componer_gafete(
     *,
     token: str,
@@ -393,20 +418,21 @@ def componer_gafete(
     Secciones: barra dorada | header recinto | foto+zona | evento | fechas | invitado | QR | footer.
     """
     from io import BytesIO
+
     from PIL import Image, ImageDraw
 
-    W     = 340
+    W = 340
     RADIO = 20
-    PAD   = 18
+    PAD = 18
 
     # Accent por zona (dorado por defecto)
     _ZONE_COLORS: dict[str, tuple[int, int, int]] = {
-        "VIP":     (255, 215,   0),
-        "CANCHA":  (  0, 200,  83),
-        "GENERAL": (  0, 200,  83),
-        "PRENSA":  (156,  39, 176),
-        "STAFF":   (255, 109,   0),
-        "PALCO":   (255, 215,   0),
+        "VIP": (255, 215, 0),
+        "CANCHA": (0, 200, 83),
+        "GENERAL": (0, 200, 83),
+        "PRENSA": (156, 39, 176),
+        "STAFF": (255, 109, 0),
+        "PALCO": (255, 215, 0),
     }
     if accent_color:
         h = accent_color.lstrip("#")
@@ -415,11 +441,11 @@ def componer_gafete(
         zkey = zona.upper().split()[0] if zona else ""
         AC = next((v for k, v in _ZONE_COLORS.items() if k in zkey), (255, 215, 0))
 
-    GOLD   = (255, 215,   0)
-    GOLD_D = (139, 100,   0)
-    GOLD_M = (255, 162,   0)
-    DEEP   = (  9,   9,  16)
-    WHITE  = (255, 255, 255)
+    GOLD = (255, 215, 0)
+    GOLD_D = (139, 100, 0)
+    GOLD_M = (255, 162, 0)
+    DEEP = (9, 9, 16)
+    WHITE = (255, 255, 255)
 
     # Helpers locales
     def _ls(draw, text, x, y, font, fill, ls=2):
@@ -429,11 +455,13 @@ def componer_gafete(
             x += (bb[2] - bb[0]) + ls
 
     def _ls_center(draw, text, cx, y, font, fill, ls=2):
-        total = sum(
-            draw.textbbox((0, 0), c, font=font)[2]
-            - draw.textbbox((0, 0), c, font=font)[0] + ls
-            for c in text
-        ) - ls
+        total = (
+            sum(
+                draw.textbbox((0, 0), c, font=font)[2] - draw.textbbox((0, 0), c, font=font)[0] + ls
+                for c in text
+            )
+            - ls
+        )
         _ls(draw, text, cx - total // 2, y, font, fill, ls)
 
     def _grad3(draw, y0, y1, ca, cb, cc):
@@ -451,27 +479,27 @@ def componer_gafete(
         draw.line([(0, y), (W - 1, y)], fill=(*GOLD, 18))
 
     # Bebas Neue para zona — fuente más grande cuando no hay foto (ancho completo)
-    z_len  = len(zona)
+    z_len = len(zona)
     if foto_bytes:
         z_size = 44 if z_len <= 10 else (36 if z_len <= 15 else 30)
     else:
         z_size = 58 if z_len <= 10 else (50 if z_len <= 15 else 40)
     f_zona = _bebas(z_size)
 
-    PHOTO_W   = 90
+    PHOTO_W = 90
     PHOTO_H_I = 132
 
-    BAR_H   = 5
-    HDR_H   = 62
-    PZ_H    = (16 + PHOTO_H_I + 16) if foto_bytes else 114  # 164 con foto, 114 sin foto
-    EVT_H   = 84
-    DT_H    = 62
-    GN_H    = 100
-    QR_H    = 360
-    FT_H    = 33
+    BAR_H = 5
+    HDR_H = 62
+    PZ_H = (16 + PHOTO_H_I + 16) if foto_bytes else 114  # 164 con foto, 114 sin foto
+    EVT_H = 84
+    DT_H = 62
+    GN_H = 100
+    QR_H = 360
+    FT_H = 33
     H = BAR_H + HDR_H + PZ_H + EVT_H + DT_H + GN_H + QR_H + FT_H
 
-    img  = Image.new("RGBA", (W, H), (*DEEP, 255))
+    img = Image.new("RGBA", (W, H), (*DEEP, 255))
     draw = ImageDraw.Draw(img)
 
     draw.rounded_rectangle([0, 0, W - 1, H - 1], radius=RADIO, fill=(*DEEP, 255))
@@ -482,19 +510,19 @@ def componer_gafete(
     # ── 2. Header ─────────────────────────────────────────────────
     y0 = BAR_H
     draw.line([(0, y0 + HDR_H - 1), (W - 1, y0 + HDR_H - 1)], fill=(*GOLD, 26))
-    _ls(draw, "XENTY ACCESOS · RECINTO", PAD, y0 + 14,
-        _inter(7, bold=True), (*AC, 102), ls=2)
-    rec_str  = (recinto or empresa).upper()
-    f_rec    = _inter(12, bold=True) if len(rec_str) > 40 else _inter(14, bold=True)
+    _ls(draw, "XENTY ACCESOS · RECINTO", PAD, y0 + 14, _inter(7, bold=True), (*AC, 102), ls=2)
+    rec_str = (recinto or empresa).upper()
+    f_rec = _inter(12, bold=True) if len(rec_str) > 40 else _inter(14, bold=True)
     _wrap_text(draw, rec_str, PAD, y0 + 30, W - PAD - 52, f_rec, (*WHITE, 255), leading=18)
     # Logo Xenty (blanco sobre fondo oscuro)
     _logo_path = _STATIC / "xenty-white.png"
     if _logo_path.exists():
         from PIL import Image as _PIL_Image
+
         _logo = _PIL_Image.open(_logo_path).convert("RGBA")
         _logo_h = 22
         _logo_w = int(_logo.width * _logo_h / _logo.height)
-        _logo   = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
+        _logo = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
         _lx = W - PAD - _logo_w
         _ly = y0 + (HDR_H - _logo_h) // 2
         img.paste(_logo, (_lx, _ly), _logo)
@@ -506,30 +534,36 @@ def componer_gafete(
     if foto_bytes:
         # Con foto: recuadro a la izquierda, zona a la derecha
         px = PAD
-        draw.rounded_rectangle([px, py, px + PHOTO_W, py + PHOTO_H_I], radius=10,
-                                fill=(18, 26, 46, 255), outline=(*AC, 70), width=1)
+        draw.rounded_rectangle(
+            [px, py, px + PHOTO_W, py + PHOTO_H_I],
+            radius=10,
+            fill=(18, 26, 46, 255),
+            outline=(*AC, 70),
+            width=1,
+        )
         try:
             fimg = Image.open(BytesIO(foto_bytes)).convert("RGBA")
-            tgt  = PHOTO_W / PHOTO_H_I
-            src  = fimg.width / fimg.height
+            tgt = PHOTO_W / PHOTO_H_I
+            src = fimg.width / fimg.height
             if src > tgt:
                 nw = int(fimg.height * tgt)
                 fimg = fimg.crop(((fimg.width - nw) // 2, 0, (fimg.width + nw) // 2, fimg.height))
             else:
                 nh = int(fimg.width / tgt)
                 fimg = fimg.crop((0, (fimg.height - nh) // 2, fimg.width, (fimg.height + nh) // 2))
-            fimg  = fimg.resize((PHOTO_W, PHOTO_H_I), Image.LANCZOS)
+            fimg = fimg.resize((PHOTO_W, PHOTO_H_I), Image.LANCZOS)
             fmask = Image.new("L", (PHOTO_W, PHOTO_H_I), 0)
             ImageDraw.Draw(fmask).rounded_rectangle(
-                [0, 0, PHOTO_W - 1, PHOTO_H_I - 1], radius=10, fill=255)
+                [0, 0, PHOTO_W - 1, PHOTO_H_I - 1], radius=10, fill=255
+            )
             img.paste(fimg, (px, py), fmask)
         except Exception:  # noqa: BLE001
             _silhouette(draw, px, py, PHOTO_W, PHOTO_H_I)
-        zx         = px + PHOTO_W + 14
+        zx = px + PHOTO_W + 14
         zone_col_w = W - PAD - zx
     else:
         # Sin foto: zona ocupa todo el ancho
-        zx         = PAD
+        zx = PAD
         zone_col_w = W - PAD * 2
 
     _ls(draw, label_zona, zx, py, _inter(7, bold=True), (*AC, 102), ls=2)
@@ -550,25 +584,39 @@ def componer_gafete(
     div_y = z_cur_y + 11
     for xi in range(zone_col_w):
         t = xi / max(zone_col_w - 1, 1)
-        draw.line([(zx + xi, div_y), (zx + xi, div_y + 1)],
-                  fill=(*GOLD, round(255 * (1 - t ** 1.2))))
+        draw.line([(zx + xi, div_y), (zx + xi, div_y + 1)], fill=(*GOLD, round(255 * (1 - t**1.2))))
 
     if punto_de_acceso:
-        _ls(draw, "PUNTO DE ACCESO", zx, div_y + 10,
-            _inter(7, bold=True), (*AC, 102), ls=2)
-        _wrap_text(draw, punto_de_acceso, zx, div_y + 22, zone_col_w,
-                   _inter(11, bold=True), (*WHITE, 255), leading=15)
+        _ls(draw, "PUNTO DE ACCESO", zx, div_y + 10, _inter(7, bold=True), (*AC, 102), ls=2)
+        _wrap_text(
+            draw,
+            punto_de_acceso,
+            zx,
+            div_y + 22,
+            zone_col_w,
+            _inter(11, bold=True),
+            (*WHITE, 255),
+            leading=15,
+        )
 
     # ── 4. Nombre del evento ──────────────────────────────────────
     y2 = y1 + PZ_H
     _gold_line(draw, y2)
     _gold_line(draw, y2 + EVT_H - 1)
     _ls(draw, label_evento, PAD, y2 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
-    _wrap_text(draw, nombre_evento, PAD, y2 + 27, W - PAD * 2,
-               _inter(13, bold=True), (*WHITE, 255), leading=17)
+    _wrap_text(
+        draw,
+        nombre_evento,
+        PAD,
+        y2 + 27,
+        W - PAD * 2,
+        _inter(13, bold=True),
+        (*WHITE, 255),
+        leading=17,
+    )
 
     # ── 5. Fechas ─────────────────────────────────────────────────
-    y3   = y2 + EVT_H
+    y3 = y2 + EVT_H
     half = (W - 1) // 2
     _gold_line(draw, y3 + DT_H - 1)
     _ls(draw, label_fecha, PAD, y3 + 12, _inter(7, bold=True), (*AC, 102), ls=2)
@@ -586,30 +634,48 @@ def componer_gafete(
     y4 = y3 + DT_H
     _gold_line(draw, y4 + GN_H - 1)
     _ls(draw, "NOMBRE DEL INVITADO", PAD, y4 + 13, _inter(7, bold=True), (*AC, 102), ls=2)
-    _wrap_text(draw, nombre_invitado, PAD, y4 + 27, W - PAD * 2,
-               _inter(17, bold=True), (*WHITE, 255), leading=22)
+    _wrap_text(
+        draw,
+        nombre_invitado,
+        PAD,
+        y4 + 27,
+        W - PAD * 2,
+        _inter(17, bold=True),
+        (*WHITE, 255),
+        leading=22,
+    )
 
     # ── 7. QR ─────────────────────────────────────────────────────
     # QR_BOX es grande a propósito: un token Fernet ronda 65-70 módulos, así que el recuadro
     # necesita ~4px por módulo para seguir siendo legible por cámara (ver _qr_imagen()).
-    y5      = y4 + GN_H
-    QR_BOX  = 300
+    y5 = y4 + GN_H
+    QR_BOX = 300
     QR_PAD_I = 10
     QR_SIZE = QR_BOX - QR_PAD_I * 2
-    qr_bx   = (W - QR_BOX) // 2
-    qr_by   = y5 + 15
-    draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
-                            radius=12, fill=(*WHITE, 255))
+    qr_bx = (W - QR_BOX) // 2
+    qr_by = y5 + 15
+    draw.rounded_rectangle(
+        [qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX], radius=12, fill=(*WHITE, 255)
+    )
     qr_img = _qr_imagen(token, QR_SIZE)
     img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
-    _ls_center(draw, "ESCANEAR PARA VALIDAR", W // 2, qr_by + QR_BOX + 8,
-               _inter(7, bold=True), (*AC, 102), ls=2)
+    _ls_center(
+        draw,
+        "ESCANEAR PARA VALIDAR",
+        W // 2,
+        qr_by + QR_BOX + 8,
+        _inter(7, bold=True),
+        (*AC, 102),
+        ls=2,
+    )
     if codigo_acceso:
         f_code = _inter(8)
-        cb     = draw.textbbox((0, 0), codigo_acceso, font=f_code)
+        cb = draw.textbbox((0, 0), codigo_acceso, font=f_code)
         draw.text(
             ((W - (cb[2] - cb[0])) // 2, qr_by + QR_BOX + 8 + 10 + 8),
-            codigo_acceso, font=f_code, fill=(*WHITE, 51),
+            codigo_acceso,
+            font=f_code,
+            fill=(*WHITE, 51),
         )
 
     # ── 8. Footer ─────────────────────────────────────────────────
@@ -618,9 +684,13 @@ def componer_gafete(
     draw.rectangle([0, y6, W - 1, H - 1], fill=(*GOLD, 8))
     _wrap_text(
         draw,
-        "Todos los accesos son intransferibles. "
-        "Xenty Accesos · Sistema de Control de Acceso",
-        PAD, y6 + 9, W - PAD * 2, _inter(7), (*WHITE, 41), leading=10,
+        "Todos los accesos son intransferibles. " "Xenty Accesos · Sistema de Control de Acceso",
+        PAD,
+        y6 + 9,
+        W - PAD * 2,
+        _inter(7),
+        (*WHITE, 41),
+        leading=10,
     )
 
     # Máscara de esquinas redondeadas
@@ -634,6 +704,7 @@ def componer_gafete(
 
 
 # ── Gafete de estacionamiento — v2 «Premium Dark · Acento Dorado» ────────────
+
 
 def componer_gafete_estacionamiento(
     *,
@@ -653,24 +724,25 @@ def componer_gafete_estacionamiento(
     Sin foto de portador. Sin grilla.
     """
     from io import BytesIO
+
     from PIL import Image, ImageDraw
 
-    W     = 340
+    W = 340
     RADIO = 20
-    PAD   = 18
+    PAD = 18
 
-    GOLD   = (255, 215,   0)
-    GOLD_D = (139, 100,   0)
-    GOLD_M = (255, 162,   0)
-    DEEP   = (  9,   9,  16)
-    WHITE  = (255, 255, 255)
+    GOLD = (255, 215, 0)
+    GOLD_D = (139, 100, 0)
+    GOLD_M = (255, 162, 0)
+    DEEP = (9, 9, 16)
+    WHITE = (255, 255, 255)
 
     _ZONE_COLORS: dict[str, tuple[int, int, int]] = {
-        "GENERAL":   (255, 215,   0),
-        "VIP":       (255, 215,   0),
-        "STAFF":     (255, 109,   0),
-        "PRENSA":    (156,  39, 176),
-        "PROVEEDOR": ( 33, 150, 243),
+        "GENERAL": (255, 215, 0),
+        "VIP": (255, 215, 0),
+        "STAFF": (255, 109, 0),
+        "PRENSA": (156, 39, 176),
+        "PROVEEDOR": (33, 150, 243),
     }
     zkey = zona.upper().split()[0] if zona else "GENERAL"
     AC = next((v for k, v in _ZONE_COLORS.items() if k in zkey), GOLD)
@@ -678,13 +750,16 @@ def componer_gafete_estacionamiento(
     cajon_display = (cajon or parking or "C-1").upper()
 
     def _cajon_size(c: str) -> int:
-        if len(c) <= 3: return 94
-        if len(c) <= 4: return 78
-        if len(c) <= 6: return 60
+        if len(c) <= 3:
+            return 94
+        if len(c) <= 4:
+            return 78
+        if len(c) <= 6:
+            return 60
         return 48
 
     f_caj_size = _cajon_size(cajon_display)
-    f_caj      = _bebas(f_caj_size)
+    f_caj = _bebas(f_caj_size)
 
     # Helpers locales
     def _ls(draw, text, x, y, font, fill, ls=2):
@@ -694,11 +769,13 @@ def componer_gafete_estacionamiento(
             x += (bb[2] - bb[0]) + ls
 
     def _ls_center(draw, text, cx, y, font, fill, ls=2):
-        total = sum(
-            draw.textbbox((0, 0), c, font=font)[2]
-            - draw.textbbox((0, 0), c, font=font)[0] + ls
-            for c in text
-        ) - ls
+        total = (
+            sum(
+                draw.textbbox((0, 0), c, font=font)[2] - draw.textbbox((0, 0), c, font=font)[0] + ls
+                for c in text
+            )
+            - ls
+        )
         _ls(draw, text, cx - total // 2, y, font, fill, ls)
 
     def _grad3(draw, y0, y1, ca, cb, cc):
@@ -715,16 +792,16 @@ def componer_gafete_estacionamiento(
     def _sep(draw, y):
         draw.line([(0, y), (W - 1, y)], fill=(*GOLD, 18))
 
-    BAR_H  = 5
-    HDR_H  = 92
+    BAR_H = 5
+    HDR_H = 92
     PROV_H = 83
-    CAJ_H  = 90
-    QR_H   = 340
+    CAJ_H = 90
+    QR_H = 340
     INFO_H = 88
     FOOT_H = 48
     H = BAR_H + HDR_H + PROV_H + CAJ_H + QR_H + INFO_H + FOOT_H
 
-    img  = Image.new("RGBA", (W, H), (*DEEP, 255))
+    img = Image.new("RGBA", (W, H), (*DEEP, 255))
     draw = ImageDraw.Draw(img)
     draw.rounded_rectangle([0, 0, W - 1, H - 1], radius=RADIO, fill=(*DEEP, 255))
 
@@ -736,15 +813,16 @@ def componer_gafete_estacionamiento(
     _sep(draw, y0 + HDR_H - 1)
     _ls(draw, "XENTY ACCESOS", PAD, y0 + 15, _inter(7, bold=True), (*GOLD, 102), ls=2)
     f_title = _inter(20, bold=True)
-    draw.text((PAD, y0 + 30), "PASE DE",          font=f_title, fill=(*WHITE, 255))
-    draw.text((PAD, y0 + 54), "ESTACIONAMIENTO",  font=f_title, fill=(*WHITE, 255))
+    draw.text((PAD, y0 + 30), "PASE DE", font=f_title, fill=(*WHITE, 255))
+    draw.text((PAD, y0 + 54), "ESTACIONAMIENTO", font=f_title, fill=(*WHITE, 255))
     _logo_path = _STATIC / "xenty-white.png"
     if _logo_path.exists():
         from PIL import Image as _PIL_Image
-        _logo   = _PIL_Image.open(_logo_path).convert("RGBA")
+
+        _logo = _PIL_Image.open(_logo_path).convert("RGBA")
         _logo_h = 22
         _logo_w = int(_logo.width * _logo_h / _logo.height)
-        _logo   = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
+        _logo = _logo.resize((_logo_w, _logo_h), _PIL_Image.LANCZOS)
         img.paste(_logo, (W - PAD - _logo_w, y0 + 20), _logo)
 
     # ── 3. Proveedor ──────────────────────────────────────────────
@@ -752,24 +830,29 @@ def componer_gafete_estacionamiento(
     _sep(draw, y1 + PROV_H - 1)
     ix = PAD
     iy = y1 + (PROV_H - 52) // 2
-    draw.rounded_rectangle([ix, iy, ix + 52, iy + 52], radius=12,
-                            fill=(*GOLD, 18), outline=(*GOLD, 51), width=1)
+    draw.rounded_rectangle(
+        [ix, iy, ix + 52, iy + 52], radius=12, fill=(*GOLD, 18), outline=(*GOLD, 51), width=1
+    )
     # Ícono de auto estilizado centrado en el cuadro
     cx_i = ix + 26
     cy_i = iy + 26
-    draw.rounded_rectangle([cx_i - 15, cy_i - 2, cx_i + 15, cy_i + 9], radius=3,
-                            fill=(*GOLD, 140))
-    draw.polygon([
-        (cx_i - 12, cy_i - 2), (cx_i - 10, cy_i - 7),
-        (cx_i + 10, cy_i - 7), (cx_i + 12, cy_i - 2),
-    ], fill=(*GOLD, 140))
+    draw.rounded_rectangle([cx_i - 15, cy_i - 2, cx_i + 15, cy_i + 9], radius=3, fill=(*GOLD, 140))
+    draw.polygon(
+        [
+            (cx_i - 12, cy_i - 2),
+            (cx_i - 10, cy_i - 7),
+            (cx_i + 10, cy_i - 7),
+            (cx_i + 12, cy_i - 2),
+        ],
+        fill=(*GOLD, 140),
+    )
     draw.ellipse([cx_i - 12, cy_i + 6, cx_i - 6, cy_i + 12], fill=(*GOLD, 179))
-    draw.ellipse([cx_i +  6, cy_i + 6, cx_i + 12, cy_i + 12], fill=(*GOLD, 179))
+    draw.ellipse([cx_i + 6, cy_i + 6, cx_i + 12, cy_i + 12], fill=(*GOLD, 179))
 
     tx = ix + 52 + 14
     _ls(draw, "PROVEEDOR", tx, iy + 4, _inter(7, bold=True), (*GOLD, 102), ls=2)
     f_emp_hdr = _inter(14, bold=True)
-    emp_hdr   = nombre_empresa.upper()
+    emp_hdr = nombre_empresa.upper()
     max_emp_w = W - PAD - tx - 4
     while len(emp_hdr) > 2:
         eb = draw.textbbox((0, 0), emp_hdr, font=f_emp_hdr)
@@ -788,7 +871,7 @@ def componer_gafete_estacionamiento(
     bb = draw.textbbox((0, 0), cajon_display, font=f_caj)
     if (bb[2] - bb[0]) > max_caj_w:
         f_caj = _bebas(max(round(f_caj_size * max_caj_w / max(bb[2] - bb[0], 1)), 36))
-        bb    = draw.textbbox((0, 0), cajon_display, font=f_caj)
+        bb = draw.textbbox((0, 0), cajon_display, font=f_caj)
     caj_y = y2 + CAJ_H - (bb[3] - bb[1]) - 10
     draw.text((PAD, caj_y), cajon_display, font=f_caj, fill=(*AC, 255))
 
@@ -797,17 +880,25 @@ def componer_gafete_estacionamiento(
     # para seguir siendo legible por cámara (ver _qr_imagen()).
     y2b = y2 + CAJ_H
     _sep(draw, y2b + QR_H - 1)
-    QR_BOX   = 300
+    QR_BOX = 300
     QR_PAD_I = 10
-    QR_SIZE  = QR_BOX - QR_PAD_I * 2
-    qr_bx    = (W - QR_BOX) // 2
-    qr_by    = y2b + 15
-    draw.rounded_rectangle([qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX],
-                            radius=12, fill=(*WHITE, 255))
+    QR_SIZE = QR_BOX - QR_PAD_I * 2
+    qr_bx = (W - QR_BOX) // 2
+    qr_by = y2b + 15
+    draw.rounded_rectangle(
+        [qr_bx, qr_by, qr_bx + QR_BOX, qr_by + QR_BOX], radius=12, fill=(*WHITE, 255)
+    )
     qr_img = _qr_imagen(token, QR_SIZE)
     img.paste(qr_img, (qr_bx + QR_PAD_I, qr_by + QR_PAD_I))
-    _ls_center(draw, "ESCANEAR PARA VALIDAR", W // 2, qr_by + QR_BOX + 10,
-               _inter(7, bold=True), (*GOLD, 102), ls=2)
+    _ls_center(
+        draw,
+        "ESCANEAR PARA VALIDAR",
+        W // 2,
+        qr_by + QR_BOX + 10,
+        _inter(7, bold=True),
+        (*GOLD, 102),
+        ls=2,
+    )
 
     # ── 5. Info del evento ────────────────────────────────────────
     y3 = y2b + QR_H
@@ -827,9 +918,8 @@ def componer_gafete_estacionamiento(
     draw.text((PAD + 12, ry), zona.upper(), font=_inter(10, bold=True), fill=(*WHITE, 255))
     if vigencia:
         vig_str = f"VIGENCIA: {vigencia[:10]}"
-        vb      = draw.textbbox((0, 0), vig_str, font=_inter(10))
-        draw.text((W - PAD - (vb[2] - vb[0]), ry), vig_str,
-                  font=_inter(10), fill=(*WHITE, 97))
+        vb = draw.textbbox((0, 0), vig_str, font=_inter(10))
+        draw.text((W - PAD - (vb[2] - vb[0]), ry), vig_str, font=_inter(10), fill=(*WHITE, 97))
 
     # ── 6. Footer ─────────────────────────────────────────────────
     y4 = y3 + INFO_H
@@ -840,7 +930,12 @@ def componer_gafete_estacionamiento(
         "Los pases de estacionamiento son intransferibles. "
         "Válido únicamente para el evento y cajón indicados. "
         "Xenty Accesos no se responsabiliza por el uso no autorizado.",
-        PAD, y4 + 9, W - PAD * 2, _inter(7), (*WHITE, 41), leading=10,
+        PAD,
+        y4 + 9,
+        W - PAD * 2,
+        _inter(7),
+        (*WHITE, 41),
+        leading=10,
     )
 
     mask = Image.new("L", (W, H), 0)

@@ -5,6 +5,7 @@ nombre único **por recinto** (no global), y ``parent_id`` de Ubicación/Entrada
 
 Referencia: MODELO_DATOS_SAR §6.4 · SAR_FUNCIONALIDADES §2.
 """
+
 from __future__ import annotations
 
 from django.db import models

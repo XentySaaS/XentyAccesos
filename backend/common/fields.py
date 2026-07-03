@@ -7,6 +7,7 @@ El ciphertext se guarda en una columna TEXT (más largo que el claro), por lo qu
 NO admiten búsquedas por igualdad: Fernet es no determinístico (IV aleatorio por cifrado). Eso es
 deseable para PII (`curp`, `nss`, `ine_data`, tokens) que no se consulta por valor exacto.
 """
+
 from __future__ import annotations
 
 import json

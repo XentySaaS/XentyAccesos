@@ -4,6 +4,7 @@
 
 Referencia: MODELO_DATOS_SAR §6.9.
 """
+
 from __future__ import annotations
 
 from django.db import models
@@ -20,7 +21,9 @@ class Sancion(models.Model):  # warnings
         SUSPENSION = "suspension", "Suspensión"
         BAJA = "baja", "Baja"
 
-    empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE, related_name="sanciones")
+    empleado = models.ForeignKey(
+        "empleados.Empleado", on_delete=models.CASCADE, related_name="sanciones"
+    )
     evento = models.ForeignKey("eventos.Evento", on_delete=models.SET_NULL, null=True, blank=True)
     cita = models.ForeignKey("citas.Cita", on_delete=models.SET_NULL, null=True, blank=True)
     severidad = models.CharField(max_length=8, choices=Severidad.choices, null=True, blank=True)

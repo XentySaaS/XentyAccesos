@@ -6,6 +6,7 @@
 Sin autenticación ni contexto de tenant (rutas en la whitelist de enforcement, CLAUDE.md §6). No
 exponen datos: solo el estado de las dependencias.
 """
+
 from __future__ import annotations
 
 from rest_framework.permissions import AllowAny

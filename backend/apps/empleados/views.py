@@ -1,4 +1,5 @@
 """ViewSet de Empleado (contexto proveedores) + import por Excel idempotente."""
+
 from __future__ import annotations
 
 from rest_framework import status, viewsets
@@ -37,7 +38,9 @@ class EmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         """Importa empleados desde un .xlsx (columnas: nombre, email, telefono). Idempotente por email."""
         archivo = request.FILES.get("archivo")
         if not archivo:
-            return Response({"detail": "Falta 'archivo' (.xlsx)."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Falta 'archivo' (.xlsx)."}, status=status.HTTP_400_BAD_REQUEST
+            )
         validar_archivo(archivo, extensiones=(".xlsx",), max_mb=5)
 
         from openpyxl import load_workbook
@@ -51,7 +54,8 @@ class EmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
             email = str(fila[1]).strip().lower() if len(fila) > 1 and fila[1] else None
             telefono = str(fila[2]).strip() if len(fila) > 2 and fila[2] else None
             _, creado = Empleado.objects.update_or_create(
-                proveedor=request.user, email=email,
+                proveedor=request.user,
+                email=email,
                 defaults={"nombre": nombre, "telefono": telefono},
             )
             creados += int(creado)

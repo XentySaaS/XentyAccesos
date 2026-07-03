@@ -5,10 +5,12 @@ el cliente de WhatsApp de ``apps.mensajeria`` y el correo de Django. Las notific
 bloquean la operación: si fallan, se registran y la API responde igual (en dev, WhatsApp es sandbox
 y el correo va a Mailpit).
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import datetime, time as _dtime, timezone as _dtz
+from datetime import UTC, datetime
+from datetime import time as _dtime
 
 from common.email_builder import construir_correo, enviar_correo_html
 
@@ -17,17 +19,31 @@ logger = logging.getLogger(__name__)
 
 def _exp_epoch(evento) -> float:
     """Epoch del fin del último día de vigencia del evento (para el QR)."""
-    return datetime.combine(evento.vigencia_fin, _dtime(23, 59, 59), tzinfo=_dtz.utc).timestamp()
+    return datetime.combine(evento.vigencia_fin, _dtime(23, 59, 59), tzinfo=UTC).timestamp()
 
 
 _MESES_ES = {
-    "January": "Ene", "February": "Feb", "March": "Mar", "April": "Abr",
-    "May": "May", "June": "Jun", "July": "Jul", "August": "Ago",
-    "September": "Sep", "October": "Oct", "November": "Nov", "December": "Dic",
+    "January": "Ene",
+    "February": "Feb",
+    "March": "Mar",
+    "April": "Abr",
+    "May": "May",
+    "June": "Jun",
+    "July": "Jul",
+    "August": "Ago",
+    "September": "Sep",
+    "October": "Oct",
+    "November": "Nov",
+    "December": "Dic",
 }
 _DIAS_ES = {
-    "Monday": "Lun", "Tuesday": "Mar", "Wednesday": "Mie",
-    "Thursday": "Jue", "Friday": "Vie", "Saturday": "Sab", "Sunday": "Dom",
+    "Monday": "Lun",
+    "Tuesday": "Mar",
+    "Wednesday": "Mie",
+    "Thursday": "Jue",
+    "Friday": "Vie",
+    "Saturday": "Sab",
+    "Sunday": "Dom",
 }
 
 
@@ -55,6 +71,7 @@ def _kwargs_gafete(ep) -> dict:
 
 def _enviar_whatsapp(telefono: str | None, cuerpo: str) -> None:
     from apps.mensajeria.services import notificar_whatsapp
+
     notificar_whatsapp(telefono, cuerpo)
 
 
@@ -72,7 +89,7 @@ def _enviar_correo_simple(
     """Envía correo con plantilla HTML. ``cuerpo`` se usa como texto plano y como párrafos HTML."""
     if not destino:
         return
-    lineas = [l.strip() for l in cuerpo.strip().splitlines() if l.strip()]
+    lineas = [ln.strip() for ln in cuerpo.strip().splitlines() if ln.strip()]
     html = construir_correo(
         nombre_tenant=nombre_tenant,
         saludo=saludo or (lineas[0] if lineas else ""),
@@ -128,14 +145,22 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
     adjuntos: list[tuple[str, bytes, str]] = []
     if ep.requiere_parking:
         try:
-            from apps.gafetes.services import TIPO_PARKING, componer_gafete_estacionamiento, emitir_qr
-            exp     = _exp_epoch(evento)
+            from apps.gafetes.services import (
+                TIPO_PARKING,
+                componer_gafete_estacionamiento,
+                emitir_qr,
+            )
+
+            exp = _exp_epoch(evento)
             fecha_v = evento.vigencia_inicio.strftime("%d/%m/%Y")
             recinto = evento.recinto.nombre if evento.recinto_id else nombre_tenant
             for i, cajon in enumerate(ep.cajones.order_by("id"), start=1):
                 token = emitir_qr(
-                    id=cajon.id, tipo=TIPO_PARKING, tenant=_conn.schema_name,
-                    exp_epoch=exp, contexto=str(cajon.uuid),
+                    id=cajon.id,
+                    tipo=TIPO_PARKING,
+                    tenant=_conn.schema_name,
+                    exp_epoch=exp,
+                    contexto=str(cajon.uuid),
                 )
                 png = componer_gafete_estacionamiento(
                     token=token,
@@ -160,8 +185,11 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
         asunto=asunto,
     )
     enviar_correo_html(
-        asunto=asunto, texto_plano=texto_plano, html=html,
-        destino=destino, adjuntos=adjuntos or None,
+        asunto=asunto,
+        texto_plano=texto_plano,
+        html=html,
+        destino=destino,
+        adjuntos=adjuntos or None,
     )
     _enviar_whatsapp(proveedor.telefono, texto_plano)
 
@@ -236,8 +264,10 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
         from apps.gafetes.services import TIPO_EVENTO, componer_gafete, emitir_qr
 
         token = emitir_qr(
-            id=asignacion.id, tipo=TIPO_EVENTO,
-            tenant=_conn.schema_name, exp_epoch=_exp_epoch(ev),
+            id=asignacion.id,
+            tipo=TIPO_EVENTO,
+            tenant=_conn.schema_name,
+            exp_epoch=_exp_epoch(ev),
         )
         foto: bytes | None = None
         if empleado.foto:
@@ -245,7 +275,6 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
                 foto = empleado.foto.read()
             except OSError:
                 pass
-        recinto = ev.recinto.nombre if ev.recinto_id else nombre_tenant
         png = componer_gafete(
             token=token,
             nombre_invitado=empleado.nombre,
@@ -265,8 +294,11 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
         asunto=asunto,
     )
     enviar_correo_html(
-        asunto=asunto, texto_plano=texto_plano, html=html,
-        destino=empleado.email, adjuntos=adjunto,
+        asunto=asunto,
+        texto_plano=texto_plano,
+        html=html,
+        destino=empleado.email,
+        adjuntos=adjunto,
     )
     _enviar_whatsapp(empleado.telefono, texto_plano)
 
@@ -306,18 +338,16 @@ def recalcular_status_asignaciones(empleado) -> int:
 
     from .models import EmpleadoEventoProveedor, EventoGrupoDocumentos
 
-    asignaciones = (
-        EmpleadoEventoProveedor.objects
-        .filter(empleado=empleado)
-        .select_related("evento_proveedor")
+    asignaciones = EmpleadoEventoProveedor.objects.filter(empleado=empleado).select_related(
+        "evento_proveedor"
     )
     nombre_tenant = connection.schema_name
     cambiadas = 0
     for asignacion in asignaciones:
         reqs = list(
-            EventoGrupoDocumentos.objects
-            .filter(evento_id=asignacion.evento_proveedor.evento_id)
-            .values_list("grupo_id", "type_validation")
+            EventoGrupoDocumentos.objects.filter(
+                evento_id=asignacion.evento_proveedor.evento_id
+            ).values_list("grupo_id", "type_validation")
         )
         nuevo = (
             EmpleadoEventoProveedor.StatusDocs.CUMPLE
@@ -330,8 +360,10 @@ def recalcular_status_asignaciones(empleado) -> int:
             asignacion.save(update_fields=["statusdocs"])
             cambiadas += 1
             # Notifica al empleado cuando sus docs quedan verificados y su acceso es confirmado.
-            if (prev == EmpleadoEventoProveedor.StatusDocs.PENDIENTES
-                    and nuevo == EmpleadoEventoProveedor.StatusDocs.CUMPLE):
+            if (
+                prev == EmpleadoEventoProveedor.StatusDocs.PENDIENTES
+                and nuevo == EmpleadoEventoProveedor.StatusDocs.CUMPLE
+            ):
                 notificar_asignacion_empleado(asignacion, nombre_tenant=nombre_tenant)
     return cambiadas
 
@@ -348,7 +380,9 @@ def estado_documental(empleado, requisitos) -> tuple[bool, list[dict]]:
 
     docs = {
         (d.tipo_documento_id, d.estado)
-        for d in DocumentoEmpleado.objects.filter(empleado=empleado).only("tipo_documento_id", "estado")
+        for d in DocumentoEmpleado.objects.filter(empleado=empleado).only(
+            "tipo_documento_id", "estado"
+        )
     }
     verificados_ids = {tid for (tid, est) in docs if est == DocumentoEmpleado.Estado.VERIFICADO}
     pendientes_ids = {tid for (tid, est) in docs if est == DocumentoEmpleado.Estado.PENDIENTE}
@@ -356,7 +390,9 @@ def estado_documental(empleado, requisitos) -> tuple[bool, list[dict]]:
     cumple_todo = True
     detalle: list[dict] = []
     for r in requisitos:
-        tipos = list(TipoDocumento.objects.filter(grupo_id=r.grupo_id, activo=True).values("id", "nombre"))
+        tipos = list(
+            TipoDocumento.objects.filter(grupo_id=r.grupo_id, activo=True).values("id", "nombre")
+        )
         nombre = {t["id"]: t["nombre"] for t in tipos}
         ids = set(nombre)
         verif = ids & verificados_ids
@@ -369,16 +405,18 @@ def estado_documental(empleado, requisitos) -> tuple[bool, list[dict]]:
             faltan = set() if ok or pend else ids
         if not ok:
             cumple_todo = False
-        detalle.append({
-            "grupo": r.grupo_id,
-            "grupo_nombre": r.grupo.nombre,
-            "type_validation": r.type_validation,
-            "ok": ok,
-            "verificados": [nombre[i] for i in verif],
-            "pendientes": [nombre[i] for i in pend],
-            "faltantes": [nombre[i] for i in faltan],
-            "tipos": tipos,
-        })
+        detalle.append(
+            {
+                "grupo": r.grupo_id,
+                "grupo_nombre": r.grupo.nombre,
+                "type_validation": r.type_validation,
+                "ok": ok,
+                "verificados": [nombre[i] for i in verif],
+                "pendientes": [nombre[i] for i in pend],
+                "faltantes": [nombre[i] for i in faltan],
+                "tipos": tipos,
+            }
+        )
     return cumple_todo, detalle
 
 
@@ -395,9 +433,7 @@ def notificar_evento_cancelado(evento, *, nombre_tenant: str) -> int:
         f"El evento «{evento.nombre}» de {nombre_tenant} ha sido cancelado.\n\n"
         f"— {nombre_tenant} · Xenty Acceso"
     )
-    invitaciones = (
-        EventoProveedor.objects.filter(evento=evento).select_related("proveedor")
-    )
+    invitaciones = EventoProveedor.objects.filter(evento=evento).select_related("proveedor")
     n = 0
     for ep in invitaciones:
         responsable = (ep.proveedor.nombre_responsable or ep.proveedor.nombre or "").strip().title()
@@ -409,7 +445,9 @@ def notificar_evento_cancelado(evento, *, nombre_tenant: str) -> int:
         )
         _enviar_whatsapp(ep.proveedor.telefono, texto_plano)
         enviar_correo_html(
-            asunto=asunto, texto_plano=texto_plano, html=html,
+            asunto=asunto,
+            texto_plano=texto_plano,
+            html=html,
             destino=ep.proveedor.email_responsable or ep.proveedor.email,
         )
         n += 1

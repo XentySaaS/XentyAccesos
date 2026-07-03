@@ -3,6 +3,7 @@
 Nivel B = diagnóstico de salud de configuración + cliente de la Mesa (probar conexión, enviar
 diagnóstico). Nunca toca datos de dominio ni consume créditos (CLAUDE.md §9).
 """
+
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response

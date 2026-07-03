@@ -1,4 +1,5 @@
 """Rutas REST de citas."""
+
 from rest_framework.routers import DefaultRouter
 
 from .views import AsistenteCitaViewSet, CitaViewSet, ContactoViewSet

@@ -5,29 +5,76 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('citas', '0001_initial'),
-        ('empleados', '0001_initial'),
-        ('eventos', '0002_empleadoeventoproveedor_eventoproveedor_and_more'),
+        ("citas", "0001_initial"),
+        ("empleados", "0001_initial"),
+        ("eventos", "0002_empleadoeventoproveedor_eventoproveedor_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Sancion',
+            name="Sancion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('severidad', models.CharField(blank=True, choices=[('bajo', 'Bajo'), ('medio', 'Medio'), ('alto', 'Alto')], max_length=8, null=True)),
-                ('penalidad', models.CharField(blank=True, choices=[('advertencia', 'Advertencia'), ('suspension', 'Suspensión'), ('baja', 'Baja')], max_length=12, null=True)),
-                ('motivo', models.TextField()),
-                ('fecha_inicio', models.DateField(blank=True, null=True)),
-                ('fecha_fin', models.DateField(blank=True, null=True)),
-                ('creado', models.DateTimeField(auto_now_add=True)),
-                ('cita', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='citas.cita')),
-                ('empleado', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sanciones', to='empleados.empleado')),
-                ('evento', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='eventos.evento')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "severidad",
+                    models.CharField(
+                        blank=True,
+                        choices=[("bajo", "Bajo"), ("medio", "Medio"), ("alto", "Alto")],
+                        max_length=8,
+                        null=True,
+                    ),
+                ),
+                (
+                    "penalidad",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("advertencia", "Advertencia"),
+                            ("suspension", "Suspensión"),
+                            ("baja", "Baja"),
+                        ],
+                        max_length=12,
+                        null=True,
+                    ),
+                ),
+                ("motivo", models.TextField()),
+                ("fecha_inicio", models.DateField(blank=True, null=True)),
+                ("fecha_fin", models.DateField(blank=True, null=True)),
+                ("creado", models.DateTimeField(auto_now_add=True)),
+                (
+                    "cita",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="citas.cita",
+                    ),
+                ),
+                (
+                    "empleado",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="sanciones",
+                        to="empleados.empleado",
+                    ),
+                ),
+                (
+                    "evento",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to="eventos.evento",
+                    ),
+                ),
             ],
         ),
     ]

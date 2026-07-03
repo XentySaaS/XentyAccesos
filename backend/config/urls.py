@@ -11,6 +11,7 @@ Autenticación de los dos contextos (F0.2):
 
 F1+ monta las apps de negocio bajo /api/.
 """
+
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
@@ -49,7 +50,9 @@ urlpatterns = [
     path("api/soporte/probar-conexion/", ProbarConexionView.as_view(), name="soporte-probar"),
     path("api/soporte/enviar-diagnostico/", EnviarDiagnosticoView.as_view(), name="soporte-diag"),
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
-    path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"),
+    path(
+        "api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"
+    ),
     path("api/", include("apps.accounts.urls")),  # F1: gestión de usuarios del tenant
     path("api/", include("apps.recintos.urls")),  # F1: topología de recintos
     path("api/", include("apps.proveedores.urls")),  # F1: catálogo + onboarding de proveedores

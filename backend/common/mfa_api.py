@@ -5,13 +5,14 @@ Flujo:
   2. ``POST /api/auth/mfa/totp/activar/``   (sesión completa) → verifica 1er código y activa MFA.
   3. ``POST /api/auth/mfa/verificar/``      (sesión MFA pendiente, tras login) → emite tokens full.
 """
+
 from __future__ import annotations
 
 import base64
 import io
 
 import qrcode
-from rest_framework import serializers, status
+from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView

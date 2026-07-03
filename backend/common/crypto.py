@@ -1,4 +1,5 @@
 """Acceso al cifrador Fernet del proyecto (clave ``SECRET_KEY_FERNET``)."""
+
 from __future__ import annotations
 
 from functools import lru_cache

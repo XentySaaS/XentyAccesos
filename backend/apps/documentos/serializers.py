@@ -1,4 +1,5 @@
 """Serializers del catálogo documental y de documentos de empleado."""
+
 from __future__ import annotations
 
 import os
@@ -50,8 +51,17 @@ class DocumentoEmpleadoSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentoEmpleado
         fields = [
-            "id", "empleado", "empleado_nombre", "tipo_documento", "tipo_documento_nombre",
-            "proveedor_nombre", "archivo", "tipo_archivo", "estado", "motivo_rechazo", "creado",
+            "id",
+            "empleado",
+            "empleado_nombre",
+            "tipo_documento",
+            "tipo_documento_nombre",
+            "proveedor_nombre",
+            "archivo",
+            "tipo_archivo",
+            "estado",
+            "motivo_rechazo",
+            "creado",
         ]
         read_only_fields = ["tipo_archivo", "estado", "motivo_rechazo", "creado"]
 
@@ -71,5 +81,7 @@ class DocumentoEmpleadoSerializer(serializers.ModelSerializer):
         return archivo
 
     def create(self, validated):
-        validated["tipo_archivo"] = os.path.splitext(validated["archivo"].name)[1].lstrip(".").lower()
+        validated["tipo_archivo"] = (
+            os.path.splitext(validated["archivo"].name)[1].lstrip(".").lower()
+        )
         return super().create(validated)

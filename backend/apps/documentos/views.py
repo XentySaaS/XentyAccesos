@@ -1,4 +1,5 @@
 """ViewSets de documentos: catálogo (admin/acceso) + documentos de empleado + verificación."""
+
 from __future__ import annotations
 
 from rest_framework import status, viewsets
@@ -24,7 +25,10 @@ from .serializers import (
 from .services import notificar_aprobacion, notificar_rechazo
 
 _CATALOGO_PERMS = [
-    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("documentos"), RequiereRol("administrador"),
+    *PERMISOS_BASE(),
+    ContextoAcceso,
+    RequiereModulo("documentos"),
+    RequiereRol("administrador"),
 ]
 
 
@@ -85,6 +89,7 @@ class DocumentoEmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     def download(self, request, pk=None):
         """Descarga autenticada del archivo. El queryset ya filtra por pertenencia."""
         import mimetypes
+
         from django.http import FileResponse
 
         doc = self.get_object()
@@ -93,7 +98,9 @@ class DocumentoEmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         try:
             f = doc.archivo.open("rb")
         except (FileNotFoundError, OSError):
-            return Response({"detail": "Archivo no encontrado en disco."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Archivo no encontrado en disco."}, status=status.HTTP_404_NOT_FOUND
+            )
         content_type, _ = mimetypes.guess_type(doc.archivo.name)
         return FileResponse(f, content_type=content_type or "application/octet-stream")
 
@@ -106,6 +113,7 @@ class DocumentoEmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         doc.save(update_fields=["estado", "motivo_rechazo"])
         # Propaga checkdocs: una asignación pendiente puede pasar a "cumple" al validar este doc.
         from apps.eventos.services import recalcular_status_asignaciones
+
         recalcular_status_asignaciones(doc.empleado)
         notificar_aprobacion(doc)
         return Response({"estado": doc.estado})
@@ -119,6 +127,7 @@ class DocumentoEmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         doc.save(update_fields=["estado", "motivo_rechazo"])
         # Al rechazar, una asignación que dependía de este doc deja de cumplir.
         from apps.eventos.services import recalcular_status_asignaciones
+
         recalcular_status_asignaciones(doc.empleado)
         notificar_rechazo(doc)
         return Response({"estado": doc.estado})

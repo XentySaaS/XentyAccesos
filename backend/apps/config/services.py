@@ -3,6 +3,7 @@
 Uso en ViewSets: heredar de ``AuditViewSetMixin`` antes de ``ModelViewSet``.
 Uso puntual: llamar directamente a ``registrar()``.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,6 +25,7 @@ def registrar(
     # HistorialCambio.usuario apunta a accounts.Usuario. Actores de otros contextos
     # (p. ej. CuentaProveedor) se registran sin FK de usuario para evitar ValueError.
     from apps.accounts.models import Usuario
+
     if usuario is not None and not isinstance(usuario, Usuario):
         usuario = None
     return HistorialCambio.objects.create(
@@ -41,7 +43,7 @@ def _safe(val: Any) -> Any:
     """Convierte valores no-JSON-serializables a str para almacenar en JSONField."""
     if val is None:
         return None
-    if isinstance(val, (str, int, float, bool)):
+    if isinstance(val, str | int | float | bool):
         return val
     return str(val)
 

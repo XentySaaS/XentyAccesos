@@ -3,6 +3,7 @@
 Los roles del tenant son enums (``Usuario.Rol``), no requieren tabla ni siembra. Aquí se siembran
 los Planes con su lista de módulos (que gobierna ``RequiereModulo``).
 """
+
 from __future__ import annotations
 
 from django.core.management.base import BaseCommand
@@ -10,8 +11,19 @@ from django.core.management.base import BaseCommand
 from apps.tenants.models import Plan
 
 TODOS_LOS_MODULOS = [
-    "recintos", "proveedores", "empleados", "documentos", "eventos", "citas",
-    "acceso", "gafetes", "sanciones", "dispositivos", "mensajeria", "cumplimiento", "ocr",
+    "recintos",
+    "proveedores",
+    "empleados",
+    "documentos",
+    "eventos",
+    "citas",
+    "acceso",
+    "gafetes",
+    "sanciones",
+    "dispositivos",
+    "mensajeria",
+    "cumplimiento",
+    "ocr",
 ]
 
 PLANES = [
@@ -19,7 +31,15 @@ PLANES = [
         "clave": "basico",
         "nombre": "Básico",
         "precio_mensual": 0,
-        "modulos": ["recintos", "proveedores", "empleados", "documentos", "eventos", "acceso", "gafetes"],
+        "modulos": [
+            "recintos",
+            "proveedores",
+            "empleados",
+            "documentos",
+            "eventos",
+            "acceso",
+            "gafetes",
+        ],
         "limites": {"usuarios": 5, "eventos": 20},
     },
     {

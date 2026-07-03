@@ -4,6 +4,7 @@ Firma sobre ``METHOD-PATH-TIMESTAMP`` con el token del dispositivo (``compare_di
 tiempo y **nonce de un solo uso** (anti-replay en Redis). El dispositivo vive en ``public`` y queda
 ligado a su tenant; toda operación posterior corre dentro de ``tenant_context`` (aislamiento, §C7).
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -28,7 +29,9 @@ class EdgeHMACAuthentication(BaseAuthentication):
     def authenticate(self, request):
         h = request.headers
         mac, ts, nonce, firma = (
-            h.get("X-Edge-Mac"), h.get("X-Edge-Timestamp"), h.get("X-Edge-Nonce"),
+            h.get("X-Edge-Mac"),
+            h.get("X-Edge-Timestamp"),
+            h.get("X-Edge-Nonce"),
             h.get("X-Edge-Signature"),
         )
         if not all([mac, ts, nonce, firma]):
@@ -37,7 +40,9 @@ class EdgeHMACAuthentication(BaseAuthentication):
         from apps.tenants.models import DispositivoEdge
 
         with schema_context(get_public_schema_name()):
-            device = DispositivoEdge.objects.select_related("tenant").filter(mac_address=mac).first()
+            device = (
+                DispositivoEdge.objects.select_related("tenant").filter(mac_address=mac).first()
+            )
         if device is None:
             raise AuthenticationFailed("Dispositivo desconocido.")
 

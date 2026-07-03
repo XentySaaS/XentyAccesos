@@ -4,6 +4,7 @@ Convierte ``Ratelimited`` (django-ratelimit, subclase de PermissionDenied) en un
 mensaje claro, en vez del 403 genérico de DRF (REMEDIACION §A4: superar el umbral → 429).
 El resto de excepciones siguen el manejo estándar de DRF.
 """
+
 from __future__ import annotations
 
 from django_ratelimit.exceptions import Ratelimited

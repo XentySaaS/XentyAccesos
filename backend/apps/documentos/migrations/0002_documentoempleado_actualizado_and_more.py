@@ -5,36 +5,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('documentos', '0001_initial'),
+        ("documentos", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='documentoempleado',
-            name='actualizado',
+            model_name="documentoempleado",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='grupodocumentos',
-            name='actualizado',
+            model_name="grupodocumentos",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='grupodocumentos',
-            name='creado',
+            model_name="grupodocumentos",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='tipodocumento',
-            name='actualizado',
+            model_name="tipodocumento",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='tipodocumento',
-            name='creado',
+            model_name="tipodocumento",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

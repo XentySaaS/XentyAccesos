@@ -1,7 +1,9 @@
 """ViewSet de Evento: CRUD, máquina de estados (acciones), verificadores, invitaciones y gafetes."""
+
 from __future__ import annotations
 
-from datetime import datetime, time as dtime, timezone as dtz
+from datetime import UTC, datetime
+from datetime import time as dtime
 
 from django.db import connection
 from django.http import HttpResponse
@@ -15,7 +17,13 @@ from apps.config.services import AuditViewSetMixin
 from apps.documentos.services import cumple_requisitos
 from apps.empleados.models import Empleado
 from apps.gafetes.services import TIPO_EVENTO, TIPO_PARKING, componer_gafete, emitir_qr
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
+from common.permissions import (
+    PERMISOS_BASE,
+    ContextoAcceso,
+    RequiereModulo,
+    RequierePermisoPersonalizado,
+    RequiereRol,
+)
 
 from . import services as noti
 from .models import (
@@ -40,7 +48,9 @@ def _base_url(request) -> str:
 class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = EventoSerializer
     permission_classes = [
-        *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("eventos"),
+        *PERMISOS_BASE(),
+        ContextoAcceso,
+        RequiereModulo("eventos"),
         RequiereRol("administrador", "editor", "recepcion", "usuario"),
         RequierePermisoPersonalizado("eventos"),
     ]
@@ -69,12 +79,15 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         evento = self.get_object()
         grupos = request.data.get("grupos", [])  # [{"grupo": id, "type_validation": 0|1}]
         EventoGrupoDocumentos.objects.filter(evento=evento).delete()
-        EventoGrupoDocumentos.objects.bulk_create([
-            EventoGrupoDocumentos(
-                evento=evento, grupo_id=g["grupo"], type_validation=g.get("type_validation", 0)
-            )
-            for g in grupos if g.get("grupo")
-        ])
+        EventoGrupoDocumentos.objects.bulk_create(
+            [
+                EventoGrupoDocumentos(
+                    evento=evento, grupo_id=g["grupo"], type_validation=g.get("type_validation", 0)
+                )
+                for g in grupos
+                if g.get("grupo")
+            ]
+        )
         return Response({"requisitos": len(grupos)})
 
     def _transicionar(self, evento, nuevo):
@@ -101,7 +114,9 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         evento = self.get_object()
         resp = self._transicionar(evento, Evento.Estado.CANCELADO)
         if resp.status_code == status.HTTP_200_OK:
-            notificados = noti.notificar_evento_cancelado(evento, nombre_tenant=_tenant_nombre(request))
+            notificados = noti.notificar_evento_cancelado(
+                evento, nombre_tenant=_tenant_nombre(request)
+            )
             resp.data["notificados"] = notificados
         return resp
 
@@ -114,57 +129,64 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         """
         evento = self.get_object()
         eps = (
-            EventoProveedor.objects
-            .filter(evento=evento)
+            EventoProveedor.objects.filter(evento=evento)
             .select_related("proveedor", "zona", "acceso", "protocolo")
             .order_by("id")
         )
         proveedores = []
         for ep in eps:
             asignaciones = (
-                EmpleadoEventoProveedor.objects
-                .filter(evento_proveedor=ep)
+                EmpleadoEventoProveedor.objects.filter(evento_proveedor=ep)
                 .select_related("empleado")
                 .order_by("empleado__nombre")
             )
-            empleados = [{
-                "id": a.empleado_id,
-                "nombre": a.empleado.nombre,
-                "email": a.empleado.email,
-                "telefono": a.empleado.telefono,
-                "foto_url": request.build_absolute_uri(a.empleado.foto.url) if a.empleado.foto else None,
-                "statusdocs": a.statusdocs,
-            } for a in asignaciones]
-            proveedores.append({
-                "id": ep.id,
-                "proveedor": ep.proveedor.nombre,
-                "responsable": ep.proveedor.nombre_responsable,
-                "email_responsable": ep.proveedor.email_responsable,
-                "zona": ep.zona.nombre if ep.zona_id else None,
-                "acceso": ep.acceso.nombre if ep.acceso_id else None,
-                "protocolo": ep.protocolo.nombre if ep.protocolo_id else None,
-                "requiere_parking": ep.requiere_parking,
-                "parking": ep.parking,
-                "cajones_parking": ep.cajones_parking,
-                "notas": ep.notas,
-                "empleados": empleados,
-                "total_empleados": len(empleados),
-            })
-        return Response({
-            "evento": {
-                "id": evento.id,
-                "nombre": evento.nombre,
-                "recinto": evento.recinto.nombre if evento.recinto_id else None,
-                "estado": evento.estado,
-                "vigencia_inicio": evento.vigencia_inicio,
-                "vigencia_fin": evento.vigencia_fin,
-                "hora_inicio": evento.hora_inicio,
-                "hora_fin": evento.hora_fin,
-                "protocolo": evento.protocolo.nombre if evento.protocolo_id else None,
-            },
-            "proveedores": proveedores,
-            "total_proveedores": len(proveedores),
-        })
+            empleados = [
+                {
+                    "id": a.empleado_id,
+                    "nombre": a.empleado.nombre,
+                    "email": a.empleado.email,
+                    "telefono": a.empleado.telefono,
+                    "foto_url": request.build_absolute_uri(a.empleado.foto.url)
+                    if a.empleado.foto
+                    else None,
+                    "statusdocs": a.statusdocs,
+                }
+                for a in asignaciones
+            ]
+            proveedores.append(
+                {
+                    "id": ep.id,
+                    "proveedor": ep.proveedor.nombre,
+                    "responsable": ep.proveedor.nombre_responsable,
+                    "email_responsable": ep.proveedor.email_responsable,
+                    "zona": ep.zona.nombre if ep.zona_id else None,
+                    "acceso": ep.acceso.nombre if ep.acceso_id else None,
+                    "protocolo": ep.protocolo.nombre if ep.protocolo_id else None,
+                    "requiere_parking": ep.requiere_parking,
+                    "parking": ep.parking,
+                    "cajones_parking": ep.cajones_parking,
+                    "notas": ep.notas,
+                    "empleados": empleados,
+                    "total_empleados": len(empleados),
+                }
+            )
+        return Response(
+            {
+                "evento": {
+                    "id": evento.id,
+                    "nombre": evento.nombre,
+                    "recinto": evento.recinto.nombre if evento.recinto_id else None,
+                    "estado": evento.estado,
+                    "vigencia_inicio": evento.vigencia_inicio,
+                    "vigencia_fin": evento.vigencia_fin,
+                    "hora_inicio": evento.hora_inicio,
+                    "hora_fin": evento.hora_fin,
+                    "protocolo": evento.protocolo.nombre if evento.protocolo_id else None,
+                },
+                "proveedores": proveedores,
+                "total_proveedores": len(proveedores),
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def asignar_verificadores(self, request, pk=None):
@@ -242,15 +264,33 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     @staticmethod
     def _exp_epoch(evento) -> float:
         """Fin de la vigencia del evento (fin del día) en epoch, para el ``exp`` del QR."""
-        return datetime.combine(evento.vigencia_fin, dtime(23, 59, 59), tzinfo=dtz.utc).timestamp()
+        return datetime.combine(evento.vigencia_fin, dtime(23, 59, 59), tzinfo=UTC).timestamp()
 
     def _kwargs_evento(self, ep) -> dict:
         ev = ep.evento
-        _MESES = {"January":"Ene","February":"Feb","March":"Mar","April":"Abr",
-                  "May":"May","June":"Jun","July":"Jul","August":"Ago",
-                  "September":"Sep","October":"Oct","November":"Nov","December":"Dic"}
-        _DIAS  = {"Monday":"Lun","Tuesday":"Mar","Wednesday":"Mie","Thursday":"Jue",
-                  "Friday":"Vie","Saturday":"Sab","Sunday":"Dom"}
+        _MESES = {
+            "January": "Ene",
+            "February": "Feb",
+            "March": "Mar",
+            "April": "Abr",
+            "May": "May",
+            "June": "Jun",
+            "July": "Jul",
+            "August": "Ago",
+            "September": "Sep",
+            "October": "Oct",
+            "November": "Nov",
+            "December": "Dic",
+        }
+        _DIAS = {
+            "Monday": "Lun",
+            "Tuesday": "Mar",
+            "Wednesday": "Mie",
+            "Thursday": "Jue",
+            "Friday": "Vie",
+            "Saturday": "Sab",
+            "Sunday": "Dom",
+        }
 
         def _fecha(d):
             return f"{d.day} {_MESES[d.strftime('%B')]} {d.year}"
@@ -274,15 +314,19 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         """Gafete de acceso (QR) de un empleado asignado a esta invitación."""
         ep = self.get_object()
         asignacion = (
-            EmpleadoEventoProveedor.objects
-            .filter(evento_proveedor=ep, empleado_id=request.query_params.get("empleado"))
-            .select_related("empleado").first()
+            EmpleadoEventoProveedor.objects.filter(
+                evento_proveedor=ep, empleado_id=request.query_params.get("empleado")
+            )
+            .select_related("empleado")
+            .first()
         )
         if asignacion is None:
             return Response({"detail": "Empleado no asignado a esta invitación."}, status=404)
         empleado = asignacion.empleado
         token = emitir_qr(
-            id=asignacion.id, tipo=TIPO_EVENTO, tenant=connection.schema_name,
+            id=asignacion.id,
+            tipo=TIPO_EVENTO,
+            tenant=connection.schema_name,
             exp_epoch=self._exp_epoch(ep.evento),
         )
         foto = empleado.foto.read() if empleado.foto else None
@@ -299,14 +343,20 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     def gafete_parking(self, request, pk=None):
         """Gafete de estacionamiento (QR) de un cajón de esta invitación."""
         from apps.gafetes.services import componer_gafete_estacionamiento
-        ep    = self.get_object()
-        cajon = ep.cajones.filter(id=request.query_params.get("cajon")).first() or ep.cajones.first()
+
+        ep = self.get_object()
+        cajon = (
+            ep.cajones.filter(id=request.query_params.get("cajon")).first() or ep.cajones.first()
+        )
         if cajon is None:
             return Response({"detail": "Esta invitación no tiene cajones de parking."}, status=404)
-        ev    = ep.evento
+        ev = ep.evento
         token = emitir_qr(
-            id=cajon.id, tipo=TIPO_PARKING, tenant=connection.schema_name,
-            exp_epoch=self._exp_epoch(ev), contexto=str(cajon.uuid),
+            id=cajon.id,
+            tipo=TIPO_PARKING,
+            tenant=connection.schema_name,
+            exp_epoch=self._exp_epoch(ev),
+            contexto=str(cajon.uuid),
         )
         png = componer_gafete_estacionamiento(
             token=token,
@@ -321,7 +371,9 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         return HttpResponse(png, content_type="image/png")
 
     def _exige_proveedor_dueno(self, ep):
-        if self._ctx() != "proveedores" or ep.proveedor_id != getattr(self.request.user, "proveedor_id", None):
+        if self._ctx() != "proveedores" or ep.proveedor_id != getattr(
+            self.request.user, "proveedor_id", None
+        ):
             raise PermissionDenied("Solo el proveedor dueño de la invitación opera sus empleados.")
 
     @action(detail=True, methods=["get"])
@@ -331,15 +383,23 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
         ep = self.get_object()
         reqs = (
-            EventoGrupoDocumentos.objects
-            .filter(evento=ep.evento).select_related("grupo").order_by("id")
+            EventoGrupoDocumentos.objects.filter(evento=ep.evento)
+            .select_related("grupo")
+            .order_by("id")
         )
-        data = [{
-            "grupo": r.grupo_id,
-            "grupo_nombre": r.grupo.nombre,
-            "type_validation": r.type_validation,
-            "tipos": list(TipoDocumento.objects.filter(grupo_id=r.grupo_id, activo=True).values("id", "nombre")),
-        } for r in reqs]
+        data = [
+            {
+                "grupo": r.grupo_id,
+                "grupo_nombre": r.grupo.nombre,
+                "type_validation": r.type_validation,
+                "tipos": list(
+                    TipoDocumento.objects.filter(grupo_id=r.grupo_id, activo=True).values(
+                        "id", "nombre"
+                    )
+                ),
+            }
+            for r in reqs
+        ]
         return Response({"requisitos": data})
 
     @action(detail=True, methods=["get"])
@@ -350,7 +410,9 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
             self._exige_proveedor_dueno(ep)
 
         reqs = list(
-            EventoGrupoDocumentos.objects.filter(evento=ep.evento).select_related("grupo").order_by("id")
+            EventoGrupoDocumentos.objects.filter(evento=ep.evento)
+            .select_related("grupo")
+            .order_by("id")
         )
         # Mapa empleado_id → statusdocs para saber si está asignado y con qué estado documental.
         asignaciones = {
@@ -364,18 +426,24 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         out = []
         for e in empleados:
             cumple, detalle = noti.estado_documental(e, reqs)
-            out.append({
-                "id": e.id, "nombre": e.nombre,
-                "asignado": e.id in asignaciones,
-                "statusdocs": asignaciones.get(e.id),  # 0=pendiente, 1=cumple, None=no asignado
-                "cumple": cumple, "detalle": detalle,
-            })
-        return Response({
-            "empleados": out,
-            "limite": ep.limite,
-            "asignados_count": len(asignaciones),
-            "requiere_documentos": bool(reqs),
-        })
+            out.append(
+                {
+                    "id": e.id,
+                    "nombre": e.nombre,
+                    "asignado": e.id in asignaciones,
+                    "statusdocs": asignaciones.get(e.id),  # 0=pendiente, 1=cumple, None=no asignado
+                    "cumple": cumple,
+                    "detalle": detalle,
+                }
+            )
+        return Response(
+            {
+                "empleados": out,
+                "limite": ep.limite,
+                "asignados_count": len(asignaciones),
+                "requiere_documentos": bool(reqs),
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def cajones(self, request, pk=None):
@@ -396,7 +464,9 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         quitados = [a.empleado for a in qs]
         borradas = qs.delete()[0]
         for emp in quitados:
-            noti.notificar_desasignacion_empleado(emp, ep.evento, nombre_tenant=_tenant_nombre(request))
+            noti.notificar_desasignacion_empleado(
+                emp, ep.evento, nombre_tenant=_tenant_nombre(request)
+            )
         return Response({"desasignados": borradas})
 
     @action(detail=True, methods=["post"], url_path="asignar-empleados")
@@ -408,16 +478,21 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         CUMPLE y enviará la notificación en ese momento.
         """
         ep = self.get_object()
-        if self._ctx() != "proveedores" or ep.proveedor_id != getattr(request.user, "proveedor_id", None):
+        if self._ctx() != "proveedores" or ep.proveedor_id != getattr(
+            request.user, "proveedor_id", None
+        ):
             raise PermissionDenied("Solo el proveedor dueño asigna empleados.")
 
-        empleados = list(Empleado.objects.filter(
-            id__in=request.data.get("empleados", []),
-            proveedor__proveedor_id=request.user.proveedor_id,
-        ))
+        empleados = list(
+            Empleado.objects.filter(
+                id__in=request.data.get("empleados", []),
+                proveedor__proveedor_id=request.user.proveedor_id,
+            )
+        )
         requisitos = list(
-            EventoGrupoDocumentos.objects.filter(evento=ep.evento)
-            .values_list("grupo_id", "type_validation")
+            EventoGrupoDocumentos.objects.filter(evento=ep.evento).values_list(
+                "grupo_id", "type_validation"
+            )
         )
 
         actuales = EmpleadoEventoProveedor.objects.filter(evento_proveedor=ep).count()
@@ -436,12 +511,15 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 else EmpleadoEventoProveedor.StatusDocs.PENDIENTES
             )
             asignacion, creado = EmpleadoEventoProveedor.objects.get_or_create(
-                evento_proveedor=ep, empleado=e,
+                evento_proveedor=ep,
+                empleado=e,
                 defaults={"statusdocs": nuevo_status},
             )
             if creado:
                 creados += 1
                 # Solo notifica al empleado cuando ya cumple con los documentos requeridos.
                 if nuevo_status == EmpleadoEventoProveedor.StatusDocs.CUMPLE:
-                    noti.notificar_asignacion_empleado(asignacion, nombre_tenant=_tenant_nombre(request))
+                    noti.notificar_asignacion_empleado(
+                        asignacion, nombre_tenant=_tenant_nombre(request)
+                    )
         return Response({"asignados": creados})

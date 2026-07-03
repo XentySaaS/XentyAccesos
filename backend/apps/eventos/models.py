@@ -5,6 +5,7 @@ pivotes evento↔documento y la asignación masiva llegan en F3.2.
 
 Referencia: MODELO_DATOS_SAR §6.6 · SAR_FUNCIONALIDADES §6.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -33,9 +34,11 @@ class Evento(models.Model):  # events
         "accounts.Usuario", on_delete=models.PROTECT, related_name="eventos"
     )
     recinto = models.ForeignKey("recintos.Recinto", on_delete=models.PROTECT)
-    protocolo = models.ForeignKey("recintos.Protocolo", on_delete=models.PROTECT, null=True, blank=True)
+    protocolo = models.ForeignKey(
+        "recintos.Protocolo", on_delete=models.PROTECT, null=True, blank=True
+    )
     vigencia_inicio = models.DateField()  # era start_time (DATE)
-    vigencia_fin = models.DateField()     # era end_time (DATE); valida fin >= inicio
+    vigencia_fin = models.DateField()  # era end_time (DATE); valida fin >= inicio
     hora_inicio = models.TimeField(null=True, blank=True)
     hora_fin = models.TimeField(null=True, blank=True)
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PROGRAMADO)
@@ -69,14 +72,24 @@ class EventoProveedor(models.Model):  # event_suppliers
 
     evento = models.ForeignKey(Evento, on_delete=models.CASCADE, related_name="proveedores")
     proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
-    protocolo = models.ForeignKey("recintos.Protocolo", on_delete=models.SET_NULL, null=True, blank=True)
+    protocolo = models.ForeignKey(
+        "recintos.Protocolo", on_delete=models.SET_NULL, null=True, blank=True
+    )
     zona = models.ForeignKey("recintos.Zona", on_delete=models.SET_NULL, null=True, blank=True)
     acceso = models.ForeignKey("recintos.Acceso", on_delete=models.SET_NULL, null=True, blank=True)
     ubicacion = models.ForeignKey(
-        "recintos.Ubicacion", on_delete=models.SET_NULL, null=True, blank=True, related_name="es_ubicacion"
+        "recintos.Ubicacion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="es_ubicacion",
     )
     punto_acceso = models.ForeignKey(
-        "recintos.Ubicacion", on_delete=models.SET_NULL, null=True, blank=True, related_name="es_punto_acceso"
+        "recintos.Ubicacion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="es_punto_acceso",
     )
     limite = models.IntegerField(default=0)  # 0 = sin límite
     requiere_parking = models.BooleanField(default=False)
@@ -85,7 +98,8 @@ class EventoProveedor(models.Model):  # event_suppliers
     notas = models.TextField(null=True, blank=True)
     empleados = models.ManyToManyField("empleados.Empleado", through="EmpleadoEventoProveedor")
     areas_autorizadas = models.ManyToManyField(
-        "recintos.AreaAutorizada", through="AreaAutorizadaEventoProveedor",
+        "recintos.AreaAutorizada",
+        through="AreaAutorizadaEventoProveedor",
         related_name="eventos_proveedor",
     )
     creado = models.DateTimeField(auto_now_add=True)
@@ -104,7 +118,9 @@ class EmpleadoEventoProveedor(models.Model):  # employee_event_supplier
         CUMPLE = 1, "Cumple"
 
     empleado = models.ForeignKey("empleados.Empleado", on_delete=models.CASCADE)
-    evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE, related_name="asignaciones")
+    evento_proveedor = models.ForeignKey(
+        EventoProveedor, on_delete=models.CASCADE, related_name="asignaciones"
+    )
     statusdocs = models.IntegerField(choices=StatusDocs.choices, default=StatusDocs.PENDIENTES)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
@@ -115,7 +131,9 @@ class EmpleadoEventoProveedor(models.Model):  # employee_event_supplier
 
 class CajonParking(models.Model):  # parking_event_suppliers
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, db_index=True)  # va en el QR
-    evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE, related_name="cajones")
+    evento_proveedor = models.ForeignKey(
+        EventoProveedor, on_delete=models.CASCADE, related_name="cajones"
+    )
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
@@ -155,7 +173,9 @@ class AreaAutorizadaEvento(models.Model):  # authorized_areas_events
         unique_together = [("area", "evento")]
 
 
-class AreaAutorizadaEventoProveedor(models.Model):  # authorized_areas_event_supppliers (typo corregido)
+class AreaAutorizadaEventoProveedor(
+    models.Model
+):  # authorized_areas_event_supppliers (typo corregido)
     area = models.ForeignKey("recintos.AreaAutorizada", on_delete=models.CASCADE)
     evento_proveedor = models.ForeignKey(EventoProveedor, on_delete=models.CASCADE)
 

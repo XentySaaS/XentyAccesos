@@ -4,6 +4,7 @@ Envío por Celery con reintentos; UltraMsg tras interfaz (credenciales por entor
 
 Referencia: MODELO_DATOS_SAR §6.10 · SAR_FUNCIONALIDADES §12.
 """
+
 from __future__ import annotations
 
 from django.db import models

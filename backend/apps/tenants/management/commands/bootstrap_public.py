@@ -3,6 +3,7 @@
 django-tenants necesita un Tenant con ``schema_name='public'`` y un Domain para rutear el control
 plane y cualquier petición al dominio base. Se ejecuta al arrancar el backend en Docker.
 """
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -30,4 +31,8 @@ class Command(BaseCommand):
             _, creado = Domain.objects.get_or_create(
                 domain=host, tenant=tenant, defaults={"is_primary": i == 0}
             )
-            self.stdout.write(self.style.SUCCESS(f"✔ Dominio público '{host}' {'creado' if creado else 'ya existía'}."))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"✔ Dominio público '{host}' {'creado' if creado else 'ya existía'}."
+                )
+            )

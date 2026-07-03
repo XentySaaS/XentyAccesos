@@ -1,4 +1,5 @@
 """Vistas de proveedores: CRUD + invitación (admin) y onboarding público (token firmado)."""
+
 from __future__ import annotations
 
 from django.core import signing
@@ -37,7 +38,11 @@ def _base_url_de(request) -> str:
 class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = Proveedor.objects.all().order_by("id")
     serializer_class = ProveedorSerializer
-    permission_classes = [*PERMISOS_BASE(), RequiereModulo("proveedores"), RequiereRol("administrador")]
+    permission_classes = [
+        *PERMISOS_BASE(),
+        RequiereModulo("proveedores"),
+        RequiereRol("administrador"),
+    ]
     filterset_fields = ["estado", "rfc"]
 
     def perform_create(self, serializer):
@@ -47,6 +52,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         # Audita la consulta a la lista 69-B (el bloqueo ya se aplicó al validar el RFC).
         try:
             from apps.cumplimiento.services import validar_69b
+
             validar_69b(proveedor)
         except Exception:  # noqa: BLE001 — auditoría best-effort
             pass
@@ -90,12 +96,14 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 telefono=proveedor.telefono,
             )
 
-        return Response({
-            "token": token,
-            "vigencia_horas": VIGENCIA_HORAS,
-            "email_enviado": bool(email_destino),
-            "onboarding_url": f"{_base_url_de(request)}/proveedores/onboarding?token={token}",
-        })
+        return Response(
+            {
+                "token": token,
+                "vigencia_horas": VIGENCIA_HORAS,
+                "email_enviado": bool(email_destino),
+                "onboarding_url": f"{_base_url_de(request)}/proveedores/onboarding?token={token}",
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def revision(self, request, pk=None):
@@ -106,30 +114,39 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         """
         proveedor = self.get_object()
         resp = proveedor.responsable
-        return Response({
-            "empresa": {
-                "nombre":       proveedor.nombre,
-                "razon_social": proveedor.razon_social,
-                "rfc":          proveedor.rfc,
-                "repse":        bool(proveedor.file_repse),
-                "sua":          bool(proveedor.file_sua),
-            },
-            "responsable": ({
-                "nombre":  f"{resp.nombre} {resp.apellidos or ''}".strip(),
-                "email":   resp.email,
-                "puesto":  resp.puesto,
-                "curp":    resp.curp,   # PII descifrada solo para cotejo del admin
-                "nss":     resp.nss,
-                "ine":     bool(resp.file_ine),
-                "foto":    bool(resp.foto),
-            } if resp else {
-                "nombre":  proveedor.nombre_responsable,
-                "email":   proveedor.email_responsable,
-                "puesto":  None, "curp": None, "nss": None,
-                "ine":     False, "foto": False,
-            }),
-            "estado": proveedor.estado,
-        })
+        return Response(
+            {
+                "empresa": {
+                    "nombre": proveedor.nombre,
+                    "razon_social": proveedor.razon_social,
+                    "rfc": proveedor.rfc,
+                    "repse": bool(proveedor.file_repse),
+                    "sua": bool(proveedor.file_sua),
+                },
+                "responsable": (
+                    {
+                        "nombre": f"{resp.nombre} {resp.apellidos or ''}".strip(),
+                        "email": resp.email,
+                        "puesto": resp.puesto,
+                        "curp": resp.curp,  # PII descifrada solo para cotejo del admin
+                        "nss": resp.nss,
+                        "ine": bool(resp.file_ine),
+                        "foto": bool(resp.foto),
+                    }
+                    if resp
+                    else {
+                        "nombre": proveedor.nombre_responsable,
+                        "email": proveedor.email_responsable,
+                        "puesto": None,
+                        "curp": None,
+                        "nss": None,
+                        "ine": False,
+                        "foto": False,
+                    }
+                ),
+                "estado": proveedor.estado,
+            }
+        )
 
     @action(detail=True, methods=["get"])
     def documento(self, request, pk=None):
@@ -143,9 +160,9 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         resp = proveedor.responsable
         archivo = {
             "repse": proveedor.file_repse,
-            "sua":   proveedor.file_sua,
-            "ine":   resp.file_ine if resp else None,
-            "foto":  resp.foto if resp else None,
+            "sua": proveedor.file_sua,
+            "ine": resp.file_ine if resp else None,
+            "foto": resp.foto if resp else None,
         }.get(tipo)
         if not archivo:
             raise Http404("Documento no disponible.")
@@ -156,7 +173,9 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         """Activa el proveedor (CONFIRMADO → ACTIVO) y notifica al responsable."""
         proveedor = self.get_object()
         if proveedor.estado == Proveedor.Estado.ACTIVO:
-            return Response({"detail": "El proveedor ya está activo."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "El proveedor ya está activo."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         proveedor.estado = Proveedor.Estado.ACTIVO
         proveedor.save(update_fields=["estado"])
@@ -173,11 +192,13 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 telefono=getattr(cuenta, "telefono", None) or proveedor.telefono,
             )
 
-        return Response({
-            "detail": "Proveedor activado.",
-            "estado": proveedor.estado,
-            "email_enviado": bool(cuenta and cuenta.email),
-        })
+        return Response(
+            {
+                "detail": "Proveedor activado.",
+                "estado": proveedor.estado,
+                "email_enviado": bool(cuenta and cuenta.email),
+            }
+        )
 
     @action(detail=True, methods=["post"])
     def desactivar(self, request, pk=None):
@@ -207,7 +228,7 @@ class OnboardingProveedorView(APIView):
         """Valida el token y devuelve (payload, tenant_slug). Lanza Response en error."""
         if not token_str:
             raise ValueError("Token requerido.")
-        payload = leer_invitacion(token_str)   # lanza SignatureExpired / BadSignature
+        payload = leer_invitacion(token_str)  # lanza SignatureExpired / BadSignature
         tenant_slug = payload.get("tenant", "")
         if not tenant_slug:
             raise signing.BadSignature("Token sin tenant.")
@@ -228,21 +249,25 @@ class OnboardingProveedorView(APIView):
         with schema_context(tenant_slug):
             proveedor = Proveedor.objects.filter(pk=payload.get("proveedor_id")).first()
             if proveedor is None:
-                return Response({"detail": "El proveedor ya no existe."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"detail": "El proveedor ya no existe."}, status=status.HTTP_404_NOT_FOUND
+                )
             if proveedor.estado in (Proveedor.Estado.CONFIRMADO, Proveedor.Estado.ACTIVO):
                 return Response(
                     {"detail": "Este proveedor ya completó el registro.", "ya_registrado": True},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            return Response({
-                "nombre":             proveedor.nombre,
-                "razon_social":       proveedor.razon_social or "",
-                "rfc":                proveedor.rfc or "",
-                "email_empresa":      proveedor.email or "",
-                "telefono_empresa":   proveedor.telefono or "",
-                "nombre_responsable": proveedor.nombre_responsable or "",
-                "email_responsable":  proveedor.email_responsable or "",
-            })
+            return Response(
+                {
+                    "nombre": proveedor.nombre,
+                    "razon_social": proveedor.razon_social or "",
+                    "rfc": proveedor.rfc or "",
+                    "email_empresa": proveedor.email or "",
+                    "telefono_empresa": proveedor.telefono or "",
+                    "nombre_responsable": proveedor.nombre_responsable or "",
+                    "email_responsable": proveedor.email_responsable or "",
+                }
+            )
 
     # ── POST: procesamiento completo del wizard ──────────────────────────────
     def post(self, request):
@@ -265,7 +290,9 @@ class OnboardingProveedorView(APIView):
         with schema_context(tenant_slug):
             proveedor = Proveedor.objects.filter(pk=payload.get("proveedor_id")).first()
             if proveedor is None:
-                return Response({"detail": "El proveedor ya no existe."}, status=status.HTTP_404_NOT_FOUND)
+                return Response(
+                    {"detail": "El proveedor ya no existe."}, status=status.HTTP_404_NOT_FOUND
+                )
 
             # Paso 1: actualizar empresa
             campos_empresa: list[str] = []

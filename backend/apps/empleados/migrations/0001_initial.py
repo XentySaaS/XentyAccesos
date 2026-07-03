@@ -5,24 +5,42 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('proveedores', '0003_proveedor_cuentaproveedor_proveedor'),
+        ("proveedores", "0003_proveedor_cuentaproveedor_proveedor"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Empleado',
+            name="Empleado",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200)),
-                ('email', models.EmailField(blank=True, max_length=254, null=True)),
-                ('telefono', models.CharField(blank=True, max_length=30, null=True)),
-                ('foto', models.ImageField(blank=True, null=True, upload_to='empleados/fotos/')),
-                ('estado', models.CharField(choices=[('activo', 'Activo'), ('inactivo', 'Inactivo'), ('baja', 'Baja')], default='activo', max_length=10)),
-                ('proveedor', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='empleados', to='proveedores.cuentaproveedor')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=200)),
+                ("email", models.EmailField(blank=True, max_length=254, null=True)),
+                ("telefono", models.CharField(blank=True, max_length=30, null=True)),
+                ("foto", models.ImageField(blank=True, null=True, upload_to="empleados/fotos/")),
+                (
+                    "estado",
+                    models.CharField(
+                        choices=[("activo", "Activo"), ("inactivo", "Inactivo"), ("baja", "Baja")],
+                        default="activo",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "proveedor",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="empleados",
+                        to="proveedores.cuentaproveedor",
+                    ),
+                ),
             ],
         ),
     ]

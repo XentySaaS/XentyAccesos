@@ -2,6 +2,7 @@
 
 Evita que RFC, CURP, email, NSS o datos de INE lleguen a los logs o a Sentry en claro.
 """
+
 from __future__ import annotations
 
 import logging
@@ -14,8 +15,17 @@ _PATRONES = [
 ]
 
 CLAVES_PII = {
-    "curp", "rfc", "nss", "ine_data", "numero_identificacion", "password",
-    "email", "telefono", "token", "secret", "mfa_totp_secret",
+    "curp",
+    "rfc",
+    "nss",
+    "ine_data",
+    "numero_identificacion",
+    "password",
+    "email",
+    "telefono",
+    "token",
+    "secret",
+    "mfa_totp_secret",
 }
 
 
@@ -31,7 +41,7 @@ def redactar(valor):
         return {
             k: ("[REDACTED]" if k.lower() in CLAVES_PII else redactar(v)) for k, v in valor.items()
         }
-    if isinstance(valor, (list, tuple)):
+    if isinstance(valor, list | tuple):
         return [redactar(v) for v in valor]
     if isinstance(valor, str):
         return redactar_texto(valor)

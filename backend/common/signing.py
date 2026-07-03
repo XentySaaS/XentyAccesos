@@ -3,6 +3,7 @@
 Reemplazan el esquema ``sha1(clave.exp)`` / AES-ECB del origen por ``django.core.signing`` (firma
 HMAC con ``SECRET_KEY`` + timestamp). Verificable sin estado y con expiración (72h por defecto).
 """
+
 from __future__ import annotations
 
 from django.core import signing

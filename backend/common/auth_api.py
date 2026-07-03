@@ -1,4 +1,5 @@
 """Vistas de autenticación compartidas por los dos contextos del tenant."""
+
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator
@@ -36,7 +37,9 @@ class BaseLoginView(APIView):
     def post(self, request):
         s = _CredencialesSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        invalidas = Response({"detail": "Credenciales inválidas."}, status=status.HTTP_401_UNAUTHORIZED)
+        invalidas = Response(
+            {"detail": "Credenciales inválidas."}, status=status.HTTP_401_UNAUTHORIZED
+        )
         try:
             actor = self.model.objects.get(email=s.validated_data["email"].lower())
         except self.model.DoesNotExist:

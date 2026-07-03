@@ -6,6 +6,7 @@ super-admin (``apps.tenants.SuperAdmin``) son autenticatables SEPARADOS con su p
 
 Referencia: MODELO_DATOS_SAR §6.1.
 """
+
 from __future__ import annotations
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -53,7 +54,10 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     email_verificado = models.DateTimeField(null=True, blank=True)
     rol = models.CharField(max_length=20, choices=Rol.choices, default=Rol.EDITOR)
     recinto = models.ForeignKey(
-        "recintos.Recinto", on_delete=models.SET_NULL, null=True, blank=True,
+        "recintos.Recinto",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="usuarios",
     )
     telefono = models.CharField(max_length=30, null=True, blank=True)
@@ -97,7 +101,9 @@ class PermisoUsuario(models.Model):
         VERIFICACION = "verificacion", "Verificación"
 
     usuario = models.ForeignKey(
-        Usuario, on_delete=models.CASCADE, related_name="permisos_modulos",
+        Usuario,
+        on_delete=models.CASCADE,
+        related_name="permisos_modulos",
     )
     modulo = models.CharField(max_length=30, choices=Modulo.choices)
     ver = models.BooleanField(default=True)

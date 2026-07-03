@@ -5,33 +5,67 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('proveedores', '0002_cuentaproveedor_mfa_habilitado_and_more'),
+        ("proveedores", "0002_cuentaproveedor_mfa_habilitado_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Proveedor',
+            name="Proveedor",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200)),
-                ('razon_social', models.CharField(blank=True, max_length=255, null=True)),
-                ('rfc', models.CharField(blank=True, db_index=True, max_length=13, null=True)),
-                ('email', models.EmailField(blank=True, max_length=254, null=True)),
-                ('email_responsable', models.EmailField(blank=True, max_length=254, null=True)),
-                ('nombre_responsable', models.CharField(blank=True, max_length=200, null=True)),
-                ('telefono', models.CharField(blank=True, max_length=30, null=True)),
-                ('direccion', models.TextField(blank=True, null=True)),
-                ('file_repse', models.FileField(blank=True, null=True, upload_to='proveedores/repse/')),
-                ('file_sua', models.FileField(blank=True, null=True, upload_to='proveedores/sua/')),
-                ('estado', models.CharField(choices=[('pendiente', 'Pendiente'), ('confirmado', 'Confirmado'), ('activo', 'Activo'), ('inactivo', 'Inactivo')], default='pendiente', max_length=12)),
-                ('responsable', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='proveedor_responsable', to='proveedores.cuentaproveedor')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=200)),
+                ("razon_social", models.CharField(blank=True, max_length=255, null=True)),
+                ("rfc", models.CharField(blank=True, db_index=True, max_length=13, null=True)),
+                ("email", models.EmailField(blank=True, max_length=254, null=True)),
+                ("email_responsable", models.EmailField(blank=True, max_length=254, null=True)),
+                ("nombre_responsable", models.CharField(blank=True, max_length=200, null=True)),
+                ("telefono", models.CharField(blank=True, max_length=30, null=True)),
+                ("direccion", models.TextField(blank=True, null=True)),
+                (
+                    "file_repse",
+                    models.FileField(blank=True, null=True, upload_to="proveedores/repse/"),
+                ),
+                ("file_sua", models.FileField(blank=True, null=True, upload_to="proveedores/sua/")),
+                (
+                    "estado",
+                    models.CharField(
+                        choices=[
+                            ("pendiente", "Pendiente"),
+                            ("confirmado", "Confirmado"),
+                            ("activo", "Activo"),
+                            ("inactivo", "Inactivo"),
+                        ],
+                        default="pendiente",
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "responsable",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="proveedor_responsable",
+                        to="proveedores.cuentaproveedor",
+                    ),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='cuentaproveedor',
-            name='proveedor',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='cuentas', to='proveedores.proveedor'),
+            model_name="cuentaproveedor",
+            name="proveedor",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="cuentas",
+                to="proveedores.proveedor",
+            ),
         ),
     ]

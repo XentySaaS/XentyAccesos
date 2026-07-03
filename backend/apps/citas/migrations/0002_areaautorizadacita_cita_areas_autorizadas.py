@@ -5,27 +5,43 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('citas', '0001_initial'),
-        ('recintos', '0001_initial'),
+        ("citas", "0001_initial"),
+        ("recintos", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AreaAutorizadaCita',
+            name="AreaAutorizadaCita",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('area', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recintos.areaautorizada')),
-                ('cita', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='citas.cita')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "area",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="recintos.areaautorizada"
+                    ),
+                ),
+                (
+                    "cita",
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="citas.cita"),
+                ),
             ],
             options={
-                'unique_together': {('area', 'cita')},
+                "unique_together": {("area", "cita")},
             },
         ),
         migrations.AddField(
-            model_name='cita',
-            name='areas_autorizadas',
-            field=models.ManyToManyField(related_name='citas', through='citas.AreaAutorizadaCita', to='recintos.areaautorizada'),
+            model_name="cita",
+            name="areas_autorizadas",
+            field=models.ManyToManyField(
+                related_name="citas",
+                through="citas.AreaAutorizadaCita",
+                to="recintos.areaautorizada",
+            ),
         ),
     ]

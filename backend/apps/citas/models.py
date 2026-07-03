@@ -5,6 +5,7 @@ El asistente referencia a un Contacto o Empleado vía ``GenericForeignKey`` (el 
 
 Referencia: MODELO_DATOS_SAR §6.7 · SAR_FUNCIONALIDADES §7.
 """
+
 from __future__ import annotations
 
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -44,7 +45,10 @@ class Cita(models.Model):  # appointments
         "accounts.Usuario", on_delete=models.PROTECT, related_name="citas_creadas"
     )
     asignado_a = models.ForeignKey(
-        "accounts.Usuario", on_delete=models.SET_NULL, null=True, blank=True,
+        "accounts.Usuario",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="citas_asignadas",
     )
     nombre = models.CharField(max_length=200, null=True, blank=True)
@@ -54,16 +58,29 @@ class Cita(models.Model):  # appointments
     hora_fin = models.TimeField(null=True, blank=True)
     limite = models.IntegerField(null=True, blank=True)
     tipo = models.IntegerField(choices=Tipo.choices, default=Tipo.PROVEEDOR)
-    tipo_cita = models.CharField(max_length=12, choices=TipoCita.choices, default=TipoCita.PROGRAMADA)
+    tipo_cita = models.CharField(
+        max_length=12, choices=TipoCita.choices, default=TipoCita.PROGRAMADA
+    )
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
-    protocolo = models.ForeignKey("recintos.Protocolo", on_delete=models.PROTECT, null=True, blank=True)
-    proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.SET_NULL, null=True, blank=True)
+    protocolo = models.ForeignKey(
+        "recintos.Protocolo", on_delete=models.PROTECT, null=True, blank=True
+    )
+    proveedor = models.ForeignKey(
+        "proveedores.Proveedor", on_delete=models.SET_NULL, null=True, blank=True
+    )
     recinto = models.ForeignKey("recintos.Recinto", on_delete=models.PROTECT)
     ubicacion = models.ForeignKey(
-        "recintos.Ubicacion", on_delete=models.SET_NULL, null=True, blank=True, related_name="citas_ubicacion"
+        "recintos.Ubicacion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="citas_ubicacion",
     )
     punto_acceso = models.ForeignKey(
-        "recintos.Ubicacion", on_delete=models.SET_NULL, null=True, blank=True,
+        "recintos.Ubicacion",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="citas_punto_acceso",
     )
     acceso = models.ForeignKey("recintos.Acceso", on_delete=models.SET_NULL, null=True, blank=True)

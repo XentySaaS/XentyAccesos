@@ -5,6 +5,7 @@ no es único (el origen quitó esa restricción).
 
 Referencia: MODELO_DATOS_SAR §6.3 · SAR_FUNCIONALIDADES §4.
 """
+
 from __future__ import annotations
 
 from django.db import models

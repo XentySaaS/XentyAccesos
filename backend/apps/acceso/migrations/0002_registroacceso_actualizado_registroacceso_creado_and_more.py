@@ -5,31 +5,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('acceso', '0001_initial'),
+        ("acceso", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='registroacceso',
-            name='actualizado',
+            model_name="registroacceso",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='registroacceso',
-            name='creado',
+            model_name="registroacceso",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='registroaccesoparking',
-            name='actualizado',
+            model_name="registroaccesoparking",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='registroaccesoparking',
-            name='creado',
+            model_name="registroaccesoparking",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

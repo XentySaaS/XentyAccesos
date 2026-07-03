@@ -6,45 +6,100 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('recintos', '0001_initial'),
+        ("recintos", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Evento',
+            name="Evento",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('nombre', models.CharField(max_length=200)),
-                ('descripcion', models.TextField(blank=True, null=True)),
-                ('vigencia_inicio', models.DateField()),
-                ('vigencia_fin', models.DateField()),
-                ('hora_inicio', models.TimeField(blank=True, null=True)),
-                ('hora_fin', models.TimeField(blank=True, null=True)),
-                ('estado', models.CharField(choices=[('programado', 'Programado'), ('en_curso', 'En curso'), ('completado', 'Completado'), ('cancelado', 'Cancelado')], default='programado', max_length=12)),
-                ('creado_por', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='eventos', to=settings.AUTH_USER_MODEL)),
-                ('protocolo', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, to='recintos.protocolo')),
-                ('recinto', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='recintos.recinto')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("nombre", models.CharField(max_length=200)),
+                ("descripcion", models.TextField(blank=True, null=True)),
+                ("vigencia_inicio", models.DateField()),
+                ("vigencia_fin", models.DateField()),
+                ("hora_inicio", models.TimeField(blank=True, null=True)),
+                ("hora_fin", models.TimeField(blank=True, null=True)),
+                (
+                    "estado",
+                    models.CharField(
+                        choices=[
+                            ("programado", "Programado"),
+                            ("en_curso", "En curso"),
+                            ("completado", "Completado"),
+                            ("cancelado", "Cancelado"),
+                        ],
+                        default="programado",
+                        max_length=12,
+                    ),
+                ),
+                (
+                    "creado_por",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="eventos",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "protocolo",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.PROTECT,
+                        to="recintos.protocolo",
+                    ),
+                ),
+                (
+                    "recinto",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT, to="recintos.recinto"
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='VerificadorEvento',
+            name="VerificadorEvento",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('evento', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='eventos.evento')),
-                ('usuario', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                (
+                    "evento",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="eventos.evento"
+                    ),
+                ),
+                (
+                    "usuario",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL
+                    ),
+                ),
             ],
             options={
-                'unique_together': {('usuario', 'evento')},
+                "unique_together": {("usuario", "evento")},
             },
         ),
         migrations.AddField(
-            model_name='evento',
-            name='verificadores',
-            field=models.ManyToManyField(related_name='eventos_a_verificar', through='eventos.VerificadorEvento', to=settings.AUTH_USER_MODEL),
+            model_name="evento",
+            name="verificadores",
+            field=models.ManyToManyField(
+                related_name="eventos_a_verificar",
+                through="eventos.VerificadorEvento",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

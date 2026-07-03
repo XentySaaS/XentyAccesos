@@ -4,10 +4,10 @@ Centraliza las transiciones de estado (trial → activo → moroso/solo-lectura 
 cancelado) y la acreditación de créditos. Lo invocan el webhook de Stripe y las acciones del
 super-admin. El estado del tenant es lo que después gobiernan los middlewares de enforcement (F0.3).
 """
+
 from __future__ import annotations
 
 from django.db import transaction
-from django.utils import timezone
 
 from apps.tenants.models import (
     MovimientoCredito,
@@ -28,9 +28,14 @@ def _resolver_plan(meta: dict | None) -> Plan | None:
 
 
 @transaction.atomic
-def activar_suscripcion(tenant: Tenant, *, plan: Plan | None = None,
-                        stripe_subscription_id: str | None = None,
-                        periodo_inicio=None, periodo_fin=None) -> Suscripcion:
+def activar_suscripcion(
+    tenant: Tenant,
+    *,
+    plan: Plan | None = None,
+    stripe_subscription_id: str | None = None,
+    periodo_inicio=None,
+    periodo_fin=None,
+) -> Suscripcion:
     """Pone el tenant ACTIVO y su suscripción ACTIVA (sale de trial/dunning)."""
     sus = Suscripcion.objects.filter(tenant=tenant).order_by("-id").first()
     plan = plan or (sus.plan if sus else None) or _resolver_plan(None)
@@ -80,19 +85,25 @@ def cancelar(tenant: Tenant) -> None:
 
 
 @transaction.atomic
-def acreditar_creditos(tenant: Tenant, cantidad: int, motivo: str, referencia: str | None = None) -> int:
+def acreditar_creditos(
+    tenant: Tenant, cantidad: int, motivo: str, referencia: str | None = None
+) -> int:
     """Suma créditos y registra el movimiento en el ledger append-only. Devuelve el saldo nuevo."""
     saldo, _ = SaldoCreditos.objects.select_for_update().get_or_create(tenant=tenant)
     saldo.saldo += int(cantidad)
     saldo.save(update_fields=["saldo", "actualizado"])
     MovimientoCredito.objects.create(
-        tenant=tenant, delta=int(cantidad), motivo=motivo,
-        saldo_resultante=saldo.saldo, referencia=referencia,
+        tenant=tenant,
+        delta=int(cantidad),
+        motivo=motivo,
+        saldo_resultante=saldo.saldo,
+        referencia=referencia,
     )
     return saldo.saldo
 
 
 # ── Despacho de eventos Stripe → transiciones ───────────────────────────────
+
 
 def _resolver_tenant(obj: dict) -> Tenant | None:
     meta = obj.get("metadata") or {}
@@ -125,9 +136,13 @@ def procesar_evento_stripe(evento: dict) -> dict:
     meta = obj.get("metadata") or {}
     if tipo == "checkout.session.completed":
         if obj.get("mode") == "payment" or meta.get("tipo") == "creditos":
-            acreditar_creditos(tenant, int(meta.get("creditos", 0)), "Compra de créditos", obj.get("id"))
+            acreditar_creditos(
+                tenant, int(meta.get("creditos", 0)), "Compra de créditos", obj.get("id")
+            )
         else:
-            activar_suscripcion(tenant, plan=_resolver_plan(meta), stripe_subscription_id=obj.get("subscription"))
+            activar_suscripcion(
+                tenant, plan=_resolver_plan(meta), stripe_subscription_id=obj.get("subscription")
+            )
     elif tipo == "customer.subscription.updated":
         _aplicar_estado_suscripcion(tenant, obj.get("status"))
     elif tipo == "customer.subscription.deleted":

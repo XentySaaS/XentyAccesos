@@ -3,6 +3,7 @@
 Pura y testeable. F3 la invoca con los grupos requeridos del evento para sincronizar
 ``EmpleadoEventoProveedor.statusdocs``.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterable
@@ -30,7 +31,9 @@ def cumple_requisitos(empleado, requisitos: Iterable[tuple[int, int]]) -> bool:
         )
         if tipo_validacion == TODOS:
             requeridos = set(
-                TipoDocumento.objects.filter(grupo_id=grupo_id, activo=True).values_list("id", flat=True)
+                TipoDocumento.objects.filter(grupo_id=grupo_id, activo=True).values_list(
+                    "id", flat=True
+                )
             )
             if not requeridos or not requeridos.issubset(verificados):
                 return False
@@ -72,11 +75,19 @@ def _avisar_documento(documento, *, verificado: bool) -> None:
             "Por favor sube un nuevo documento corregido desde el panel de empleados.",
         ]
 
-    responsable = (getattr(cuenta, "nombre_responsable", "") or getattr(cuenta, "nombre", "") or "").strip().title()
+    responsable = (
+        (getattr(cuenta, "nombre_responsable", "") or getattr(cuenta, "nombre", "") or "")
+        .strip()
+        .title()
+    )
     texto_plano = (
         f"{'Hola ' + responsable + ',' if responsable else 'Estimado proveedor,'}\n\n"
         f"El documento «{documento.tipo_documento}» de {documento.empleado} fue {estado_txt}."
-        + (f" Motivo: {documento.motivo_rechazo}." if not verificado and documento.motivo_rechazo else "")
+        + (
+            f" Motivo: {documento.motivo_rechazo}."
+            if not verificado and documento.motivo_rechazo
+            else ""
+        )
     )
 
     email = getattr(cuenta, "email", None)
@@ -92,6 +103,7 @@ def _avisar_documento(documento, *, verificado: bool) -> None:
     if telefono:
         try:
             from apps.mensajeria.services import obtener_whatsapp
+
             obtener_whatsapp().enviar(telefono, texto_plano)
         except Exception as exc:  # noqa: BLE001
             logger.warning("WhatsApp de verificación no enviado: %s", exc)

@@ -14,6 +14,7 @@ datos, no por disciplina de código*. En concreto:
 Requiere PostgreSQL real (django-tenants). Cada prueba crea/lee datos dentro de un
 ``schema_context`` y confía en la reversión transaccional de ``django_db`` para no dejar residuos.
 """
+
 import pytest
 from django.core.cache import cache
 from django.core.files.storage import default_storage
@@ -24,6 +25,7 @@ pytestmark = pytest.mark.django_db
 
 
 # ── Aislamiento de datos operativos (data plane) ─────────────────────────────
+
 
 def test_aislamiento_usuarios_no_filtran_entre_tenants(dos_tenants):
     """Un ``Usuario`` creado en el schema de un tenant no existe en el otro."""
@@ -36,15 +38,15 @@ def test_aislamiento_usuarios_no_filtran_entre_tenants(dos_tenants):
         assert Usuario.objects.filter(email="solo-t1@x.mx").exists()
 
     with schema_context(t2.schema_name):
-        assert not Usuario.objects.filter(email="solo-t1@x.mx").exists(), (
-            "Fuga: el usuario del tenant 1 es visible desde el tenant 2"
-        )
+        assert not Usuario.objects.filter(
+            email="solo-t1@x.mx"
+        ).exists(), "Fuga: el usuario del tenant 1 es visible desde el tenant 2"
         Usuario.objects.create_user(email="solo-t2@x.mx", nombre="Dos", password="Secreta123!")
 
     with schema_context(t1.schema_name):
-        assert not Usuario.objects.filter(email="solo-t2@x.mx").exists(), (
-            "Fuga: el usuario del tenant 2 es visible desde el tenant 1"
-        )
+        assert not Usuario.objects.filter(
+            email="solo-t2@x.mx"
+        ).exists(), "Fuga: el usuario del tenant 2 es visible desde el tenant 1"
 
 
 def test_aislamiento_proveedores_no_filtran_entre_tenants(dos_tenants):
@@ -58,12 +60,13 @@ def test_aislamiento_proveedores_no_filtran_entre_tenants(dos_tenants):
         assert Proveedor.objects.count() == 1
 
     with schema_context(t2.schema_name):
-        assert Proveedor.objects.count() == 0, (
-            "Fuga: proveedores del tenant 1 visibles desde el tenant 2"
-        )
+        assert (
+            Proveedor.objects.count() == 0
+        ), "Fuga: proveedores del tenant 1 visibles desde el tenant 2"
 
 
 # ── Padrón EFOS 69-B: global visible; resultados por tenant ──────────────────
+
 
 def test_aislamiento_padron_efos_es_global_para_todos_los_tenants(dos_tenants):
     """``SatEfo`` vive en ``public`` (SHARED_APPS) → visible desde cualquier tenant."""
@@ -76,9 +79,9 @@ def test_aislamiento_padron_efos_es_global_para_todos_los_tenants(dos_tenants):
 
     for t in (t1, t2):
         with schema_context(t.schema_name):
-            assert SatEfo.objects.filter(rfc="EFO010101AAA").exists(), (
-                f"El padrón EFOS global debe ser visible desde el tenant {t.schema_name}"
-            )
+            assert SatEfo.objects.filter(
+                rfc="EFO010101AAA"
+            ).exists(), f"El padrón EFOS global debe ser visible desde el tenant {t.schema_name}"
 
 
 def test_aislamiento_resultados_69b_son_por_tenant(dos_tenants):
@@ -100,12 +103,13 @@ def test_aislamiento_resultados_69b_son_por_tenant(dos_tenants):
         assert ResultadoLista69b.objects.count() == 1
 
     with schema_context(t2.schema_name):
-        assert ResultadoLista69b.objects.count() == 0, (
-            "Fuga: los resultados de validación 69-B del tenant 1 se ven desde el tenant 2"
-        )
+        assert (
+            ResultadoLista69b.objects.count() == 0
+        ), "Fuga: los resultados de validación 69-B del tenant 1 se ven desde el tenant 2"
 
 
 # ── Aislamiento de cache (Redis) por schema ──────────────────────────────────
+
 
 def test_aislamiento_cache_por_tenant(dos_tenants):
     """La misma clave de cache guarda valores independientes por tenant (``tenant_key_func``)."""
@@ -144,6 +148,7 @@ def test_aislamiento_cache_key_func_prefija_el_schema(dos_tenants):
 
 # ── Aislamiento de storage de archivos por schema ────────────────────────────
 
+
 def test_aislamiento_storage_por_tenant(dos_tenants):
     """El storage (``TenantFileSystemStorage``) resuelve rutas distintas por schema."""
     t1, t2 = dos_tenants
@@ -157,6 +162,7 @@ def test_aislamiento_storage_por_tenant(dos_tenants):
 
 
 # ── El data plane no contamina el schema público ─────────────────────────────
+
 
 def test_aislamiento_tablas_de_tenant_no_existen_en_public(dos_tenants):
     """Las tablas de ``TENANT_APPS`` solo existen en el schema del tenant, nunca en ``public``.
@@ -175,14 +181,14 @@ def test_aislamiento_tablas_de_tenant_no_existen_en_public(dos_tenants):
             "SELECT 1 FROM information_schema.tables "
             "WHERE table_schema = 'public' AND table_name = 'accounts_usuario'"
         )
-        assert cur.fetchone() is None, (
-            "Fuga estructural: la tabla accounts_usuario existe en el schema público"
-        )
+        assert (
+            cur.fetchone() is None
+        ), "Fuga estructural: la tabla accounts_usuario existe en el schema público"
         cur.execute(
             "SELECT 1 FROM information_schema.tables "
             "WHERE table_schema = %s AND table_name = 'accounts_usuario'",
             [t1.schema_name],
         )
-        assert cur.fetchone() is not None, (
-            "La tabla accounts_usuario debe existir en el schema del tenant"
-        )
+        assert (
+            cur.fetchone() is not None
+        ), "La tabla accounts_usuario debe existir en el schema del tenant"

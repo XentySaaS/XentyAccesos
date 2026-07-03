@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cumplimiento', '0002_resultadolista69b_actualizado_satefo_actualizado_and_more'),
+        ("cumplimiento", "0002_resultadolista69b_actualizado_satefo_actualizado_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='satefo',
-            name='nombre',
+            model_name="satefo",
+            name="nombre",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='satefo',
-            name='situacion',
+            model_name="satefo",
+            name="situacion",
             field=models.CharField(max_length=60),
         ),
     ]

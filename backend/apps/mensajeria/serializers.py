@@ -1,4 +1,5 @@
 """Serializer de campañas de mensajería."""
+
 from __future__ import annotations
 
 from rest_framework import serializers
@@ -12,8 +13,16 @@ class MensajeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mensaje
         fields = [
-            "id", "cuerpo", "archivo", "segmento", "segmento_id", "estado",
-            "progreso", "creado_por", "creado", "total_destinatarios",
+            "id",
+            "cuerpo",
+            "archivo",
+            "segmento",
+            "segmento_id",
+            "estado",
+            "progreso",
+            "creado_por",
+            "creado",
+            "total_destinatarios",
         ]
         read_only_fields = ["estado", "progreso", "creado_por", "creado"]
 

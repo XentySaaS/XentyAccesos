@@ -1,4 +1,5 @@
 """Rutas REST de proveedores: catálogo (router) + onboarding público."""
+
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 

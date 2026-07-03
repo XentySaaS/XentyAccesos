@@ -2,6 +2,7 @@
 
 Usado por: apps.proveedores (invitación + activación).
 """
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -30,6 +31,7 @@ def _notificar_wa(telefono: str | None, cuerpo: str) -> None:
     if not telefono:
         return
     from apps.mensajeria.services import notificar_whatsapp
+
     notificar_whatsapp(telefono, cuerpo)
 
 
@@ -58,6 +60,7 @@ def enviar_invitacion_proveedor(
         send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
     except Exception as exc:  # noqa: BLE001
         import logging
+
         logging.getLogger(__name__).error("Error enviando invitación a %s: %s", email_destino, exc)
     _notificar_wa(telefono, cuerpo)
 
@@ -83,7 +86,10 @@ def enviar_verificacion_email(
         send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
     except Exception as exc:  # noqa: BLE001
         import logging
-        logging.getLogger(__name__).error("Error enviando verificación a %s: %s", email_destino, exc)
+
+        logging.getLogger(__name__).error(
+            "Error enviando verificación a %s: %s", email_destino, exc
+        )
 
 
 def enviar_activacion_proveedor(
@@ -110,5 +116,6 @@ def enviar_activacion_proveedor(
         send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
     except Exception as exc:  # noqa: BLE001
         import logging
+
         logging.getLogger(__name__).error("Error enviando activación a %s: %s", email_destino, exc)
     _notificar_wa(telefono, cuerpo)

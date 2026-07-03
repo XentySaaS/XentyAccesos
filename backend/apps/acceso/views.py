@@ -1,4 +1,5 @@
 """Acceso físico: escáner (guardia) + bitácora con registro de salida."""
+
 from __future__ import annotations
 
 from django.db import connection
@@ -8,7 +9,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
+from common.permissions import (
+    PERMISOS_BASE,
+    ContextoAcceso,
+    RequiereModulo,
+    RequierePermisoPersonalizado,
+    RequiereRol,
+)
 
 from .detalle import construir_contexto
 from .models import RegistroAcceso
@@ -16,12 +23,16 @@ from .serializers import RegistroAccesoSerializer
 from .services import procesar_escaneo
 
 _SCANNER = [
-    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
+    *PERMISOS_BASE(),
+    ContextoAcceso,
+    RequiereModulo("acceso"),
     RequiereRol("guardia", "administrador", "recepcion", "usuario"),
     RequierePermisoPersonalizado("acceso"),
 ]
 _BITACORA = [
-    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("acceso"),
+    *PERMISOS_BASE(),
+    ContextoAcceso,
+    RequiereModulo("acceso"),
     RequiereRol("guardia", "administrador", "editor", "recepcion", "usuario"),
     RequierePermisoPersonalizado("acceso"),
 ]
@@ -43,7 +54,11 @@ def _identidad(request, reg) -> dict:
         empleado = reg.empleado
         cuenta = empleado.proveedor  # CuentaProveedor
         empresa = cuenta.proveedor.nombre if cuenta and cuenta.proveedor_id else None
-        return {"nombre": empleado.nombre, "empresa": empresa, "foto_url": _foto_url(request, empleado.foto)}
+        return {
+            "nombre": empleado.nombre,
+            "empresa": empresa,
+            "foto_url": _foto_url(request, empleado.foto),
+        }
     if getattr(reg, "asistente_id", None):
         asistente = reg.asistente
         empresa = asistente.cita.proveedor.nombre if asistente.cita.proveedor_id else None
@@ -51,7 +66,11 @@ def _identidad(request, reg) -> dict:
         persona = asistente.persona  # Contacto o Empleado (GenericForeignKey)
         if persona is not None:
             foto = getattr(persona, "foto", None)
-        return {"nombre": asistente.nombre, "empresa": empresa, "foto_url": _foto_url(request, foto)}
+        return {
+            "nombre": asistente.nombre,
+            "empresa": empresa,
+            "foto_url": _foto_url(request, foto),
+        }
     return {"nombre": None, "empresa": None, "foto_url": None}
 
 
@@ -64,14 +83,16 @@ class EscanearView(APIView):
         reg, permitido, motivo = procesar_escaneo(
             request.data.get("qr", ""), connection.schema_name, placa=request.data.get("placa")
         )
-        return Response({
-            "permitido": permitido,
-            "motivo": motivo,
-            "registro_id": reg.id,
-            "tipo_acceso": getattr(reg, "tipo_acceso", None),
-            **_identidad(request, reg),
-            **construir_contexto(request, reg),
-        })
+        return Response(
+            {
+                "permitido": permitido,
+                "motivo": motivo,
+                "registro_id": reg.id,
+                "tipo_acceso": getattr(reg, "tipo_acceso", None),
+                **_identidad(request, reg),
+                **construir_contexto(request, reg),
+            }
+        )
 
 
 class RegistroAccesoViewSet(viewsets.ReadOnlyModelViewSet):
@@ -120,7 +141,9 @@ class RegistroAccesoViewSet(viewsets.ReadOnlyModelViewSet):
             )
         motivo = (request.data.get("motivo") or "").strip()
         if not motivo:
-            return Response({"detail": "El motivo es obligatorio."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "El motivo es obligatorio."}, status=status.HTTP_400_BAD_REQUEST
+            )
         reg.tipo_acceso = RegistroAcceso.TipoAcceso.DENEGADO
         reg.observaciones = motivo
         reg.save(update_fields=["tipo_acceso", "observaciones"])

@@ -21,6 +21,7 @@ Uso:
         destino="mauricio@empresa.com",
     )
 """
+
 from __future__ import annotations
 
 import logging
@@ -31,12 +32,12 @@ from django.core.mail import EmailMultiAlternatives
 logger = logging.getLogger(__name__)
 
 # ─── Paleta ──────────────────────────────────────────────────────────────────
-_NAVY   = "#0F1B2D"
-_BLUE   = "#2563EB"
-_CARD   = "#ffffff"
-_BG     = "#F1F4F8"
-_MUTED  = "#64748b"
-_TEXT   = "#1e293b"
+_NAVY = "#0F1B2D"
+_BLUE = "#2563EB"
+_CARD = "#ffffff"
+_BG = "#F1F4F8"
+_MUTED = "#64748b"
+_TEXT = "#1e293b"
 _BORDER = "#e2e8f0"
 
 # ─── Template base ───────────────────────────────────────────────────────────
@@ -169,6 +170,7 @@ _CTA = """\
 
 # ─── API pública ─────────────────────────────────────────────────────────────
 
+
 def construir_correo(
     *,
     nombre_tenant: str,
@@ -196,9 +198,7 @@ def construir_correo(
         else _LOGO_TEXTO.format(nombre=nombre_tenant)
     )
 
-    parrafos_html = "\n".join(
-        _PARRAFO.format(contenido=p, text=_TEXT) for p in parrafos
-    )
+    parrafos_html = "\n".join(_PARRAFO.format(contenido=p, text=_TEXT) for p in parrafos)
 
     cta_html = (
         _CTA.format(url=cta_url, texto=cta_texto, navy=_NAVY, blue=_BLUE)

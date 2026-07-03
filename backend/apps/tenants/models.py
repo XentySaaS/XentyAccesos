@@ -6,6 +6,7 @@ comandos. Todo en ``public``: ningún dato operativo de un tenant vive aquí.
 
 Referencias: MODELO_DATOS_SAR §5, PLAYBOOK_SAR_XENTY §5/§9 (F0).
 """
+
 from __future__ import annotations
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -64,7 +65,9 @@ class Plan(models.Model):
     descripcion = models.TextField(null=True, blank=True)
     precio_mensual = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     stripe_price_id = models.CharField(max_length=64, null=True, blank=True)
-    modulos = models.JSONField(default=list, blank=True)  # claves de módulo activas (RequiereModulo)
+    modulos = models.JSONField(
+        default=list, blank=True
+    )  # claves de módulo activas (RequiereModulo)
     limites = models.JSONField(default=dict, blank=True)  # p. ej. {"usuarios": 10, "eventos": 50}
     activo = models.BooleanField(default=True)
 

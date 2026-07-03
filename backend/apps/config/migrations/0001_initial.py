@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -15,29 +14,67 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='Opcion',
+            name="Opcion",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('clave', models.CharField(db_index=True, max_length=120, unique=True)),
-                ('valor', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("clave", models.CharField(db_index=True, max_length=120, unique=True)),
+                ("valor", models.TextField(blank=True, null=True)),
             ],
         ),
         migrations.CreateModel(
-            name='HistorialCambio',
+            name="HistorialCambio",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('descripcion', models.TextField()),
-                ('modelo', models.CharField(blank=True, max_length=120, null=True)),
-                ('modelo_id', models.BigIntegerField(blank=True, null=True)),
-                ('accion', models.CharField(choices=[('creado', 'Creado'), ('actualizado', 'Actualizado'), ('eliminado', 'Eliminado'), ('restaurado', 'Restaurado'), ('asignado', 'Asignado'), ('desasignado', 'Desasignado'), ('visto', 'Visto'), ('listado', 'Listado')], default='creado', max_length=12)),
-                ('antes', models.JSONField(blank=True, null=True)),
-                ('despues', models.JSONField(blank=True, null=True)),
-                ('creado', models.DateTimeField(auto_now_add=True)),
-                ('usuario', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True, primary_key=True, serialize=False, verbose_name="ID"
+                    ),
+                ),
+                ("descripcion", models.TextField()),
+                ("modelo", models.CharField(blank=True, max_length=120, null=True)),
+                ("modelo_id", models.BigIntegerField(blank=True, null=True)),
+                (
+                    "accion",
+                    models.CharField(
+                        choices=[
+                            ("creado", "Creado"),
+                            ("actualizado", "Actualizado"),
+                            ("eliminado", "Eliminado"),
+                            ("restaurado", "Restaurado"),
+                            ("asignado", "Asignado"),
+                            ("desasignado", "Desasignado"),
+                            ("visto", "Visto"),
+                            ("listado", "Listado"),
+                        ],
+                        default="creado",
+                        max_length=12,
+                    ),
+                ),
+                ("antes", models.JSONField(blank=True, null=True)),
+                ("despues", models.JSONField(blank=True, null=True)),
+                ("creado", models.DateTimeField(auto_now_add=True)),
+                (
+                    "usuario",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-creado'],
-                'indexes': [models.Index(fields=['modelo', 'modelo_id'], name='config_hist_modelo_e653b0_idx')],
+                "ordering": ["-creado"],
+                "indexes": [
+                    models.Index(
+                        fields=["modelo", "modelo_id"], name="config_hist_modelo_e653b0_idx"
+                    )
+                ],
             },
         ),
     ]

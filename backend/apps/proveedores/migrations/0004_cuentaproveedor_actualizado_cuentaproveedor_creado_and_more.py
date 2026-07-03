@@ -5,31 +5,30 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('proveedores', '0003_proveedor_cuentaproveedor_proveedor'),
+        ("proveedores", "0003_proveedor_cuentaproveedor_proveedor"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='cuentaproveedor',
-            name='actualizado',
+            model_name="cuentaproveedor",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='cuentaproveedor',
-            name='creado',
+            model_name="cuentaproveedor",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),
         migrations.AddField(
-            model_name='proveedor',
-            name='actualizado',
+            model_name="proveedor",
+            name="actualizado",
             field=models.DateTimeField(auto_now=True),
         ),
         migrations.AddField(
-            model_name='proveedor',
-            name='creado',
+            model_name="proveedor",
+            name="creado",
             field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
             preserve_default=False,
         ),

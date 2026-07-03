@@ -1,4 +1,5 @@
 """Endpoints de cumplimiento 69-B: validar proveedor, consultar EFOS y resultados."""
+
 from __future__ import annotations
 
 from rest_framework import viewsets
@@ -14,7 +15,10 @@ from .serializers import ResultadoLista69bSerializer, SatEfoSerializer
 from .services import revalidar_todos, validar_69b
 
 _PERMS = [
-    *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("cumplimiento"), RequiereRol("administrador"),
+    *PERMISOS_BASE(),
+    ContextoAcceso,
+    RequiereModulo("cumplimiento"),
+    RequiereRol("administrador"),
 ]
 
 
@@ -57,9 +61,11 @@ class ResumenView(APIView):
         if total_efos == 0:
             from django.core.cache import cache
             from django.db import connection
+
             lock = f"efos_import_pendiente:{connection.schema_name}"
             if cache.add(lock, "1", timeout=3600):
                 from .tasks import importar_efos_task
+
                 try:
                     importar_efos_task.delay(connection.schema_name)
                 except Exception:  # noqa: BLE001 — sin broker (dev): no romper la respuesta.
@@ -67,31 +73,34 @@ class ResumenView(APIView):
             importando = True
 
         # Último resultado por proveedor; marcamos los que quedaron ENCONTRADO.
-        ultimos = (
-            ResultadoLista69b.objects.filter(proveedor=OuterRef("pk")).order_by("-creado")
-        )
-        marcados = (
-            Proveedor.objects
-            .annotate(
-                ult_estado=Subquery(ultimos.values("estado")[:1]),
-                ult_rfc=Subquery(ultimos.values("rfc")[:1]),
-            )
-            .filter(ult_estado=ResultadoLista69b.Estado.ENCONTRADO)
-        )
-        sat = {e.rfc: e.situacion for e in SatEfo.objects.filter(rfc__in=[p.ult_rfc for p in marcados])}
+        ultimos = ResultadoLista69b.objects.filter(proveedor=OuterRef("pk")).order_by("-creado")
+        marcados = Proveedor.objects.annotate(
+            ult_estado=Subquery(ultimos.values("estado")[:1]),
+            ult_rfc=Subquery(ultimos.values("rfc")[:1]),
+        ).filter(ult_estado=ResultadoLista69b.Estado.ENCONTRADO)
+        sat = {
+            e.rfc: e.situacion for e in SatEfo.objects.filter(rfc__in=[p.ult_rfc for p in marcados])
+        }
         proveedores = [
-            {"id": p.id, "nombre": p.nombre, "rfc": p.ult_rfc,
-             "situacion": sat.get(p.ult_rfc), "estado": p.estado}
+            {
+                "id": p.id,
+                "nombre": p.nombre,
+                "rfc": p.ult_rfc,
+                "situacion": sat.get(p.ult_rfc),
+                "estado": p.estado,
+            }
             for p in marcados
         ]
-        return Response({
-            "total_efos": total_efos,
-            "ultima_actualizacion": ultima,
-            "padron_cargado": total_efos > 0,
-            "importando": importando,
-            "marcados": len(proveedores),
-            "proveedores": proveedores,
-        })
+        return Response(
+            {
+                "total_efos": total_efos,
+                "ultima_actualizacion": ultima,
+                "padron_cargado": total_efos > 0,
+                "importando": importando,
+                "marcados": len(proveedores),
+                "proveedores": proveedores,
+            }
+        )
 
 
 class SatEfoViewSet(viewsets.ReadOnlyModelViewSet):

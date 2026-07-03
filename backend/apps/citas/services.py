@@ -4,6 +4,7 @@ Envía correo HTML al responsable del proveedor (cita tipo 0) o a cada
 asistente con email (cita tipo 1). Best-effort: los errores se loguean
 sin propagar para no bloquear la respuesta HTTP.
 """
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,9 @@ def enviar_notificacion_cita(cita) -> int:
     try:
         logger.info(
             "enviar_notificacion_cita pk=%s tipo=%s tipo_cita=%s",
-            cita.pk, cita.tipo, cita.tipo_cita,
+            cita.pk,
+            cita.tipo,
+            cita.tipo_cita,
         )
         # Walk-in: el acceso se registra automáticamente, no se envían invitaciones por correo.
         if cita.tipo_cita == "walk_in":
@@ -45,6 +48,7 @@ def _fmt_hora(cita) -> str:
 def _nombre_tenant(cita) -> str:
     try:
         from django_tenants.utils import get_tenant
+
         t = get_tenant(None)
         return getattr(t, "company", None) or getattr(t, "nombre", "Xenty Accesos")
     except Exception:  # noqa: BLE001
@@ -53,6 +57,7 @@ def _nombre_tenant(cita) -> str:
 
 def _notificar_asistentes(cita) -> int:
     import datetime
+
     from django.db import connection
 
     tenant = _nombre_tenant(cita)
@@ -124,12 +129,16 @@ def _notificar_asistentes(cita) -> int:
             )
             adjuntos = [(f"gafete_cita_{cita.pk}_{asistente.pk}.png", gafete_bytes, "image/png")]
         except Exception:  # noqa: BLE001
-            logger.warning("Gafete no generado para asistente pk=%s — se envía sin adjunto", asistente.pk)
+            logger.warning(
+                "Gafete no generado para asistente pk=%s — se envía sin adjunto", asistente.pk
+            )
 
         con_gafete = adjuntos is not None
         logger.info(
             "Enviando correo a %s (asistente pk=%s) con_gafete=%s",
-            asistente.email, asistente.pk, con_gafete,
+            asistente.email,
+            asistente.pk,
+            con_gafete,
         )
         html = construir_correo(
             nombre_tenant=tenant,
@@ -140,14 +149,18 @@ def _notificar_asistentes(cita) -> int:
                 f"Fecha: {fecha} &nbsp;·&nbsp; Hora: {hora}",
                 f"Recinto: {recinto}",
                 "Presenta el <strong>gafete adjunto</strong> al llegar para registrar tu acceso."
-                if con_gafete else
-                "Presenta este correo al llegar para registrar tu acceso.",
+                if con_gafete
+                else "Presenta este correo al llegar para registrar tu acceso.",
             ],
         )
         texto_plano = (
             f"Invitado a {cita.nombre} el {fecha} a las {hora}. "
             f"Recinto: {recinto}. "
-            + ("Presenta el gafete adjunto al llegar." if con_gafete else "Presenta este correo al llegar.")
+            + (
+                "Presenta el gafete adjunto al llegar."
+                if con_gafete
+                else "Presenta este correo al llegar."
+            )
         )
         enviar_correo_html(
             asunto=f"Invitación: {cita.nombre or 'cita'}",
@@ -158,6 +171,7 @@ def _notificar_asistentes(cita) -> int:
         )
         # WhatsApp al asistente si tiene teléfono (el gafete va por correo).
         from apps.mensajeria.services import notificar_whatsapp
+
         notificar_whatsapp(asistente.telefono, texto_plano)
         enviados += 1
 
@@ -200,4 +214,5 @@ def _notificar_proveedor(cita) -> None:
     )
     # WhatsApp al responsable del proveedor si tiene teléfono.
     from apps.mensajeria.services import notificar_whatsapp
+
     notificar_whatsapp(getattr(p, "telefono", None), texto_plano)

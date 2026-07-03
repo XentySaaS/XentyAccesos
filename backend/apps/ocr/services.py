@@ -9,6 +9,7 @@ Estrategia:
 Si no hay credenciales AWS se usa SandboxOCR (dev/test, datos deterministas).
 El llamador cifra ine_data al guardarlo; aquí no se loguea PII.
 """
+
 from __future__ import annotations
 
 import re
@@ -18,8 +19,8 @@ from typing import Any
 
 from django.conf import settings
 
-
 # ─── Normalización ─────────────────────────────────────────────────────────────
+
 
 def _norm(text: str) -> str:
     """Quita acentos y normaliza a mayúsculas (port del str_replace de acentos del PHP)."""
@@ -48,11 +49,12 @@ _RE_CLAVE = re.compile(
     r"(?:[1-2][0-9]|0[1-9]|3[0-1])(?:0[1-9]|[1-2][0-9]|3[0-2]|88|87)[HM][0-9]{3}\b"
 )
 
-_RE_SECCION      = re.compile(r"^\d{1,4}$")
-_RE_ANIO_REG     = re.compile(r"^\d{4}\s\d{2}$")   # e.g. "2020 20"
+_RE_SECCION = re.compile(r"^\d{1,4}$")
+_RE_ANIO_REG = re.compile(r"^\d{4}\s\d{2}$")  # e.g. "2020 20"
 
 
 # ─── Validadores (port fiel del PHP, sin la validación hueca validaSeccionINE) ──
+
 
 def _es_sexo(v: str) -> bool:
     return bool(re.match(r"^[HM]$", v.strip()))
@@ -107,19 +109,20 @@ def validar_seccion(seccion: str | None) -> bool:
 #   lines=0, search=False → valor inline en la misma línea (p.ej. CLAVE DE ELECTOR)
 
 _CAMPOS_DEF: list[dict[str, Any]] = [
-    {"key": "NOMBRE",              "lines": 3, "ini_val": 1, "search": False, "fn": None},
-    {"key": "SEXO",                "lines": 0, "ini_val": 0, "search": True,  "fn": _es_sexo},
-    {"key": "DOMICILIO",           "lines": 3, "ini_val": 0, "search": False, "fn": None},
-    {"key": "CLAVE DE ELECTOR",    "lines": 0, "ini_val": 0, "search": False, "fn": _es_clave_elector},
-    {"key": "CURP",                "lines": 1, "ini_val": 1, "search": True,  "fn": _es_curp},
-    {"key": "ANO DE REGISTRO",     "lines": 1, "ini_val": 1, "search": True,  "fn": _es_anio_registro},
-    {"key": "FECHA DE NACIMIENTO", "lines": 1, "ini_val": 2, "search": True,  "fn": _es_fecha},
-    {"key": "SECCION",             "lines": 1, "ini_val": 2, "search": True,  "fn": validar_seccion},
-    {"key": "VIGENCIA",            "lines": 1, "ini_val": 2, "search": True,  "fn": _es_vigencia},
+    {"key": "NOMBRE", "lines": 3, "ini_val": 1, "search": False, "fn": None},
+    {"key": "SEXO", "lines": 0, "ini_val": 0, "search": True, "fn": _es_sexo},
+    {"key": "DOMICILIO", "lines": 3, "ini_val": 0, "search": False, "fn": None},
+    {"key": "CLAVE DE ELECTOR", "lines": 0, "ini_val": 0, "search": False, "fn": _es_clave_elector},
+    {"key": "CURP", "lines": 1, "ini_val": 1, "search": True, "fn": _es_curp},
+    {"key": "ANO DE REGISTRO", "lines": 1, "ini_val": 1, "search": True, "fn": _es_anio_registro},
+    {"key": "FECHA DE NACIMIENTO", "lines": 1, "ini_val": 2, "search": True, "fn": _es_fecha},
+    {"key": "SECCION", "lines": 1, "ini_val": 2, "search": True, "fn": validar_seccion},
+    {"key": "VIGENCIA", "lines": 1, "ini_val": 2, "search": True, "fn": _es_vigencia},
 ]
 
 
 # ─── Algoritmo principal (port de identificarFormulario + extractIne del PHP) ──
+
 
 def _identificar_formulario(lines_raw: list[str]) -> list[dict[str, Any]]:
     """
@@ -132,15 +135,14 @@ def _identificar_formulario(lines_raw: list[str]) -> list[dict[str, Any]]:
     - Devuelve [] si no se identificaron ≥5 campos (igual que el PHP que retornaba error).
     """
     # Filtrar líneas puramente en minúsculas (igual que el PHP)
-    lines: list[str] = [l for l in lines_raw if not l.islower()]
+    lines: list[str] = [ln for ln in lines_raw if not ln.islower()]
 
     # Detectar formato viejo (INEs 2008, 2013, 2014) — busca "ESTADO" en líneas
-    is_old = any("ESTADO" in _norm(l) for l in lines)
+    is_old = any("ESTADO" in _norm(ln) for ln in lines)
 
     # Inicializar estado de cada campo
     campos: list[dict[str, Any]] = [
-        {**c, "pos": -1, "value": "", "pos_real": -1, "items": []}
-        for c in _CAMPOS_DEF
+        {**c, "pos": -1, "value": "", "pos_real": -1, "items": []} for c in _CAMPOS_DEF
     ]
 
     # ── Primera pasada: localizar la posición de cada etiqueta ──────────────────
@@ -172,9 +174,9 @@ def _identificar_formulario(lines_raw: list[str]) -> list[dict[str, Any]]:
         if pos < 0 or campo["value"]:
             continue
 
-        nl  = campo["lines"]
-        iv  = campo["ini_val"]
-        fn  = campo["fn"]
+        nl = campo["lines"]
+        iv = campo["ini_val"]
+        fn = campo["fn"]
         ini = pos + iv
 
         if campo["search"] and fn:
@@ -230,7 +232,9 @@ def _identificar_formulario(lines_raw: list[str]) -> list[dict[str, Any]]:
                         if postem_anterior == x and idx > 0:
                             prev = campos[idx - 1]
                             linea_sin_key = linea_sin_key.replace(_norm(prev["key"]), "")
-                            linea_sin_key = linea_sin_key.replace(_norm(str(prev["value"])), "").strip()
+                            linea_sin_key = linea_sin_key.replace(
+                                _norm(str(prev["value"])), ""
+                            ).strip()
                         campo["value"] = linea_sin_key
                         campo["pos_real"] = x
                         postem_anterior = x
@@ -263,10 +267,11 @@ def _identificar_formulario(lines_raw: list[str]) -> list[dict[str, Any]]:
             # Formato viejo con NOMBRE: filtrar SEXO, fechas y líneas "H"/"M" intercaladas
             if is_old and campo["key"] == "NOMBRE":
                 temp = [
-                    l for l in temp
-                    if not re.search(r"(SEXO|FECHA\s*DE\s*NACIMIENTO)", _norm(l))
-                    and not _es_fecha(l.strip())
-                    and not _es_sexo(l.strip())
+                    ln
+                    for ln in temp
+                    if not re.search(r"(SEXO|FECHA\s*DE\s*NACIMIENTO)", _norm(ln))
+                    and not _es_fecha(ln.strip())
+                    and not _es_sexo(ln.strip())
                 ]
                 adjusted_ini = max(0, adjusted_ini - 1)
 
@@ -305,10 +310,10 @@ def _campos_a_datos_ine(campos: list[dict[str, Any]]) -> dict[str, str]:
             items = campo.get("items", [])
             if len(items) >= 3:
                 datos["apellidos"] = f"{items[0]} {items[1]}".strip()
-                datos["nombre"]    = items[2]
+                datos["nombre"] = items[2]
             elif len(items) == 2:
                 datos["apellidos"] = items[0]
-                datos["nombre"]    = items[1]
+                datos["nombre"] = items[1]
             else:
                 datos["nombre"] = v
         elif key == "SEXO":
@@ -332,19 +337,20 @@ def _campos_a_datos_ine(campos: list[dict[str, Any]]) -> dict[str, str]:
 
 # ─── Backends ───────────────────────────────────────────────────────────────────
 
+
 class SandboxOCR:
     """Dev/test: no llama a AWS; devuelve campos de ejemplo deterministas."""
 
     def extraer_ine(self, imagen_bytes: bytes) -> dict:
         return {
-            "nombre":           "JUAN",
-            "apellidos":        "PÉREZ LÓPEZ",
-            "curp":             "PELJ900101HDFRPN09",
+            "nombre": "JUAN",
+            "apellidos": "PÉREZ LÓPEZ",
+            "curp": "PELJ900101HDFRPN09",
             "fecha_nacimiento": "01/01/1990",
-            "sexo":             "H",
-            "domicilio":        "CALLE FALSA 123, COLONIA EJEMPLO",
-            "seccion":          "1234",
-            "numero":           "PELJ900101HDFRPN09",
+            "sexo": "H",
+            "domicilio": "CALLE FALSA 123, COLONIA EJEMPLO",
+            "seccion": "1234",
+            "numero": "PELJ900101HDFRPN09",
         }
 
 
@@ -358,12 +364,12 @@ class TextractOCR:
 
     # Mapeo de campos de analyze_id a los de la API (complemento)
     _ANALYZE_ID_MAP = {
-        "FIRST_NAME":      "nombre",
-        "LAST_NAME":       "apellidos",
-        "DATE_OF_BIRTH":   "fecha_nacimiento",
+        "FIRST_NAME": "nombre",
+        "LAST_NAME": "apellidos",
+        "DATE_OF_BIRTH": "fecha_nacimiento",
         "DOCUMENT_NUMBER": "numero",
-        "ADDRESS":         "domicilio",
-        "CURP":            "curp",
+        "ADDRESS": "domicilio",
+        "CURP": "curp",
         "PERSONAL_NUMBER": "curp",
     }
 
@@ -379,24 +385,19 @@ class TextractOCR:
 
         # ── Paso 1: parser de líneas (algoritmo portado del PHP) ─────────────────
         resp_texto = cliente.detect_document_text(Document={"Bytes": imagen_bytes})
-        lines = [
-            b["Text"]
-            for b in resp_texto.get("Blocks", [])
-            if b.get("BlockType") == "LINE"
-        ]
+        lines = [b["Text"] for b in resp_texto.get("Blocks", []) if b.get("BlockType") == "LINE"]
         campos = _identificar_formulario(lines)
         datos = _campos_a_datos_ine(campos) if campos else {}
 
         # ── Paso 2: analyze_id como complemento para campos faltantes ────────────
         campos_faltantes = {
-            k for k in ("nombre", "apellidos", "curp", "fecha_nacimiento", "domicilio", "numero")
+            k
+            for k in ("nombre", "apellidos", "curp", "fecha_nacimiento", "domicilio", "numero")
             if not datos.get(k)
         }
         if campos_faltantes:
             try:
-                resp_id = cliente.analyze_id(
-                    DocumentPages=[{"Bytes": imagen_bytes}]
-                )
+                resp_id = cliente.analyze_id(DocumentPages=[{"Bytes": imagen_bytes}])
                 for doc in resp_id.get("IdentityDocuments", []):
                     for field in doc.get("IdentityDocumentFields", []):
                         clave = field.get("Type", {}).get("Text")
@@ -413,6 +414,8 @@ class TextractOCR:
 
 def obtener_ocr():
     """Selecciona el backend OCR según haya credenciales AWS configuradas."""
-    if getattr(settings, "AWS_ACCESS_KEY_ID", None) and getattr(settings, "AWS_SECRET_ACCESS_KEY", None):
+    if getattr(settings, "AWS_ACCESS_KEY_ID", None) and getattr(
+        settings, "AWS_SECRET_ACCESS_KEY", None
+    ):
         return TextractOCR()
     return SandboxOCR()

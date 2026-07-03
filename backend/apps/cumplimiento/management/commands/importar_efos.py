@@ -10,6 +10,7 @@ Ejemplos:
   python manage.py importar_efos --schema rayados      # revalida solo ese tenant
   python manage.py importar_efos --no-revalidar        # solo actualiza el padrón
 """
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -26,10 +27,15 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--schema", help="Revalidar solo este tenant (por defecto: todos).")
-        parser.add_argument("--archivo", help="Ruta a un CSV local (bytes, cualquier codificación).")
+        parser.add_argument(
+            "--archivo", help="Ruta a un CSV local (bytes, cualquier codificación)."
+        )
         parser.add_argument("--url", help="URL del CSV (default: SAT_EFOS_CSV_URL o la del SAT).")
-        parser.add_argument("--no-revalidar", action="store_true",
-                            help="Solo actualiza el padrón; no revalida proveedores.")
+        parser.add_argument(
+            "--no-revalidar",
+            action="store_true",
+            help="Solo actualiza el padrón; no revalida proveedores.",
+        )
 
     def handle(self, *args, **opts):
         contenido = self._obtener_contenido(opts)  # bytes
@@ -59,6 +65,7 @@ class Command(BaseCommand):
         url = opts["url"] or settings.SAT_EFOS_CSV_URL or _SAT_URL_DEFAULT
         try:
             import requests
+
             r = requests.get(url, timeout=120)
             r.raise_for_status()
             return r.content
@@ -67,8 +74,6 @@ class Command(BaseCommand):
 
     def _tenants(self) -> list[str]:
         from django_tenants.utils import get_tenant_model
+
         publico = get_public_schema_name()
-        return [
-            t.schema_name for t in get_tenant_model().objects.all()
-            if t.schema_name != publico
-        ]
+        return [t.schema_name for t in get_tenant_model().objects.all() if t.schema_name != publico]

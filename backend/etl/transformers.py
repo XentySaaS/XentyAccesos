@@ -3,20 +3,31 @@
 Funciones puras (sin DB) para poder probarlas con un dataset sintético. El re-cifrado de PII es
 automático: el ORM cifra al escribir en los campos ``Encrypted*`` (MIGRACION §5).
 """
+
 from __future__ import annotations
 
 # ── Mapas de enum (origen inglés → destino español) ──────────────────────────
 ROL_USUARIO = {
-    "Administrator": "administrador", "Editor": "editor", "Security Guard": "guardia",
-    "Manager": "gerente", "Receptionist": "recepcion", "User": "usuario", "Verifier": "verificador",
+    "Administrator": "administrador",
+    "Editor": "editor",
+    "Security Guard": "guardia",
+    "Manager": "gerente",
+    "Receptionist": "recepcion",
+    "User": "usuario",
+    "Verifier": "verificador",
 }
 ROL_PROVEEDOR = {"Admin": "admin", "User": "usuario"}
 ESTADO_GENERICO = {
-    "active": "activo", "inactive": "inactivo", "pending": "pendiente",
-    "confirmed": "confirmado", "terminated": "baja",
+    "active": "activo",
+    "inactive": "inactivo",
+    "pending": "pendiente",
+    "confirmed": "confirmado",
+    "terminated": "baja",
 }
 EVENTO_ESTADO = {
-    "scheduled": "programado", "ongoing": "en_curso", "completed": "completado",
+    "scheduled": "programado",
+    "ongoing": "en_curso",
+    "completed": "completado",
     "cancelled": "cancelado",
 }
 CITA_ESTADO = {"pending": "pendiente", "confirmed": "confirmada", "cancelled": "cancelada"}

@@ -8,6 +8,7 @@ Orden (en ``settings.MIDDLEWARE``, tras ``TenantMainMiddleware`` que fija ``requ
 Todos respetan una **whitelist** de rutas (auth, billing, webhooks, health, schema) para que un
 tenant suspendido/moroso SIEMPRE pueda autenticarse y pagar (REMEDIACION §A6).
 """
+
 from __future__ import annotations
 
 from django.conf import settings

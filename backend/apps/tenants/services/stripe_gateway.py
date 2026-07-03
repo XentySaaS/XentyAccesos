@@ -4,6 +4,7 @@ Sandbox (sin ``STRIPE_SECRET_KEY``): no hace llamadas de red ni verifica firmas;
 checkout y acepta el payload del webhook tal cual. Producción (con clave): usa la librería ``stripe``.
 Esto permite desarrollar y probar el ciclo de billing completo sin credenciales reales.
 """
+
 from __future__ import annotations
 
 import json

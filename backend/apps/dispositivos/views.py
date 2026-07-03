@@ -1,4 +1,5 @@
 """API edge ``/api/v1/*`` (HMAC + rate limit). Long-poll de comandos y validación de QR."""
+
 from __future__ import annotations
 
 from django.utils.decorators import method_decorator
@@ -31,11 +32,19 @@ class ComandosPullView(_EdgeView):
 
     def get(self, request):
         comandos = pull_comandos(request.dispositivo)
-        return Response([
-            {"id": c.id, "tipo": c.tipo, "port": c.port, "duration_ms": c.duration_ms,
-             "texto": c.texto, "timeout_sec": c.timeout_sec}
-            for c in comandos
-        ])
+        return Response(
+            [
+                {
+                    "id": c.id,
+                    "tipo": c.tipo,
+                    "port": c.port,
+                    "duration_ms": c.duration_ms,
+                    "texto": c.texto,
+                    "timeout_sec": c.timeout_sec,
+                }
+                for c in comandos
+            ]
+        )
 
 
 class ComandoAckView(_EdgeView):

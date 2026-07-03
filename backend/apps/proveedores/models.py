@@ -6,6 +6,7 @@ flujo JWT propio (claim ``ctx="proveedores"``). NO es ``AUTH_USER_MODEL`` ni se 
 
 Referencia: MODELO_DATOS_SAR §6.2.
 """
+
 from __future__ import annotations
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -34,7 +35,10 @@ class Proveedor(models.Model):  # suppliers (empresa externa)
     file_repse = models.FileField(upload_to="proveedores/repse/", null=True, blank=True)
     file_sua = models.FileField(upload_to="proveedores/sua/", null=True, blank=True)
     responsable = models.ForeignKey(
-        "proveedores.CuentaProveedor", on_delete=models.SET_NULL, null=True, blank=True,
+        "proveedores.CuentaProveedor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="proveedor_responsable",
     )
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
@@ -81,7 +85,9 @@ class CuentaProveedor(AbstractBaseUser):
     # PII cifrada en reposo (Fernet):
     curp = EncryptedCharField(max_length=18, null=True, blank=True)
     nss = EncryptedCharField(max_length=11, null=True, blank=True)
-    file_ine = models.FileField(upload_to="proveedores/ine/", null=True, blank=True)  # disco PRIVADO
+    file_ine = models.FileField(
+        upload_to="proveedores/ine/", null=True, blank=True
+    )  # disco PRIVADO
     foto = models.ImageField(upload_to="proveedores/fotos/", null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)

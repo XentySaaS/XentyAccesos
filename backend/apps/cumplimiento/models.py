@@ -2,6 +2,7 @@
 
 Referencia: MODELO_DATOS_SAR §6.11 · SAR_FUNCIONALIDADES §13.
 """
+
 from __future__ import annotations
 
 from django.db import models
@@ -20,7 +21,9 @@ class ResultadoLista69b(models.Model):  # result__lista69bs -> resultados_lista6
         LIMPIO = 0, "Limpio"
         ENCONTRADO = 1, "Encontrado"
 
-    consulta = models.ForeignKey(ConsultaLista69b, on_delete=models.CASCADE, related_name="resultados")
+    consulta = models.ForeignKey(
+        ConsultaLista69b, on_delete=models.CASCADE, related_name="resultados"
+    )
     proveedor = models.ForeignKey("proveedores.Proveedor", on_delete=models.CASCADE)
     rfc = models.CharField(max_length=13, null=True, blank=True)
     query_data = models.JSONField(null=True, blank=True)

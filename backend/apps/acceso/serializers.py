@@ -1,4 +1,5 @@
 """Serializers de la bitácora de acceso."""
+
 from __future__ import annotations
 
 from rest_framework import serializers
@@ -14,10 +15,21 @@ class RegistroAccesoSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistroAcceso
         fields = [
-            "id", "tipo_acceso", "metodo",
-            "hora_entrada", "hora_salida", "placa_vehiculo", "observaciones",
-            "empleado", "asistente", "evento", "cita",
-            "persona", "titulo", "tipo_registro", "creado",
+            "id",
+            "tipo_acceso",
+            "metodo",
+            "hora_entrada",
+            "hora_salida",
+            "placa_vehiculo",
+            "observaciones",
+            "empleado",
+            "asistente",
+            "evento",
+            "cita",
+            "persona",
+            "titulo",
+            "tipo_registro",
+            "creado",
         ]
 
     def get_persona(self, obj) -> str:

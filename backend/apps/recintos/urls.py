@@ -1,4 +1,5 @@
 """Rutas REST de la topología de recintos (router DRF)."""
+
 from rest_framework.routers import DefaultRouter
 
 from .views import (

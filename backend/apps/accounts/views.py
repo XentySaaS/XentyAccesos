@@ -1,4 +1,5 @@
 """ViewSets de gestión de usuarios del tenant (solo administradores)."""
+
 from __future__ import annotations
 
 from rest_framework import status
@@ -7,7 +8,8 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.config.models import HistorialCambio
-from apps.config.services import AuditViewSetMixin, registrar as _registrar
+from apps.config.services import AuditViewSetMixin
+from apps.config.services import registrar as _registrar
 from common.permissions import PERMISOS_BASE, RequiereRol
 
 from .models import PermisoUsuario, Usuario
@@ -63,14 +65,16 @@ class UsuarioViewSet(AuditViewSetMixin, ModelViewSet):
             resultado = []
             for m in modulos_todos:
                 p = existentes.get(m)
-                resultado.append({
-                    "modulo": m,
-                    "modulo_display": PermisoUsuario.Modulo(m).label,
-                    "ver":     p.ver     if p else False,
-                    "crear":   p.crear   if p else False,
-                    "editar":  p.editar  if p else False,
-                    "eliminar": p.eliminar if p else False,
-                })
+                resultado.append(
+                    {
+                        "modulo": m,
+                        "modulo_display": PermisoUsuario.Modulo(m).label,
+                        "ver": p.ver if p else False,
+                        "crear": p.crear if p else False,
+                        "editar": p.editar if p else False,
+                        "eliminar": p.eliminar if p else False,
+                    }
+                )
             return Response(resultado)
 
         # PUT: reemplaza toda la lista de permisos

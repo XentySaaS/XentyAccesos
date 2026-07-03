@@ -3,6 +3,7 @@
 Credenciales por entorno (REMEDIATION §C2); modo sandbox sin token. El envío real corre por Celery
 con reintentos; aquí vive la lógica pura (``procesar_envio``) para poder probarla sin worker.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -32,8 +33,13 @@ class UltraMsgWhatsApp:
         if archivo:
             resp = requests.post(
                 f"{base}/messages/document",
-                data={"token": settings.ULTRAMSG_TOKEN, "to": telefono,
-                      "document": archivo, "filename": archivo.rsplit("/", 1)[-1], "caption": cuerpo},
+                data={
+                    "token": settings.ULTRAMSG_TOKEN,
+                    "to": telefono,
+                    "document": archivo,
+                    "filename": archivo.rsplit("/", 1)[-1],
+                    "caption": cuerpo,
+                },
                 timeout=20,
             )
         else:
@@ -117,7 +123,9 @@ def procesar_envio(mensaje_id: int) -> dict:
     enviados = fallidos = 0
     for i, dest in enumerate(destinatarios, start=1):
         try:
-            dest.external_id = cliente.enviar(dest.empleado.telefono or "", mensaje.cuerpo, archivo_url)
+            dest.external_id = cliente.enviar(
+                dest.empleado.telefono or "", mensaje.cuerpo, archivo_url
+            )
             dest.estado = DestinatarioMensaje.Estado.ENVIADO
             enviados += 1
         except Exception:

@@ -11,6 +11,7 @@ El servicio es gratuito: solo descarga/lee el CSV público del SAT.
 
 Estatus bloqueantes configurables (``SAT_EFOS_ESTATUS_BLOQUEANTES``, default Definitivo/Presunto).
 """
+
 from __future__ import annotations
 
 import csv
@@ -86,7 +87,7 @@ def importar_efos(contenido: bytes | str) -> dict:
     ahora = timezone.now()
     objetos: list[SatEfo] = []
     vistos: set[str] = set()
-    for fila in filas[idx_header + 1:]:
+    for fila in filas[idx_header + 1 :]:
         if len(fila) <= idx_rfc:
             continue
         rfc = (fila[idx_rfc] or "").strip().upper()
@@ -94,8 +95,12 @@ def importar_efos(contenido: bytes | str) -> dict:
             continue
         vistos.add(rfc)
         situacion = ((fila[idx_sit] or "").strip() if len(fila) > idx_sit else "")[:60]
-        nombre = (fila[idx_nom] or "").strip() if idx_nom is not None and len(fila) > idx_nom else ""
-        objetos.append(SatEfo(rfc=rfc, situacion=situacion, nombre=nombre, creado=ahora, actualizado=ahora))
+        nombre = (
+            (fila[idx_nom] or "").strip() if idx_nom is not None and len(fila) > idx_nom else ""
+        )
+        objetos.append(
+            SatEfo(rfc=rfc, situacion=situacion, nombre=nombre, creado=ahora, actualizado=ahora)
+        )
 
     # Upsert masivo (INSERT ... ON CONFLICT): ~14k filas en pocos statements en vez de 28k queries.
     # bulk_create no dispara auto_now, por eso fijamos actualizado explícitamente (para el dashboard).
@@ -115,11 +120,12 @@ def validar_69b(proveedor, tipo: int = 0) -> ResultadoLista69b:
     consulta = ConsultaLista69b.objects.create(tipo=tipo)
     efo = SatEfo.objects.filter(rfc=rfc).first() if rfc else None
     bloqueado = bool(efo and situacion_bloqueante(efo.situacion))
-    estado = (
-        ResultadoLista69b.Estado.ENCONTRADO if bloqueado else ResultadoLista69b.Estado.LIMPIO
-    )
+    estado = ResultadoLista69b.Estado.ENCONTRADO if bloqueado else ResultadoLista69b.Estado.LIMPIO
     return ResultadoLista69b.objects.create(
-        consulta=consulta, proveedor=proveedor, rfc=rfc, estado=estado,
+        consulta=consulta,
+        proveedor=proveedor,
+        rfc=rfc,
+        estado=estado,
         query_data={
             "situacion": efo.situacion if efo else None,
             "nombre_sat": efo.nombre if efo else None,
@@ -143,15 +149,24 @@ def revalidar_todos(tipo: int = 1) -> dict:
         rfc = (proveedor.rfc or "").upper().strip()
         efo = SatEfo.objects.filter(rfc=rfc).first() if rfc else None
         bloqueado = bool(efo and situacion_bloqueante(efo.situacion))
-        estado = ResultadoLista69b.Estado.ENCONTRADO if bloqueado else ResultadoLista69b.Estado.LIMPIO
+        estado = (
+            ResultadoLista69b.Estado.ENCONTRADO if bloqueado else ResultadoLista69b.Estado.LIMPIO
+        )
         ResultadoLista69b.objects.create(
-            consulta=consulta, proveedor=proveedor, rfc=rfc, estado=estado,
+            consulta=consulta,
+            proveedor=proveedor,
+            rfc=rfc,
+            estado=estado,
             query_data={"situacion": efo.situacion if efo else None, "bloqueado": bloqueado},
         )
         revisados += 1
         if bloqueado:
-            encontrados.append({
-                "proveedor_id": proveedor.id, "proveedor": proveedor.nombre,
-                "rfc": rfc, "situacion": efo.situacion,
-            })
+            encontrados.append(
+                {
+                    "proveedor_id": proveedor.id,
+                    "proveedor": proveedor.nombre,
+                    "rfc": rfc,
+                    "situacion": efo.situacion,
+                }
+            )
     return {"revisados": revisados, "encontrados": len(encontrados), "detalle": encontrados}
