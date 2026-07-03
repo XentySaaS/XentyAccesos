@@ -7,6 +7,15 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **frontend-admin — detalle de tenant** (`frontend-admin/src/pages/TenantDetalle.tsx`, ruta
+  `/tenants/:id`): ficha con estado/plan/créditos/fin-de-trial, acciones de ciclo de vida
+  (suspender/activar/cancelar) y generación de checkout de suscripción Stripe. La lista de Tenants
+  ahora enlaza a cada detalle. Consume endpoints ya existentes del control plane; sin cambios de backend.
+- **Suite de aislamiento entre tenants** (obligatoria per CLAUDE.md §4): `tests/test_aislamiento_tenants.py`
+  (8 tests) + fixture `dos_tenants` en `tests/conftest.py`. Corre con `pytest -k aislamiento`.
+  Verifica no-fuga de datos por tenant (Usuario/Proveedor), padrón EFOS 69-B global visible desde
+  todos los tenants, resultados 69-B por tenant, cache (Redis) y storage segregados por schema, y
+  ausencia estructural de tablas de tenant en el schema `public`.
 - Sistema de permisos personalizados para rol "usuario" (PermisoUsuario model, migración 0005, serializer, action GET/PUT en UsuarioViewSet)
 - `RequierePermisoPersonalizado(modulo)` permission class integrada en todos los ViewSets de negocio
 - Modal de permisos en `frontend-acceso/src/pages/Usuarios.tsx` (8 módulos × 4 acciones)

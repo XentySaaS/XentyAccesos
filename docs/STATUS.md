@@ -30,7 +30,7 @@
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación |
 | frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos |
-| frontend-admin | ⚠ | Layout + lista Tenants; sin CRUD ni billing |
+| frontend-admin | ⚠ | Layout + lista Tenants + **detalle de tenant** (suscripción/créditos, acciones suspender/activar/cancelar, checkout Stripe). Falta: gestión de Planes, otorgar créditos, dashboard control-plane, MFA super-admin |
 
 ## Infraestructura
 
@@ -55,9 +55,14 @@
 
 ## Pendientes críticos
 
-1. Tests pytest — suite de aislamiento entre tenants (existe `tests/test_f0_modelos.py`, 58 líneas; falta la suite `-k aislamiento` obligatoria per CLAUDE.md)
-2. Pantalla de cumplimiento SAT 69-B en frontend-acceso (backend ya implementado)
+1. ✔ ~~Tests pytest — suite de aislamiento entre tenants~~ **HECHO (2026-07-02)**: `tests/test_aislamiento_tenants.py` (8 tests, todos verdes) + fixture `dos_tenants` en `tests/conftest.py`. Corre con `pytest -k aislamiento`. Cubre: fuga de datos por tenant (Usuario/Proveedor), padrón EFOS global visible desde todos, resultados 69-B por tenant, cache y storage segregados por schema, y ausencia estructural de tablas de tenant en `public`.
+2. ✔ ~~Pantalla de cumplimiento SAT 69-B en frontend-acceso~~ **YA EXISTE**: `frontend-acceso/src/pages/Cumplimiento.tsx` (162 líneas), cableada en Layout/Dashboard/router/Proveedores.
 3. Verificar Nginx sirve `/media/` en dev
+
+> **Correr los tests:** la imagen backend solo instala `requirements.txt` (prod, sin dev-tools por
+> diseño). Instalar las dev-deps una vez en el contenedor: `docker compose exec backend pip install
+> -r requirements-dev.txt`, luego `docker compose exec backend python -m pytest -k aislamiento`.
+> (Nota: crear cada schema de tenant corre todas las migraciones → la suite tarda ~2.5 min.)
 
 ## Bloqueadores
 
@@ -65,10 +70,8 @@ Ninguno activo.
 
 ## Próximos objetivos
 
-1. Tests de aislamiento entre tenants
-2. Pantalla frontend de cumplimiento
-3. Frontend-admin funcional (CRUD tenants, billing)
-4. Auditar cobertura real del ETL F8 (`etl/transformers.py` + `migrar_tenant_sar` ya existen como scaffold, 63 y 64 líneas — falta confirmar si cubren todo `MIGRACION_DATOS_SAR.md`)
+1. Frontend-admin funcional (CRUD tenants, planes, billing Stripe) — solo tiene Login + lista Tenants
+2. Auditar cobertura real del ETL F8 (`etl/transformers.py` + `migrar_tenant_sar` ya existen como scaffold, 63 y 64 líneas — falta confirmar si cubren todo `MIGRACION_DATOS_SAR.md`)
 
 ## Nota de precisión (2026-07-02)
 

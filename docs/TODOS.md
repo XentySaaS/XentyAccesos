@@ -12,10 +12,13 @@
   Estado: pendiente
   Contexto: ISSUE-004, fotos/docs podrían no cargar por URL incorrecta
 
-- [ ] Tests pytest — suite de aislamiento entre tenants
-  Estado: pendiente
-  Contexto: obligatorio per CLAUDE.md §4; existe `tests/test_f0_modelos.py` (58 líneas) pero falta
-  la suite `-k aislamiento` que verifique que datos de un tenant no filtran a otro
+- [x] Tests pytest — suite de aislamiento entre tenants
+  Estado: HECHO (2026-07-02)
+  Contexto: obligatorio per CLAUDE.md §4. Implementado en `tests/test_aislamiento_tenants.py`
+  (8 tests verdes) + fixture `dos_tenants` en `tests/conftest.py`. Corre con `pytest -k aislamiento`.
+  Verifica no-fuga de datos por tenant, padrón EFOS global, resultados 69-B por tenant, cache/storage
+  segregados y ausencia de tablas de tenant en `public`. Requiere `requirements-dev.txt` en el
+  contenedor (ver STATUS.md).
 
 ## Media prioridad
 
@@ -24,9 +27,11 @@
   Contexto: backend completo (`cumplimiento/services.py` importar_efos, `tasks.py` con retry vía
   Celery); falta UI para ver resultados de validación EFOS
 
-- [ ] Frontend-admin funcionalidad completa
-  Estado: pendiente
-  Contexto: actualmente solo Login + Tenants (lista); falta CRUD tenants, planes, billing Stripe
+- [~] Frontend-admin funcionalidad completa
+  Estado: en progreso (2026-07-02)
+  Contexto: Login + lista Tenants + **detalle de tenant** (`TenantDetalle.tsx`: acciones ciclo de
+  vida + checkout Stripe) HECHO. Falta: gestión de Planes (CRUD, requiere backend `PlanAdminViewSet`),
+  otorgar créditos (requiere endpoint), dashboard control-plane, pantalla MFA super-admin
 
 - [ ] Soporte Mesa de Ayuda (Nivel B)
   Estado: pendiente

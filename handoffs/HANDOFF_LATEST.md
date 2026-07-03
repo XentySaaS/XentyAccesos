@@ -28,8 +28,8 @@ Xenty Acceso es un SaaS multitenant de control de accesos a recintos, reconstrui
 | calendario | ✔ | Módulo sidebar, vista de mes, modal de detalle evento/cita |
 | dashboard | ✔ | KPIs + accesos/hora reales + eventos en curso + widget 69-B |
 | config/reportes (F8) | ⚠ | Dashboard/calendario/export OK; ETL sin auditar |
-| tests | ⚠ | **Sigue faltando la suite `-k aislamiento` obligatoria** (bloqueante) |
-| frontend-admin | ⚠ | Solo Login + lista Tenants |
+| tests | ✔/⚠ | **Suite `-k aislamiento` HECHA** (`tests/test_aislamiento_tenants.py`, 8 verdes). Falta ampliar cobertura a otros módulos |
+| frontend-admin | ⚠ | Login + lista Tenants + **detalle de tenant** (billing: acciones ciclo de vida + checkout Stripe). Falta Planes CRUD, créditos, dashboard, MFA super-admin |
 
 ## Trabajo de esta tanda (commits `ed3da00`..`d7718f7`)
 
@@ -80,7 +80,13 @@ Todo lo de abajo está commiteado y pusheado a `origin/main`.
 
 ## Issues abiertos
 
-1. **Suite de tests de aislamiento** (`pytest -k aislamiento`) sigue sin existir — bloqueante para confianza.
+1. ✔ ~~**Suite de tests de aislamiento** (`pytest -k aislamiento`)~~ **RESUELTO (2026-07-02)**:
+   `tests/test_aislamiento_tenants.py` (8 tests verdes) + `tests/conftest.py` (fixture `dos_tenants`).
+   Incluye la verificación de que el padrón 69-B global no filtra entre tenants. **Para correrla**: la
+   imagen backend no trae dev-tools; primero `docker compose exec backend pip install -r
+   requirements-dev.txt`, luego `docker compose exec backend python -m pytest -k aislamiento`
+   (~2.5 min: cada schema de tenant corre todas las migraciones). Pendiente menor: ampliar cobertura
+   de aislamiento a más módulos y considerar añadir dev-deps a la imagen de forma reproducible.
 2. **Mensajería adjunto**: el archivo se sube/guarda, pero UltraMsg lo envía por **URL pública** — requiere configurar `MEDIA_PUBLIC_BASE_URL` en prod; en dev degrada a solo texto.
 3. **Bug preexistente Eventos.tsx**: "Fecha del evento" y "Vigencia del acceso desde" comparten el mismo campo (`form.vigencia_inicio`).
 4. **Estado "advertencia" del escáner** nunca se dispara (el backend no setea `data.nota`).
@@ -88,7 +94,8 @@ Todo lo de abajo está commiteado y pusheado a `origin/main`.
 
 ## Próximos pasos sugeridos
 
-1. Suite `-k aislamiento` (incluye verificar que el padrón 69-B global no filtra entre tenants).
+1. Ampliar la suite de aislamiento a más módulos (empleados/eventos/citas/acceso) y hacer las
+   dev-deps reproducibles en la imagen (o un servicio `test` en compose).
 2. Configurar `MEDIA_PUBLIC_BASE_URL` en prod para adjuntos de WhatsApp.
 3. Auditar ETL F8 vs `docs/MIGRACION_DATOS_SAR.md`.
 4. Completar frontend-admin (control plane).

@@ -54,7 +54,8 @@
 
 ## Funcionalidades transversales pendientes
 
-- Tests pytest: existe `tests/test_f0_modelos.py` (58 líneas); falta suite `-k aislamiento` obligatoria
+- ✔ Tests pytest suite `-k aislamiento` — HECHO (2026-07-02): `tests/test_aislamiento_tenants.py`
+  (8 tests verdes) + `tests/conftest.py`
 - WebAuthn MFA (TOTP ya funciona)
 - CI/CD pipeline
 - Rate limiting: configurado, no verificado en runtime
@@ -62,7 +63,6 @@
 
 ## Prioridad actual
 
-1. Tests de aislamiento entre tenants (obligatorio, bloquea confianza en el resto)
-2. Pantalla de cumplimiento SAT 69-B (backend ya listo)
-3. Auditar cobertura real del ETL F8 contra el modelo de datos origen
-4. Frontend-admin funcional (CRUD tenants, billing)
+1. Pantalla de cumplimiento SAT 69-B (backend ya listo)
+2. Auditar cobertura real del ETL F8 contra el modelo de datos origen
+3. Frontend-admin funcional (CRUD tenants, billing)

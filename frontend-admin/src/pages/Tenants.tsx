@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 
 interface Tenant {
@@ -96,7 +97,9 @@ export default function Tenants() {
                 return (
                   <tr key={t.id} className="border-b border-slate-50 transition-colors hover:bg-slate-50/60">
                     <td className="px-5 py-3 font-medium text-slate-800">
-                      {t.nombre}
+                      <Link to={`/tenants/${t.id}`} className="hover:text-blue-600 hover:underline">
+                        {t.nombre}
+                      </Link>
                       {t.modo_solo_lectura && (
                         <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">solo lectura</span>
                       )}
@@ -112,6 +115,10 @@ export default function Tenants() {
                     <td className="px-5 py-3 tabular text-slate-700">{t.saldo}</td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1.5">
+                        <Link to={`/tenants/${t.id}`}
+                          className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                          Ver
+                        </Link>
                         {t.estado !== "suspendido" && (
                           <button onClick={() => accion(t, "suspender")}
                             className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50">
