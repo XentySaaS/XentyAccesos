@@ -22,6 +22,7 @@ from apps.ocr.views import ExtraerIneView
 from apps.proveedores.views import OnboardingProveedorView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
+from common.health import LivenessView, ReadinessView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
 
 router = DefaultRouter()
@@ -29,6 +30,8 @@ router.register("api/admin/tenants", TenantAdminViewSet, basename="admin-tenant"
 router.register("api/admin/planes", PlanAdminViewSet, basename="admin-plan")
 
 urlpatterns = [
+    path("health/", LivenessView.as_view(), name="health"),
+    path("health/ready/", ReadinessView.as_view(), name="health-ready"),
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
     path("", include("apps.dispositivos.urls")),  # F6: API edge /api/v1/* (HMAC)
     # OCR público — usada en el onboarding antes de tener cuenta

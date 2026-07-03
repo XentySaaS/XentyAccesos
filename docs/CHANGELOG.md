@@ -7,6 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **Health / readiness endpoints** (baseline suite): `GET /health/` (liveness, 200) y
+  `GET /health/ready/` (readiness: verifica DB + Redis, 200/503) en `common/health.py`, montados en
+  data plane y control plane y ruteados por nginx (`/health/`) al backend correspondiente. Sin auth
+  ni contexto de tenant. Verificado: ambos planos y vía nginx → 200 `{db:true, cache:true}`.
 - **Periodo de gracia manual por tenant** (pago externo sin activación automática): campo
   `Tenant.gracia_hasta` (migración `tenants.0002`, SHARED). Mientras `ahora < gracia_hasta` el
   enforcement **no bloquea** por trial vencido ni por suspensión (sí sigue bloqueando cancelado y el

@@ -22,10 +22,13 @@ from apps.proveedores.api import ProveedorLoginView
 from apps.proveedores.views import OnboardingProveedorView
 from apps.soporte.api import SaludConfiguracionView
 from common.auth_api import LogoutView, MeView
+from common.health import LivenessView, ReadinessView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("health/", LivenessView.as_view(), name="health"),
+    path("health/ready/", ReadinessView.as_view(), name="health-ready"),
     path("api/auth/acceso/login/", AccesoLoginView.as_view(), name="acceso-login"),
     path("api/auth/proveedores/login/", ProveedorLoginView.as_view(), name="proveedores-login"),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token-refresh"),

@@ -35,8 +35,8 @@
 - [x] Sentry con scrubbing de PII (`before_send`) en prod
 - [ ] **Logs estructurados con redacción de PII (structlog cableado)** — el processor
       `common/observability.procesador_structlog` existe pero **no está conectado** a `LOGGING`
-- [ ] **Health / readiness endpoint** (`/health`, `/readyz`) — no existe; necesario para deploy,
-      balanceador y monitoreo
+- [x] **Health / readiness endpoint** — HECHO (2026-07-03): `GET /health/` (liveness) y
+      `GET /health/ready/` (DB+Redis) en `common/health.py`, en ambos planos + ruteado por nginx
 - [ ] **Monitoreo de Celery** (estado de tasks/colas, alertas de fallo)
 - [ ] **Notificaciones in-app / centro de notificaciones** (además de email/WhatsApp)
 - [x] Versionado de releases (`Version` model + `docs/CHANGELOG.md`)
