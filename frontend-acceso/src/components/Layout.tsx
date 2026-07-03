@@ -83,10 +83,17 @@ export default function Layout() {
       >
         {/* Logo + toggles */}
         <div className="flex items-center justify-between px-4 py-5">
-          <img
-            src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty"
-            className={mostrarLabels ? "h-6 w-auto" : "mx-auto h-5 w-auto"}
-          />
+          {mostrarLabels ? (
+            <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="h-6 w-auto" />
+          ) : (
+            <div
+              className="mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold text-white"
+              style={{ backgroundColor: "#2563EB" }}
+              title="Xenty"
+            >
+              X
+            </div>
+          )}
           {/* Colapsar: solo escritorio */}
           <button
             onClick={() => setCollapsed((c) => !c)}
