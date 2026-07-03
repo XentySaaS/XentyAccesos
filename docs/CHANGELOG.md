@@ -13,6 +13,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
   modo solo-lectura de escritura). Acción `otorgar-gracia` en `TenantAdminViewSet`
   (`/api/admin/tenants/{id}/otorgar-gracia/`, `dias` 1–365; `dias=0` revoca) + sección "Periodo de
   gracia" en `TenantDetalle.tsx` (otorgar/extender/quitar, muestra días restantes y fecha de vencimiento).
+  Visibilidad: badge "en gracia" en la lista de Tenants y KPI "En gracia" en el dashboard.
 - **frontend-admin — asignar plan a un tenant** (sección Plan en `TenantDetalle.tsx`): selector de
   plan + "Asignar". Backend: acción `asignar-plan` en `TenantAdminViewSet`
   (`/api/admin/tenants/{id}/asignar-plan/`) que fija/quita `tenant.plan` (gobierna módulos y checkout

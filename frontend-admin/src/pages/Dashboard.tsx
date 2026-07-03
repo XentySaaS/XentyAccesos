@@ -9,6 +9,7 @@ interface Tenant {
   estado: string;
   trial_ends_at: string | null;
   modo_solo_lectura: boolean;
+  gracia_hasta: string | null;
   plan: string | null;
   saldo: number;
 }
@@ -51,12 +52,15 @@ export default function Dashboard() {
     const porPlan: Record<string, number> = {};
     let creditos = 0;
     let soloLectura = 0;
+    let enGracia = 0;
+    const ahora = Date.now();
     for (const t of items) {
       porEstado[t.estado] = (porEstado[t.estado] ?? 0) + 1;
       const plan = t.plan ?? "Sin plan";
       porPlan[plan] = (porPlan[plan] ?? 0) + 1;
       creditos += t.saldo;
       if (t.modo_solo_lectura) soloLectura += 1;
+      if (t.gracia_hasta && new Date(t.gracia_hasta).getTime() > ahora) enGracia += 1;
     }
     // Trials que vencen en los próximos 14 días (o ya vencidos), más urgentes primero.
     const trialsPorVencer = items
@@ -64,7 +68,7 @@ export default function Dashboard() {
       .map((t) => ({ t, dias: diasRestantes(t.trial_ends_at)! }))
       .filter((x) => x.dias <= 14)
       .sort((a, b) => a.dias - b.dias);
-    return { porEstado, porPlan, creditos, soloLectura, trialsPorVencer };
+    return { porEstado, porPlan, creditos, soloLectura, enGracia, trialsPorVencer };
   }, [items]);
 
   if (loading) {
@@ -87,9 +91,10 @@ export default function Dashboard() {
       </div>
 
       {/* KPIs principales */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Kpi label="Tenants" valor={total} tono="text-slate-800" />
         <Kpi label="Activos" valor={m.porEstado["activo"] ?? 0} tono="text-green-700" />
+        <Kpi label="En gracia" valor={m.enGracia} tono={m.enGracia ? "text-green-700" : "text-slate-800"} nota="acceso manual vigente" />
         <Kpi label="En solo lectura" valor={m.soloLectura} tono={m.soloLectura ? "text-amber-700" : "text-slate-800"} nota="dunning / retención" />
         <Kpi label="Créditos totales" valor={m.creditos} tono="text-slate-800" />
       </div>

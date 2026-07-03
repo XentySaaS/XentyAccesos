@@ -10,6 +10,7 @@ interface Tenant {
   plan: string | null;
   saldo: number;
   modo_solo_lectura: boolean;
+  gracia_hasta: string | null;
 }
 
 interface Pagina {
@@ -102,6 +103,9 @@ export default function Tenants() {
                       </Link>
                       {t.modo_solo_lectura && (
                         <span className="ml-2 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">solo lectura</span>
+                      )}
+                      {t.gracia_hasta && new Date(t.gracia_hasta) > new Date() && (
+                        <span className="ml-2 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">en gracia</span>
                       )}
                     </td>
                     <td className="px-5 py-3 font-mono text-xs text-slate-500">{t.schema_name}</td>
