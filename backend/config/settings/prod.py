@@ -1,7 +1,9 @@
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
-SECURE_SSL_REDIRECT = True                       # fuerza HTTPS (security.W008)
+# HTTPS forzado en prod (security.W008). Gate por env: el superadmin-backend en dev corre sobre
+# HTTP dentro de Docker y debe poder desactivarlo (SECURE_SSL_REDIRECT=False), sin debilitar prod.
+SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)  # noqa: F405
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True                        # elegible para la preload list (security.W021)

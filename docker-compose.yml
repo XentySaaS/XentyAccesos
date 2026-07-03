@@ -52,6 +52,7 @@ services:
     command: python manage.py runserver 0.0.0.0:8000 --noreload
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.control_plane
+      SECURE_SSL_REDIRECT: "False"   # dev: superadmin-backend corre sobre HTTP dentro de Docker
     env_file: [.env]
     volumes: ["./backend:/app", "/app/.venv"]
     ports: ["8003:8000"]
