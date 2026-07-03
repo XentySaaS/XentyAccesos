@@ -7,6 +7,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **frontend-admin — MFA del super-admin** (`frontend-admin/src/pages/Seguridad.tsx`, ruta
+  `/seguridad`): enrolar/activar TOTP (muestra clave secreta + URI `otpauth` para la app
+  autenticadora) y estado actual. El **login ahora maneja la sesión MFA-pendiente**: si el token
+  trae `mfa="pending"` pide el código de 6 dígitos y llama a `/api/admin/mfa/verificar/` antes de
+  entrar (`src/lib/jwt.ts` decodifica el claim). Backend: `MeView` (`common/auth_api.py`) ahora
+  incluye `mfa_habilitado` (aditivo, aplica a los tres contextos).
 - **frontend-admin — dashboard de control-plane** (`frontend-admin/src/pages/Dashboard.tsx`, ruta
   `/dashboard`, ahora landing tras login): KPIs (total tenants, activos, en solo lectura, créditos
   totales), distribución por estado y por plan (barras CSS), y lista de trials por vencer (14 días)

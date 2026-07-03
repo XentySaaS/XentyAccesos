@@ -29,7 +29,7 @@ Xenty Acceso es un SaaS multitenant de control de accesos a recintos, reconstrui
 | dashboard | ✔ | KPIs + accesos/hora reales + eventos en curso + widget 69-B |
 | config/reportes (F8) | ⚠ | Dashboard/calendario/export OK; ETL sin auditar |
 | tests | ✔/⚠ | **Suite `-k aislamiento` HECHA** (`tests/test_aislamiento_tenants.py`, 8 verdes). Falta ampliar cobertura a otros módulos |
-| frontend-admin | ⚠ | Login + **dashboard control-plane** (KPIs/estados/planes/trials) + lista Tenants + **detalle de tenant** (billing: acciones ciclo de vida + checkout Stripe). Falta Planes CRUD, créditos, MFA super-admin |
+| frontend-admin | ⚠ | Login (**con paso MFA**) + **dashboard** + lista Tenants + **detalle de tenant** (billing/checkout) + **Seguridad/MFA TOTP**. Falta Planes CRUD, créditos |
 
 ## Trabajo de esta tanda (commits `ed3da00`..`d7718f7`)
 

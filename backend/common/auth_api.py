@@ -54,6 +54,7 @@ class MeView(APIView):
                 "nombre": getattr(u, "nombre", None),
                 "ctx": (request.auth or {}).get("ctx"),
                 "rol": getattr(u, "rol", None),
+                "mfa_habilitado": bool(getattr(u, "mfa_habilitado", False)),
             }
         )
 

@@ -29,10 +29,10 @@
 
 - [~] Frontend-admin funcionalidad completa
   Estado: en progreso (2026-07-02)
-  Contexto: Login + **dashboard control-plane** (`Dashboard.tsx`: KPIs/estados/planes/trials) +
-  lista Tenants + **detalle de tenant** (`TenantDetalle.tsx`: acciones ciclo de vida + checkout
-  Stripe) HECHO. Falta: gestión de Planes (CRUD, requiere backend `PlanAdminViewSet`), otorgar
-  créditos (requiere endpoint), pantalla MFA super-admin
+  Contexto: Login (**con paso MFA**) + **dashboard** (`Dashboard.tsx`) + lista Tenants + **detalle
+  de tenant** (`TenantDetalle.tsx`: billing/checkout) + **Seguridad/MFA TOTP** (`Seguridad.tsx`)
+  HECHO. Falta: gestión de Planes (CRUD, requiere backend `PlanAdminViewSet`), otorgar créditos
+  (requiere endpoint)
 
 - [ ] Soporte Mesa de Ayuda (Nivel B)
   Estado: pendiente

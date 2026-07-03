@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Tenants from "./pages/Tenants";
 import TenantDetalle from "./pages/TenantDetalle";
+import Seguridad from "./pages/Seguridad";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/tenants", element: <Tenants /> },
       { path: "/tenants/:id", element: <TenantDetalle /> },
+      { path: "/seguridad", element: <Seguridad /> },
     ],
   },
 ]);
