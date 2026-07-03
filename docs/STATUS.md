@@ -49,7 +49,7 @@
 | JWT blacklist + rotación | ✔ |
 | Fernet QR (jti+exp+tenant) | ✔ |
 | PII cifrada (ine_data, curp) | ✔ |
-| Rate limiting | ⚠ Configurado en settings, no verificado |
+| Rate limiting | ✔ Login (10/m/IP), signup, onboarding, edge, ocr; `Ratelimited`→429 (handler DRF). Verificado en runtime (11º login → 429) |
 | MFA TOTP | ✔ Enrolamiento + activación + verificación |
 | WebAuthn | 🔲 |
 

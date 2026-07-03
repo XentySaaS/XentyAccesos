@@ -1,6 +1,8 @@
 """Vistas de autenticación compartidas por los dos contextos del tenant."""
 from __future__ import annotations
 
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -16,6 +18,9 @@ class _CredencialesSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, trim_whitespace=False)
 
 
+# Rate limit anti fuerza bruta (A4): las tres vistas de login lo heredan → un bucket por IP.
+# Ratelimited se convierte a 429 en common.exceptions.drf_exception_handler.
+@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
 class BaseLoginView(APIView):
     """Login por email/contraseña. Las subclases fijan ``model`` y ``ctx``.
 

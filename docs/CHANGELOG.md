@@ -57,6 +57,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 - NAV_ITEMS filtrado por rol en Layout.tsx
 
 ### Corregido
+- **Hardening — rate limiting de login + semántica 429** (REMEDIACION §A4): los tres logins (acceso,
+  proveedores, super-admin) ahora tienen rate limit (`10/m` por IP, heredado de `BaseLoginView`);
+  antes no tenían ninguno (fuerza bruta). Nuevo `EXCEPTION_HANDLER` (`common/exceptions.py`) convierte
+  `Ratelimited` en **429** en vez del 403 genérico, para todos los endpoints con límite
+  (login/signup/onboarding/edge/ocr). Verificado en runtime: el 11º intento de login → 429.
 - **MFA admin — QR real en lugar de solo el URI**: `EnrolarTOTPView` (`common/mfa_api.py`) ahora
   devuelve `qr` (PNG en base64/data-URI generado en el servidor con `qrcode`, sin exponer el secreto
   a servicios externos) y `Seguridad.tsx` lo renderiza. Antes el texto decía "escanea el URI" pero

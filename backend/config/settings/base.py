@@ -143,6 +143,8 @@ REST_FRAMEWORK = {
         "common.permissions.EmailVerificado",     # §6 slot 5: email no verificado -> 403
     ),
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
+    # Convierte Ratelimited → 429 (REMEDIACION §A4); el resto usa el manejo estándar de DRF.
+    "EXCEPTION_HANDLER": "common.exceptions.drf_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
