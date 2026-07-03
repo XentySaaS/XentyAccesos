@@ -46,6 +46,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 - NAV_ITEMS filtrado por rol en Layout.tsx
 
 ### Corregido
+- **MFA admin — QR real en lugar de solo el URI**: `EnrolarTOTPView` (`common/mfa_api.py`) ahora
+  devuelve `qr` (PNG en base64/data-URI generado en el servidor con `qrcode`, sin exponer el secreto
+  a servicios externos) y `Seguridad.tsx` lo renderiza. Antes el texto decía "escanea el URI" pero
+  no había código escaneable.
 - `CitaViewSet` crash en startup: `queryset = Cita.objects.none()` para basename DRF router (`4be3b6d`)
 - `AuditViewSetMixin` ValueError con CuentaProveedor: isinstance check en `registrar()` (`config/services.py`)
 - `FotoCirculo` no actualizaba imagen al cambiar foto: `useEffect(() => setErr(false), [foto])`

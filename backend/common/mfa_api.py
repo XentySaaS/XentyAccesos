@@ -7,6 +7,10 @@ Flujo:
 """
 from __future__ import annotations
 
+import base64
+import io
+
+import qrcode
 from rest_framework import serializers, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -18,6 +22,15 @@ from common.mfa import generar_secreto, uri_aprovisionamiento, verificar_totp
 
 def _ctx_de(request) -> str:
     return (request.auth or {}).get("ctx", "")
+
+
+def _qr_data_uri(texto: str) -> str:
+    """PNG en base64 (data URI) del QR. Se genera en el servidor: el secreto TOTP nunca se
+    envía a un servicio de QR externo."""
+    img = qrcode.make(texto)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 class _CodigoSerializer(serializers.Serializer):
@@ -36,7 +49,8 @@ class EnrolarTOTPView(APIView):
         secreto = generar_secreto()
         user.mfa_totp_secret = secreto
         user.save(update_fields=["mfa_totp_secret"])
-        return Response({"secret": secreto, "otpauth_uri": uri_aprovisionamiento(secreto, user.email)})
+        uri = uri_aprovisionamiento(secreto, user.email)
+        return Response({"secret": secreto, "otpauth_uri": uri, "qr": _qr_data_uri(uri)})
 
 
 class ActivarTOTPView(APIView):

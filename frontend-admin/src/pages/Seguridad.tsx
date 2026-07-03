@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 
 interface Me { email?: string; mfa_habilitado?: boolean; }
-interface Enrolamiento { secret: string; otpauth_uri: string; }
+interface Enrolamiento { secret: string; otpauth_uri: string; qr: string; }
 
 const INK = "#0F1B2D";
 
@@ -117,14 +117,22 @@ export default function Seguridad() {
               <li>
                 <span className="font-medium text-slate-700">1. Agrega la clave a tu app autenticadora</span>
                 <p className="mt-1 text-xs text-slate-400">
-                  Escanea el URI o ingresa manualmente esta clave secreta (Google Authenticator, Authy, 1Password…).
+                  Escanea este código QR con tu app (Google Authenticator, Authy, 1Password…), o
+                  ingresa manualmente la clave secreta.
                 </p>
-                <code className="mt-2 block break-all rounded-lg bg-slate-50 px-3 py-2 font-mono text-sm tracking-wider text-slate-800 ring-1 ring-slate-100">
-                  {enrol.secret}
-                </code>
-                <a href={enrol.otpauth_uri} className="mt-1.5 block break-all text-xs text-blue-600 hover:underline">
-                  {enrol.otpauth_uri}
-                </a>
+                <div className="mt-3 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                  <img
+                    src={enrol.qr}
+                    alt="Código QR para configurar el segundo factor"
+                    className="h-40 w-40 rounded-lg bg-white p-2 ring-1 ring-slate-100"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Clave secreta</p>
+                    <code className="mt-1 block break-all rounded-lg bg-slate-50 px-3 py-2 font-mono text-sm tracking-wider text-slate-800 ring-1 ring-slate-100">
+                      {enrol.secret}
+                    </code>
+                  </div>
+                </div>
               </li>
               <li>
                 <span className="font-medium text-slate-700">2. Ingresa el código de 6 dígitos que genera la app</span>
