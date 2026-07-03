@@ -1,65 +1,84 @@
 # Tareas — Xenty Acceso
 
-> Actualizado: 2026-07-02
+> Actualizado: 2026-07-03
+>
+> Reglas: `[x]` hecho · `[ ]` pendiente · `[~]` descartado/fuera de alcance. La sección **Baseline
+> de la suite** son requisitos transversales que **todo producto Xenty** (Fiscal, Nómina, Acceso)
+> debe cumplir; el resto es específico de Acceso.
 
-## Alta prioridad
+---
 
-- [ ] Verificar foto empleado end-to-end (fix ValueError aplicado, confirmar flujo completo)
-  Estado: pendiente
-  Contexto: ISSUE-003, fix en config/services.py + Empleados.tsx
+## Baseline de la suite Xenty (transversal — todo producto debe tenerlo)
 
-- [ ] Confirmar Nginx sirve /media/ en dev
-  Estado: pendiente
-  Contexto: ISSUE-004, fotos/docs podrían no cargar por URL incorrecta
+### Comercial / control plane
+- [x] Billing Stripe (suscripción + paquetes de créditos + webhooks, modo sandbox)
+- [x] Créditos con ledger append-only (`MovimientoCredito` / `SaldoCreditos`)
+- [x] Panel super-admin (control plane): tenants, planes, detalle, gracia, checkout
+- [x] Onboarding self-service (`/api/signup`) + landing pública separada
+- [ ] **Mesa de Ayuda (Nivel B) completa** — hoy solo `SaludConfiguracionView` (stub). Falta la
+      integración real (registro/consulta de tickets, credenciales por tenant cifradas). *Requisito
+      explícito del playbook §5.*
 
-- [x] Tests pytest — suite de aislamiento entre tenants
-  Estado: HECHO (2026-07-02)
-  Contexto: obligatorio per CLAUDE.md §4. Implementado en `tests/test_aislamiento_tenants.py`
-  (8 tests verdes) + fixture `dos_tenants` en `tests/conftest.py`. Corre con `pytest -k aislamiento`.
-  Verifica no-fuga de datos por tenant, padrón EFOS global, resultados 69-B por tenant, cache/storage
-  segregados y ausencia de tablas de tenant en `public`. Requiere `requirements-dev.txt` en el
-  contenedor (ver STATUS.md).
+### Identidad y seguridad
+- [x] MFA TOTP (enrolar/activar/verificar) en control plane y tenant
+- [ ] **MFA WebAuthn** — el playbook define MFA = TOTP **+ WebAuthn**; solo TOTP está hecho
+- [x] Roles + permisos granulares (`RequiereRol` / `PermisoUsuario`)
+- [x] Rate limiting (login, signup, onboarding, edge, ocr) + `Ratelimited`→429
+- [x] Aislamiento multitenant probado (suite `pytest -k aislamiento`)
+- [x] Passwords Argon2id · JWT blacklist+rotación · PII cifrada (Fernet)
+- [x] Headers de seguridad en prod (`check --deploy` limpio)
 
-## Media prioridad
+### Observabilidad y operación
+- [x] Sentry con scrubbing de PII (`before_send`) en prod
+- [ ] **Logs estructurados con redacción de PII (structlog cableado)** — el processor
+      `common/observability.procesador_structlog` existe pero **no está conectado** a `LOGGING`
+- [ ] **Health / readiness endpoint** (`/health`, `/readyz`) — no existe; necesario para deploy,
+      balanceador y monitoreo
+- [ ] **Monitoreo de Celery** (estado de tasks/colas, alertas de fallo)
+- [x] Versionado de releases (`Version` model + `docs/CHANGELOG.md`)
 
-- [ ] Cumplimiento SAT 69-B: pantalla en frontend-acceso
-  Estado: pendiente
-  Contexto: backend completo (`cumplimiento/services.py` importar_efos, `tasks.py` con retry vía
-  Celery); falta UI para ver resultados de validación EFOS
+### Cumplimiento y datos (LFPDPPP / privacidad)
+- [x] PII cifrada en reposo + archivos en disco privado por schema
+- [ ] **Derechos ARCO / portabilidad**: exportar y **borrar** datos del titular a solicitud
+- [ ] **Aviso de privacidad + Términos y condiciones** (legal, aceptación en onboarding)
+- [ ] **Backups y política de retención** (respaldo por schema + restauración probada)
 
-- [x] Frontend-admin funcionalidad completa
-  Estado: HECHO (2026-07-02)
-  Contexto: Login (con paso MFA) + dashboard (`Dashboard.tsx`) + Tenants + detalle de tenant
-  (`TenantDetalle.tsx`: billing/checkout + créditos) + Planes CRUD (`Planes.tsx` +
-  `PlanAdminViewSet`) + Seguridad/MFA TOTP (`Seguridad.tsx`). Alcance de control plane completo.
-  Nota: verificación visual autenticada pendiente (requiere login super-admin en dev)
+### Entrega
+- [ ] **CI/CD pipeline** (lint + tests + build + deploy)
+- [ ] Deploy a producción (Nginx prod, secrets por entorno, `DEBUG=False`)
+- [ ] `requirements-dev.txt` reproducible en la imagen (hoy `pytest` se instala a mano)
 
-- [ ] Soporte Mesa de Ayuda (Nivel B)
-  Estado: pendiente
-  Contexto: SaludConfiguracionView existe, falta integración completa
+---
 
-- [x] Rate limiting verificar en endpoints críticos
-  Estado: HECHO (2026-07-03) — login (10/m/IP) + Ratelimited→429 verificado en runtime (11º intento → 429)
+## Cierre para producción (específico de Acceso)
 
-## Baja prioridad
+- [ ] Terminar hardening: cablear structlog (PII en logs) + descarga `/media/` con policy de
+      pertenencia (evitar servir archivos privados por URL directa) — ISSUE-004
+- [ ] Verificar foto empleado end-to-end (fix ValueError aplicado) — ISSUE-003
+- [ ] QA E2E + verificación visual autenticada de frontend-admin (requiere login super-admin en dev)
 
-- [~] F8 ETL MySQL→Postgres — DESCARTADO
-  Estado: fuera de alcance
-  Contexto: el sistema original solo tuvo datos de prueba → no hay migración. `etl/` y
-  `MIGRACION_DATOS_SAR.md` quedan como referencia. Este build es la implementación final.
+---
 
-- [ ] WebAuthn MFA
-  Estado: pendiente
-  Contexto: TOTP funciona; WebAuthn es complementario
+## Hecho recientemente (reconciliación)
 
-- [ ] Stripe billing integration
-  Estado: pendiente
-  Contexto: frontend-admin + control plane; Stripe SDK en requirements
+- [x] Suite de aislamiento entre tenants (`pytest -k aislamiento`, 8 verdes) — 2026-07-02
+- [x] Pantalla de cumplimiento SAT 69-B en frontend-acceso (`Cumplimiento.tsx`) — ya existía
+- [x] Frontend-admin completo (dashboard, detalle+billing, planes CRUD, MFA+QR, créditos, plan, gracia)
+- [x] Rate limiting verificado en runtime (11º login → 429) — 2026-07-03
 
-- [ ] CI/CD pipeline
-  Estado: pendiente
-  Contexto: sin GitHub Actions ni similar configurado
+---
 
-- [ ] PROMPT_CLAUDE_DESIGN_SAR.md
-  Estado: pendiente
-  Contexto: referenciado en docs pero nunca creado
+## Deuda menor / bugs conocidos
+
+- [ ] `Eventos.tsx`: "Fecha del evento" y "Vigencia desde" comparten `form.vigencia_inicio`
+- [ ] Estado "advertencia" del escáner nunca se dispara (backend no setea `data.nota`)
+- [ ] `PROMPT_CLAUDE_DESIGN_SAR.md` — referenciado en docs pero nunca creado
+- [ ] Adjunto WhatsApp por URL pública → requiere `MEDIA_PUBLIC_BASE_URL` en prod
+
+---
+
+## Descartado / fuera de alcance
+
+- [~] **ETL MySQL→Postgres + migración de tenants** — el sistema original solo tuvo datos de prueba;
+      no hay nada real que migrar. `backend/etl/` y `MIGRACION_DATOS_SAR.md` quedan como referencia.
+      Este build es la implementación final (go-live con tenants nuevos vía onboarding).
