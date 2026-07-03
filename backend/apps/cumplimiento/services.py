@@ -79,7 +79,10 @@ def importar_efos(contenido: bytes | str) -> dict:
     idx_sit = next(j for c, j in cols.items() if c.startswith("situacion"))
     idx_nom = next((j for c, j in cols.items() if c.startswith("nombre")), None)
 
-    creados = actualizados = 0
+    from django.utils import timezone
+
+    ahora = timezone.now()
+    objetos: list[SatEfo] = []
     vistos: set[str] = set()
     for fila in filas[idx_header + 1:]:
         if len(fila) <= idx_rfc:
@@ -88,15 +91,20 @@ def importar_efos(contenido: bytes | str) -> dict:
         if not rfc or not re.fullmatch(r"[A-ZÑ&0-9]{10,13}", rfc) or rfc in vistos:
             continue
         vistos.add(rfc)
-        situacion = (fila[idx_sit] or "").strip() if len(fila) > idx_sit else ""
+        situacion = ((fila[idx_sit] or "").strip() if len(fila) > idx_sit else "")[:60]
         nombre = (fila[idx_nom] or "").strip() if idx_nom is not None and len(fila) > idx_nom else ""
-        _, creado = SatEfo.objects.update_or_create(
-            rfc=rfc, defaults={"situacion": situacion, "nombre": nombre}
-        )
-        creados += int(creado)
-        actualizados += int(not creado)
+        objetos.append(SatEfo(rfc=rfc, situacion=situacion, nombre=nombre, creado=ahora, actualizado=ahora))
 
-    return {"creados": creados, "actualizados": actualizados, "total": len(vistos)}
+    # Upsert masivo (INSERT ... ON CONFLICT): ~14k filas en pocos statements en vez de 28k queries.
+    # bulk_create no dispara auto_now, por eso fijamos actualizado explícitamente (para el dashboard).
+    SatEfo.objects.bulk_create(
+        objetos,
+        update_conflicts=True,
+        unique_fields=["rfc"],
+        update_fields=["nombre", "situacion", "actualizado"],
+        batch_size=1000,
+    )
+    return {"total": len(objetos)}
 
 
 def validar_69b(proveedor, tipo: int = 0) -> ResultadoLista69b:

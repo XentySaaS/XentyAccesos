@@ -9,8 +9,9 @@ from django.db import models
 
 class SatEfo(models.Model):  # sat_efos (espejo del CSV oficial)
     rfc = models.CharField(max_length=13, unique=True, db_index=True)
-    nombre = models.CharField(max_length=255, null=True, blank=True)
-    situacion = models.CharField(max_length=40)  # Presunto|Definitivo|Desvirtuado|Sentencia Favorable
+    # La razón social del SAT puede superar los 500 caracteres → TextField sin límite fijo.
+    nombre = models.TextField(null=True, blank=True)
+    situacion = models.CharField(max_length=60)  # Presunto|Definitivo|Desvirtuado|Sentencia Favorable
     meta = models.JSONField(null=True, blank=True)
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
