@@ -18,7 +18,7 @@ export default function Login() {
     try {
       const { data } = await api.post("/api/admin/login/", { email, password });
       setTokens(data.access, data.refresh);
-      navigate("/tenants");
+      navigate("/dashboard");
     } catch {
       setError("Correo o contraseña incorrectos.");
     } finally {

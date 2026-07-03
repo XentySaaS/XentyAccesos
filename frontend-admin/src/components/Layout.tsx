@@ -6,6 +6,7 @@ import { useAuth } from "../store/auth";
 interface Me { nombre?: string; email?: string; rol?: string; }
 
 const NAV_ITEMS: { to: string; label: string }[] = [
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/tenants", label: "Tenants" },
 ];
 
@@ -55,7 +56,8 @@ export default function Layout() {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
           {NAV_ITEMS.map((item) => {
-            const active = location.pathname === item.to;
+            const active =
+              location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
             return (
               <Link
                 key={item.to}
@@ -148,6 +150,7 @@ function Clock() {
 function NavIcon({ label, active }: { label: string; active: boolean }) {
   const cls = `h-4 w-4 flex-shrink-0 ${active ? "text-white" : "text-slate-400"}`;
   const icons: Record<string, JSX.Element> = {
+    "Dashboard": <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>,
     "Tenants": <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><line x1="9" y1="9" x2="9" y2="9"/><line x1="9" y1="13" x2="9" y2="13"/></svg>,
   };
   return icons[label] ?? <span className={`h-4 w-4 ${cls}`} />;

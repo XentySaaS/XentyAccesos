@@ -7,6 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **frontend-admin — dashboard de control-plane** (`frontend-admin/src/pages/Dashboard.tsx`, ruta
+  `/dashboard`, ahora landing tras login): KPIs (total tenants, activos, en solo lectura, créditos
+  totales), distribución por estado y por plan (barras CSS), y lista de trials por vencer (14 días)
+  con enlace al detalle. Solo frontend; consume `/api/admin/tenants/`.
 - **frontend-admin — detalle de tenant** (`frontend-admin/src/pages/TenantDetalle.tsx`, ruta
   `/tenants/:id`): ficha con estado/plan/créditos/fin-de-trial, acciones de ciclo de vida
   (suspender/activar/cancelar) y generación de checkout de suscripción Stripe. La lista de Tenants
