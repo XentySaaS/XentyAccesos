@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from django.conf import settings
+from django.db.models import ProtectedError
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
-from rest_framework import serializers, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -105,6 +106,33 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"])
     def cancelar(self, request, pk=None):
         return self._accion(billing.cancelar)
+
+
+class PlanAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plan
+        fields = ["id", "clave", "nombre", "descripcion", "precio_mensual",
+                  "stripe_price_id", "modulos", "limites", "activo"]
+
+
+class PlanAdminViewSet(viewsets.ModelViewSet):
+    """CRUD de planes comerciales (super-admin). ``clave`` es estable: no reasignar a la ligera."""
+
+    queryset = Plan.objects.all().order_by("precio_mensual", "id")
+    serializer_class = PlanAdminSerializer
+    permission_classes = [IsAuthenticated, MFASesionCompleta, EsSuperAdmin]
+    filterset_fields = ["activo"]
+
+    def destroy(self, request, *args, **kwargs):
+        # Suscripcion.plan es PROTECT: si hay suscripciones, no se puede borrar → 409 con guía.
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "No se puede eliminar: hay suscripciones que usan este plan. "
+                           "Desactívalo en su lugar."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
 
 class CrearCheckoutView(APIView):

@@ -11,6 +11,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.tenants.admin_api import (
     CrearCheckoutView,
+    PlanAdminViewSet,
     SignupView,
     SuperAdminLoginView,
     TenantAdminViewSet,
@@ -25,6 +26,7 @@ from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
 
 router = DefaultRouter()
 router.register("api/admin/tenants", TenantAdminViewSet, basename="admin-tenant")
+router.register("api/admin/planes", PlanAdminViewSet, basename="admin-plan")
 
 urlpatterns = [
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),

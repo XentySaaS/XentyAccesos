@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Tenants from "./pages/Tenants";
 import TenantDetalle from "./pages/TenantDetalle";
+import Planes from "./pages/Planes";
 import Seguridad from "./pages/Seguridad";
 import { useAuth } from "./store/auth";
 
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
       { path: "/dashboard", element: <Dashboard /> },
       { path: "/tenants", element: <Tenants /> },
       { path: "/tenants/:id", element: <TenantDetalle /> },
+      { path: "/planes", element: <Planes /> },
       { path: "/seguridad", element: <Seguridad /> },
     ],
   },

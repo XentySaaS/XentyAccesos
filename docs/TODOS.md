@@ -30,9 +30,9 @@
 - [~] Frontend-admin funcionalidad completa
   Estado: en progreso (2026-07-02)
   Contexto: Login (**con paso MFA**) + **dashboard** (`Dashboard.tsx`) + lista Tenants + **detalle
-  de tenant** (`TenantDetalle.tsx`: billing/checkout) + **Seguridad/MFA TOTP** (`Seguridad.tsx`)
-  HECHO. Falta: gestión de Planes (CRUD, requiere backend `PlanAdminViewSet`), otorgar créditos
-  (requiere endpoint)
+  de tenant** (`TenantDetalle.tsx`: billing/checkout) + **Planes CRUD** (`Planes.tsx` +
+  `PlanAdminViewSet`) + **Seguridad/MFA TOTP** (`Seguridad.tsx`) HECHO. Falta: otorgar créditos a
+  un tenant (requiere endpoint que llame a `billing.acreditar_creditos`)
 
 - [ ] Soporte Mesa de Ayuda (Nivel B)
   Estado: pendiente
