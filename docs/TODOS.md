@@ -77,6 +77,14 @@
 
 ---
 
+## Diferido — fuera de alcance por ahora (revisar después)
+
+- [~] **Facturación CFDI al cliente por su suscripción** — decidir si lo emite **XentyFiscal** (suite)
+      o cada producto el suyo. Fuera de alcance *de momento*.
+- [~] **Panel de estado / status page público** — fuera de alcance *de momento*.
+
+---
+
 ## Descartado / fuera de alcance
 
 - [~] **ETL MySQL→Postgres + migración de tenants** — el sistema original solo tuvo datos de prueba;
