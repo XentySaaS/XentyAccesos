@@ -57,6 +57,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 - NAV_ITEMS filtrado por rol en Layout.tsx
 
 ### Corregido
+- **Hardening — `/media` en dev ya no expone archivos privados (REMEDIACION §C5 / ISSUE-004)**: el
+  serve de `/media` en dev bloquea los directorios con PII/documentos (`ine`, `repse`, `sua`,
+  `documentos`) y solo sirve no-sensibles (fotos). Los privados se descargan por endpoints
+  autenticados con policy de pertenencia (`documentos.download`, `proveedores.documento`). En prod
+  (`DEBUG=False`) Django no sirve `/media` en absoluto. Verificado: foto→200, INE→404.
 - **Hardening — redacción de PII en logs (REMEDIACION §A7)**: se cableó `LOGGING` con
   `common.observability.RedaccionPIIFilter`, que borra RFC/CURP/email de cada mensaje antes de
   emitirlo (el redactor existía pero no estaba conectado; la app usa `logging` estándar, no structlog).

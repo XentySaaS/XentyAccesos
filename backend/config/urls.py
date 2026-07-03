@@ -12,9 +12,8 @@ Autenticación de los dos contextos (F0.2):
 F1+ monta las apps de negocio bajo /api/.
 """
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.api import AccesoLoginView
@@ -53,6 +52,18 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    # Solo campos no-sensibles (p. ej. Empleado.foto) se sirven así; INE/RESPE/SUA/docs
-    # se descargan por acciones autenticadas (ver apps.documentos, apps.proveedores).
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # En dev servimos /media SOLO para archivos no sensibles (p. ej. fotos). Los directorios con
+    # PII/documentos (INE, REPSE, SUA, docs de empleado) NO se exponen aquí: se descargan por
+    # acciones autenticadas con policy de pertenencia (apps.documentos, apps.proveedores).
+    # REMEDIACION §C5. En prod (DEBUG=False) /media no lo sirve Django en absoluto.
+    from django.http import Http404
+    from django.views.static import serve as _serve
+
+    _MEDIA_PRIVADO = ("/ine/", "/repse/", "/sua/", "/documentos/")
+
+    def _media_dev(request, path):
+        if any(seg in ("/" + path.lower()) for seg in _MEDIA_PRIVADO):
+            raise Http404("Archivo privado: usa el endpoint autenticado de descarga.")
+        return _serve(request, path, document_root=settings.MEDIA_ROOT)
+
+    urlpatterns += [re_path(r"^media/(?P<path>.*)$", _media_dev)]

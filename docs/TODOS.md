@@ -56,8 +56,11 @@
 
 ## Cierre para producción (específico de Acceso)
 
-- [ ] Terminar hardening: cablear structlog (PII en logs) + descarga `/media/` con policy de
-      pertenencia (evitar servir archivos privados por URL directa) — ISSUE-004
+- [x] Terminar hardening de logs y `/media` — HECHO (2026-07-03): redacción PII en logs (`RedaccionPIIFilter`
+      cableado en `LOGGING`) + `/media` en dev ya no expone privados (INE/REPSE/SUA/docs bloqueados;
+      privados por endpoint autenticado con ownership). ISSUE-004 cerrado en su parte de seguridad.
+- [ ] Serving de fotos en **producción** (deploy): con `DEBUG=False` Django no sirve `/media`;
+      definir cómo se sirven las fotos en prod (nginx desde disco por schema, o endpoint autenticado)
 - [ ] Verificar foto empleado end-to-end (fix ValueError aplicado) — ISSUE-003
 - [ ] QA E2E + verificación visual autenticada de frontend-admin (requiere login super-admin en dev)
 

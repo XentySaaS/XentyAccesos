@@ -57,7 +57,7 @@
 
 1. ✔ ~~Tests pytest — suite de aislamiento entre tenants~~ **HECHO (2026-07-02)**: `tests/test_aislamiento_tenants.py` (8 tests, todos verdes) + fixture `dos_tenants` en `tests/conftest.py`. Corre con `pytest -k aislamiento`. Cubre: fuga de datos por tenant (Usuario/Proveedor), padrón EFOS global visible desde todos, resultados 69-B por tenant, cache y storage segregados por schema, y ausencia estructural de tablas de tenant en `public`.
 2. ✔ ~~Pantalla de cumplimiento SAT 69-B en frontend-acceso~~ **YA EXISTE**: `frontend-acceso/src/pages/Cumplimiento.tsx` (162 líneas), cableada en Layout/Dashboard/router/Proveedores.
-3. Verificar Nginx sirve `/media/` en dev
+3. ✔ ~~Verificar `/media/` en dev~~ **HECHO (2026-07-03)**: en dev se sirve `/media` solo para no-sensibles (fotos); INE/REPSE/SUA/docs bloqueados (se bajan por endpoint autenticado). Pendiente **deploy**: estrategia de serving de fotos en prod (hoy `/media` no lo sirve Django con `DEBUG=False`).
 
 > **Correr los tests:** la imagen backend solo instala `requirements.txt` (prod, sin dev-tools por
 > diseño). Instalar las dev-deps una vez en el contenedor: `docker compose exec backend pip install
