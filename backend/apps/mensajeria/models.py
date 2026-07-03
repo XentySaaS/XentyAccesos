@@ -47,6 +47,25 @@ class DestinatarioMensaje(models.Model):  # message_recipients
     estado = models.CharField(
         max_length=10, choices=Estado.choices, default=Estado.PENDIENTE, db_index=True
     )  # FIX: índice para seguimiento de progreso
-    external_id = models.CharField(max_length=64, null=True, blank=True)  # id de UltraMsg
+    external_id = models.CharField(max_length=64, null=True, blank=True)  # id del proveedor
+    proveedor = models.CharField(max_length=20, null=True, blank=True)  # qué proveedor lo envió
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
+
+
+class RegistroEnvio(models.Model):
+    """Ledger append-only de notificaciones sueltas (ARQUITECTURA_CONNECTOR §9).
+
+    Trazabilidad de qué proveedor atendió cada notificación y su resultado, para failover/auditoría.
+    No guarda el teléfono completo (PII): solo una máscara (``****1234``).
+    """
+
+    destino_mascara = models.CharField(max_length=24)
+    proveedor = models.CharField(max_length=20)
+    ok = models.BooleanField(default=False)
+    external_id = models.CharField(max_length=64, null=True, blank=True)
+    error = models.TextField(null=True, blank=True)
+    creado = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-creado"]

@@ -6,6 +6,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 
 ## [Sin release] — 2026-07-02
 
+### Agregado
+- **Comunicaciones F-A — seam de mensajería failover-ready** (ARQUITECTURA_CONNECTOR §15): se
+  introduce la abstracción `ProveedorMensajeria` (`apps/mensajeria/proveedores.py`), un
+  **circuit breaker** por proveedor y por tenant (`breaker.py`, vía cache Redis prefijada por schema)
+  y un **Router** único (`router.py`) con reintentos, failover y **ledger sin PII** (`RegistroEnvio`,
+  máscara `****1234`). `notificar_whatsapp` y `procesar_envio` ahora pasan por el Router; su
+  comportamiento externo no cambia (solo UltraMsg/Sandbox por ahora). Deja todo listo para enchufar
+  el Connector (XCC) como otro proveedor sin tocar el dominio. Verificado (5 tests: sandbox, envío +
+  ledger, failover, breaker, best-effort). Migración `mensajeria.0003` (tenant).
+
 ### Corregido
 - **Sidebar móvil = drawer flotante (los 3 paneles)**: en móvil (<768px) el sidebar ya no empuja ni
   encoge el contenido; ahora es un drawer superpuesto con backdrop, abierto por un botón hamburguesa

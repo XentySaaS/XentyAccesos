@@ -1,79 +1,29 @@
-"""WhatsApp (UltraMsg) tras interfaz, segmentación de campañas y procesamiento de envío.
+"""Mensajería: segmentación de campañas y procesamiento de envío.
 
-Credenciales por entorno (REMEDIATION §C2); modo sandbox sin token. El envío real corre por Celery
-con reintentos; aquí vive la lógica pura (``procesar_envio``) para poder probarla sin worker.
+El envío pasa SIEMPRE por ``apps.mensajeria.router`` (proveedores tras interfaz + failover +
+circuit breaker). Aquí solo vive la lógica de campañas y el helper de notificación. El envío real
+corre por Celery con reintentos.
 """
 
 from __future__ import annotations
 
-import uuid
-
 from django.conf import settings
 
+from . import router
 from .models import DestinatarioMensaje, Mensaje
 
 
-class SandboxWhatsApp:
-    """No envía nada real; devuelve un id simulado (dev/test)."""
-
-    def enviar(self, telefono: str, cuerpo: str, archivo=None) -> str:
-        return f"sandbox-{uuid.uuid4().hex[:12]}"
-
-
-class UltraMsgWhatsApp:
-    def enviar(self, telefono: str, cuerpo: str, archivo=None) -> str:
-        """Envía texto; si ``archivo`` es una URL pública, manda un documento con caption.
-
-        UltraMsg recibe el adjunto por URL (no subida), por eso ``archivo`` debe ser una URL
-        alcanzable desde internet. Si no lo es (dev/localhost), el envío degrada a texto.
-        """
-        import requests
-
-        base = f"https://api.ultramsg.com/{settings.ULTRAMSG_INSTANCE_ID}"
-        if archivo:
-            resp = requests.post(
-                f"{base}/messages/document",
-                data={
-                    "token": settings.ULTRAMSG_TOKEN,
-                    "to": telefono,
-                    "document": archivo,
-                    "filename": archivo.rsplit("/", 1)[-1],
-                    "caption": cuerpo,
-                },
-                timeout=20,
-            )
-        else:
-            resp = requests.post(
-                f"{base}/messages/chat",
-                data={"token": settings.ULTRAMSG_TOKEN, "to": telefono, "body": cuerpo},
-                timeout=15,
-            )
-        resp.raise_for_status()
-        return str(resp.json().get("id", ""))
-
-
-def obtener_whatsapp():
-    return UltraMsgWhatsApp() if settings.ULTRAMSG_TOKEN else SandboxWhatsApp()
-
-
 def notificar_whatsapp(telefono: str | None, cuerpo: str, archivo=None) -> bool:
-    """Envía una notificación por WhatsApp si el destinatario tiene teléfono (best-effort).
+    """Notificación por WhatsApp si el destinatario tiene teléfono (best-effort, punto único).
 
     Regla del producto: toda notificación (usuario/proveedor/empleado/asistente) se manda también
-    por WhatsApp cuando la persona tiene número. Punto único para actuales y futuras notificaciones.
-    Nunca propaga errores (no debe bloquear la operación); devuelve True si se intentó el envío.
+    por WhatsApp cuando la persona tiene número. Delega en el Router (nunca lanza); devuelve True si
+    el envío fue aceptado por algún proveedor.
     """
-    import logging
-
     tel = (telefono or "").strip()
     if not tel:
         return False
-    try:
-        obtener_whatsapp().enviar(tel, cuerpo, archivo)
-        return True
-    except Exception as exc:  # noqa: BLE001 — best-effort
-        logging.getLogger(__name__).warning("WhatsApp no enviado a %s: %s", tel, exc)
-        return False
+    return router.enviar(tel, cuerpo, archivo, reintentos=1, registrar=True).ok
 
 
 def resolver_destinatarios(segmento: str, segmento_id=None):
@@ -104,14 +54,13 @@ def crear_destinatarios(mensaje: Mensaje):
 
 
 def procesar_envio(mensaje_id: int) -> dict:
-    """Envía la campaña a sus destinatarios pendientes y actualiza estado/progreso."""
-    cliente = obtener_whatsapp()
+    """Envía la campaña a sus destinatarios pendientes (vía Router) y actualiza estado/progreso."""
     mensaje = Mensaje.objects.get(id=mensaje_id)
     mensaje.estado = Mensaje.Estado.EN_PROGRESO
     mensaje.save(update_fields=["estado"])
 
-    # Adjunto (opcional): UltraMsg lo recibe por URL pública. Se arma con MEDIA_PUBLIC_BASE_URL
-    # (dominio público del despliegue); si no está configurada, se envía solo texto.
+    # Adjunto (opcional): el proveedor lo recibe por URL pública (MEDIA_PUBLIC_BASE_URL). Sin ella,
+    # se envía solo texto.
     archivo_url = None
     if mensaje.archivo:
         base = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "") or ""
@@ -122,16 +71,19 @@ def procesar_envio(mensaje_id: int) -> dict:
     total = len(destinatarios) or 1
     enviados = fallidos = 0
     for i, dest in enumerate(destinatarios, start=1):
-        try:
-            dest.external_id = cliente.enviar(
-                dest.empleado.telefono or "", mensaje.cuerpo, archivo_url
-            )
+        # El ledger de campaña es DestinatarioMensaje; no duplicar en RegistroEnvio (registrar=False).
+        res = router.enviar(
+            dest.empleado.telefono or "", mensaje.cuerpo, archivo_url, registrar=False
+        )
+        if res.ok:
             dest.estado = DestinatarioMensaje.Estado.ENVIADO
             enviados += 1
-        except Exception:
+        else:
             dest.estado = DestinatarioMensaje.Estado.FALLIDO
             fallidos += 1
-        dest.save(update_fields=["estado", "external_id"])
+        dest.external_id = res.external_id
+        dest.proveedor = res.proveedor
+        dest.save(update_fields=["estado", "external_id", "proveedor"])
         mensaje.progreso = round(i / total * 100, 2)
         mensaje.save(update_fields=["progreso"])
 

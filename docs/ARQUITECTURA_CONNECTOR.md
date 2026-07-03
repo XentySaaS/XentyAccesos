@@ -340,7 +340,14 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
 
 ---
 
-## 16. Decisiones abiertas (requieren tu confirmación)
+## 16bis. Decisiones tomadas (aprobado 2026-07-03)
+- **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).
+- **Nombre**: Xenty Communication Connector (XCC). **Transporte**: REST+HMAC. **Runtime**: Node+Baileys.
+- **Repositorio del XCC**: **separado** (máxima independencia).
+- **`PreferenciaMensajeria`**: en el **schema del tenant**.
+- **MVP del Connector (F-C)**: **media completa** desde el inicio.
+
+## 16. Decisiones abiertas (histórico — ya resueltas en §16bis)
 1. **Nombre**: ¿`Xenty Communication Connector (XCC)`? (recomendado)
 2. **Transporte**: confirmar **REST+HMAC** (recomendado) vs gRPC/mensajería.
 3. **Runtime del Connector**: confirmar **Node.js + Baileys** (única vía madura para WA Web local).
