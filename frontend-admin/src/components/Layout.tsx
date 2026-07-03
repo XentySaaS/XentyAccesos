@@ -58,13 +58,13 @@ export default function Layout() {
           {mostrarLabels ? (
             <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="h-6 w-auto" />
           ) : (
-            <div
-              className="mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold text-white"
-              style={{ backgroundColor: "#2563EB" }}
-              title="Xenty"
+            <svg
+              className="mx-auto h-7 w-7 text-white" viewBox="0 0 24 24" fill="none"
+              role="img" aria-label="Xenty"
             >
-              X
-            </div>
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+              <circle cx="12" cy="12" r="3.25" fill="currentColor" />
+            </svg>
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}
