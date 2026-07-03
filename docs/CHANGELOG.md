@@ -6,6 +6,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 
 ## [Sin release] — 2026-07-02
 
+### Corregido
+- **Sidebar móvil = drawer flotante (los 3 paneles)**: en móvil (<768px) el sidebar ya no empuja ni
+  encoge el contenido; ahora es un drawer superpuesto con backdrop, abierto por un botón hamburguesa
+  en el topbar y cerrado al tocar fuera o al navegar. En escritorio se mantiene fijo con el colapso.
+  Aplicado a `frontend-acceso`, `frontend-proveedores` y `frontend-admin` (`components/Layout.tsx`).
+
 ### Cambiado
 - **Lint limpio y bloqueante en CI**: `ruff format` aplicado a todo el backend (172 archivos) +
   auto-fixes; `ruff check` queda en verde y el CI ahora **bloquea** con `ruff check` + `ruff format
