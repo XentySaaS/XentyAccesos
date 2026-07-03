@@ -38,16 +38,15 @@
   Estado: pendiente
   Contexto: SaludConfiguracionView existe, falta integración completa
 
-- [ ] Rate limiting verificar en endpoints críticos
-  Estado: pendiente
-  Contexto: django-ratelimit configurado en settings pero no probado
+- [x] Rate limiting verificar en endpoints críticos
+  Estado: HECHO (2026-07-03) — login (10/m/IP) + Ratelimited→429 verificado en runtime (11º intento → 429)
 
 ## Baja prioridad
 
-- [ ] F8 ETL MySQL→Postgres
-  Estado: pendiente
-  Contexto: solo cuando se apruebe; etl/ directory existe vacío
-  Depende de: aprobación explícita
+- [~] F8 ETL MySQL→Postgres — DESCARTADO
+  Estado: fuera de alcance
+  Contexto: el sistema original solo tuvo datos de prueba → no hay migración. `etl/` y
+  `MIGRACION_DATOS_SAR.md` quedan como referencia. Este build es la implementación final.
 
 - [ ] WebAuthn MFA
   Estado: pendiente

@@ -14,7 +14,11 @@
 | F5 | Gafetes, QR firmado, acceso físico y sanciones | ✔ | ✔ |
 | F6 | Dispositivos edge (HMAC + nonce anti-replay + long-poll) | ✔ | — (sin panel; son dispositivos físicos) |
 | F7 | Mensajería WhatsApp y cumplimiento SAT 69-B | ✔ | ✔ (Mensajería + Cumplimiento) |
-| F8 | Reportes, dashboard, calendario, ETL y hardening final | ⚠ ETL scaffolded | ⚠ Dashboard/calendario/reportes ✔; ETL y hardening pendientes |
+| F8 | Reportes, dashboard, calendario y hardening final | ✔ (reportes/dashboard) · ⚠ hardening | ✔ Dashboard/calendario/reportes |
+
+> **ETL/migración FUERA DE ALCANCE**: el sistema original solo tuvo datos de prueba, así que no hay
+> nada real que migrar. `docs/MIGRACION_DATOS_SAR.md` y `backend/etl/` quedan como referencia; este
+> build es la implementación final (go-live con tenants nuevos vía onboarding self-service).
 
 > Nota: "roles y permisos granulares" (PermisoUsuario) no es una fase numerada del playbook — es una
 > mejora transversal añadida sobre F1 (accounts) en la sesión 2026-07-02.

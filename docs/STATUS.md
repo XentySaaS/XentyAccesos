@@ -70,10 +70,13 @@ Ninguno activo.
 
 ## Próximos objetivos
 
-1. Auditar cobertura real del ETL F8 (`etl/transformers.py` + `migrar_tenant_sar` ya existen como scaffold, 63 y 64 líneas — falta confirmar si cubren todo `MIGRACION_DATOS_SAR.md`)
-2. Hardening final (checklist `REMEDIACION_SEGURIDAD_SAR.md`): verificar rate limiting en runtime, `/media/` en Nginx dev
-3. WebAuthn MFA (TOTP ya funciona) · CI/CD
-4. Verificación visual autenticada de frontend-admin (requiere login super-admin en dev)
+> **ETL/migración descartados**: el sistema original solo tuvo datos de prueba → no hay migración.
+> Este build es la implementación final (go-live con tenants nuevos vía onboarding self-service).
+
+1. Hardening final (checklist `REMEDIACION_SEGURIDAD_SAR.md`): logs PII con structlog cableado, descarga `/media/` segura con policy de pertenencia
+2. WebAuthn MFA (TOTP ya funciona) — opcional
+3. CI/CD + deploy a producción (Nginx prod, secrets)
+4. QA E2E + verificación visual autenticada de frontend-admin (requiere login super-admin en dev)
 
 ## Nota de precisión (2026-07-02)
 

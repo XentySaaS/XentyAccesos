@@ -95,11 +95,13 @@ Todo lo de abajo está commiteado y pusheado a `origin/main`.
 
 ## Próximos pasos sugeridos
 
-1. Ampliar la suite de aislamiento a más módulos (empleados/eventos/citas/acceso) y hacer las
-   dev-deps reproducibles en la imagen (o un servicio `test` en compose).
-2. Configurar `MEDIA_PUBLIC_BASE_URL` en prod para adjuntos de WhatsApp.
-3. Auditar ETL F8 vs `docs/MIGRACION_DATOS_SAR.md`.
-4. Completar frontend-admin (control plane).
+> **ETL/migración descartados**: el sistema original solo tuvo datos de prueba → no hay migración.
+> Este build es la implementación final (go-live con tenants nuevos vía onboarding self-service).
+
+1. Terminar hardening: cablear structlog (redacción PII en logs) y descarga `/media/` con policy de pertenencia.
+2. WebAuthn MFA (opcional) · CI/CD · deploy a producción (Nginx prod, secrets).
+3. QA E2E + verificación visual autenticada de frontend-admin.
+4. Configurar `MEDIA_PUBLIC_BASE_URL` en prod para adjuntos de WhatsApp.
 
 ## Verificar servicios
 
