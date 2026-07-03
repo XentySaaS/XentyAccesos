@@ -13,8 +13,8 @@
 | F4 | Citas y OCR de INE | ✔ | ✔ |
 | F5 | Gafetes, QR firmado, acceso físico y sanciones | ✔ | ✔ |
 | F6 | Dispositivos edge (HMAC + nonce anti-replay + long-poll) | ✔ | — (sin panel; son dispositivos físicos) |
-| F7 | Mensajería WhatsApp y cumplimiento SAT 69-B | ✔ backend | ⚠ Mensajería sí, Cumplimiento no |
-| F8 | Reportes, dashboard, calendario, ETL y hardening final | ⚠ Scaffolded | 🔲 |
+| F7 | Mensajería WhatsApp y cumplimiento SAT 69-B | ✔ | ✔ (Mensajería + Cumplimiento) |
+| F8 | Reportes, dashboard, calendario, ETL y hardening final | ⚠ ETL scaffolded | ⚠ Dashboard/calendario/reportes ✔; ETL y hardening pendientes |
 
 > Nota: "roles y permisos granulares" (PermisoUsuario) no es una fase numerada del playbook — es una
 > mejora transversal añadida sobre F1 (accounts) en la sesión 2026-07-02.

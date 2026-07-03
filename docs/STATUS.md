@@ -18,7 +18,7 @@
 | gafetes | ✔ | componer_gafete (Premium Dark), estacionamiento, Fernet QR |
 | sanciones | ✔ | Sancion CRUD |
 | mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry (max_retries=3) |
-| cumplimiento | ⚠ | Backend ✔ (`importar_efos_task` con retry, modelo EFOS); sin pantalla en frontend-acceso |
+| cumplimiento | ✔ | Backend (`importar_efos_task` con retry) + padrón EFOS global (`apps.efos`) + pantalla `Cumplimiento.tsx` en frontend-acceso |
 | ocr | ✔ | Textract + sandbox para INE |
 | config | ✔ | Opcion, HistorialCambio, AuditViewSetMixin, DashboardView, CalendarioView, ExportarAccesosView (F8) |
 | soporte | ⚠ | SaludConfiguracionView (stub Nivel B) |
@@ -30,7 +30,7 @@
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación |
 | frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos |
-| frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (billing/checkout Stripe + **créditos**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Alcance de control plane funcionalmente completo |
+| frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Control plane funcionalmente completo |
 
 ## Infraestructura
 
@@ -70,8 +70,10 @@ Ninguno activo.
 
 ## Próximos objetivos
 
-1. Frontend-admin funcional (CRUD tenants, planes, billing Stripe) — solo tiene Login + lista Tenants
-2. Auditar cobertura real del ETL F8 (`etl/transformers.py` + `migrar_tenant_sar` ya existen como scaffold, 63 y 64 líneas — falta confirmar si cubren todo `MIGRACION_DATOS_SAR.md`)
+1. Auditar cobertura real del ETL F8 (`etl/transformers.py` + `migrar_tenant_sar` ya existen como scaffold, 63 y 64 líneas — falta confirmar si cubren todo `MIGRACION_DATOS_SAR.md`)
+2. Hardening final (checklist `REMEDIACION_SEGURIDAD_SAR.md`): verificar rate limiting en runtime, `/media/` en Nginx dev
+3. WebAuthn MFA (TOTP ya funciona) · CI/CD
+4. Verificación visual autenticada de frontend-admin (requiere login super-admin en dev)
 
 ## Nota de precisión (2026-07-02)
 
