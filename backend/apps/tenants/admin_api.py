@@ -81,6 +81,11 @@ class TenantAdminSerializer(serializers.ModelSerializer):
         return s.saldo if s else 0
 
 
+class AsignarPlanSerializer(serializers.Serializer):
+    # Clave del plan a asignar; null/"" desasigna (deja el tenant sin plan).
+    plan = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
 class AcreditarCreditosSerializer(serializers.Serializer):
     cantidad = serializers.IntegerField()  # + acredita / - ajuste
     motivo = serializers.CharField(max_length=160)
@@ -116,6 +121,25 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"])
     def cancelar(self, request, pk=None):
         return self._accion(billing.cancelar)
+
+    @action(detail=True, methods=["post"], url_path="asignar-plan")
+    def asignar_plan(self, request, pk=None):
+        """Asigna (o desasigna) el plan del tenant. No crea suscripción Stripe: solo fija el plan
+        que gobierna los módulos disponibles y el checkout por defecto."""
+        tenant = self.get_object()
+        s = AsignarPlanSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        clave = s.validated_data.get("plan")
+        if clave:
+            plan = Plan.objects.filter(clave=clave).first()
+            if plan is None:
+                return Response({"detail": "Plan no encontrado."}, status=404)
+            tenant.plan = plan
+        else:
+            tenant.plan = None
+        tenant.save(update_fields=["plan"])
+        tenant.refresh_from_db()
+        return Response(self.get_serializer(tenant).data)
 
     @action(detail=True, methods=["post"])
     def creditos(self, request, pk=None):

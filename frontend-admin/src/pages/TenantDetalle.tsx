@@ -20,6 +20,8 @@ interface Checkout {
   id?: string;
 }
 
+interface PlanOpc { clave: string; nombre: string; activo: boolean; }
+
 const INK = "#0F1B2D";
 
 const ESTADO_BADGE: Record<string, { bg: string; text: string; label: string; dot: string }> = {
@@ -44,6 +46,8 @@ export default function TenantDetalle() {
   const [cantidad, setCantidad] = useState("");
   const [motivo, setMotivo]     = useState("");
   const [creditoMsg, setCreditoMsg] = useState<string | null>(null);
+  const [planes, setPlanes]     = useState<PlanOpc[]>([]);
+  const [planSel, setPlanSel]   = useState<string>("");
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -51,6 +55,7 @@ export default function TenantDetalle() {
     try {
       const { data } = await api.get<Tenant>(`/api/admin/tenants/${id}/`);
       setT(data);
+      setPlanSel(data.plan ?? "");
     } catch {
       setError("No se pudo cargar el tenant.");
     } finally {
@@ -59,6 +64,13 @@ export default function TenantDetalle() {
   }, [id]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  useEffect(() => {
+    interface Pag { results?: PlanOpc[]; }
+    api.get<Pag | PlanOpc[]>("/api/admin/planes/")
+      .then(({ data }) => setPlanes(Array.isArray(data) ? data : data.results ?? []))
+      .catch(() => {});
+  }, []);
 
   async function accion(nombre: "suspender" | "activar" | "cancelar") {
     setOcupado(nombre);
@@ -83,6 +95,20 @@ export default function TenantDetalle() {
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail;
       setError(detail ?? "No se pudo generar el checkout.");
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function asignarPlan() {
+    setOcupado("plan");
+    setError(null);
+    try {
+      const { data } = await api.post<Tenant>(`/api/admin/tenants/${id}/asignar-plan/`, { plan: planSel });
+      setT(data);
+      setPlanSel(data.plan ?? "");
+    } catch {
+      setError("No se pudo asignar el plan.");
     } finally {
       setOcupado(null);
     }
@@ -199,6 +225,37 @@ export default function TenantDetalle() {
               {ocupado === "cancelar" ? "Cancelando…" : "Cancelar suscripción"}
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Plan */}
+      <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <h2 className="text-sm font-semibold text-slate-700">Plan</h2>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Define los módulos disponibles para el tenant y el plan por defecto del checkout. No crea
+          la suscripción de Stripe (eso ocurre al completar el checkout).
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select
+            value={planSel}
+            onChange={(e) => setPlanSel(e.target.value)}
+            disabled={ocupado !== null}
+            className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          >
+            <option value="">Sin plan</option>
+            {planes.map((p) => (
+              <option key={p.clave} value={p.clave}>
+                {p.nombre}{!p.activo ? " (inactivo)" : ""}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={asignarPlan}
+            disabled={ocupado !== null || planSel === (t.plan ?? "")}
+            className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {ocupado === "plan" ? "Asignando…" : "Asignar plan"}
+          </button>
         </div>
       </div>
 

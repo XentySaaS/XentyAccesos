@@ -7,6 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **frontend-admin — asignar plan a un tenant** (sección Plan en `TenantDetalle.tsx`): selector de
+  plan + "Asignar". Backend: acción `asignar-plan` en `TenantAdminViewSet`
+  (`/api/admin/tenants/{id}/asignar-plan/`) que fija/quita `tenant.plan` (gobierna módulos y checkout
+  por defecto; no crea la suscripción Stripe). Antes el plan solo se asignaba al alta o en el checkout.
 - **frontend-admin — otorgar créditos a un tenant** (sección en `TenantDetalle.tsx`): acredita o
   ajusta créditos con cantidad + motivo. Backend: acción `creditos` en `TenantAdminViewSet`
   (`/api/admin/tenants/{id}/creditos/`) que llama a `billing.acreditar_creditos` (ledger
