@@ -37,7 +37,7 @@
       `common/observability.procesador_structlog` existe pero **no está conectado** a `LOGGING`
 - [x] **Health / readiness endpoint** — HECHO (2026-07-03): `GET /health/` (liveness) y
       `GET /health/ready/` (DB+Redis) en `common/health.py`, en ambos planos + ruteado por nginx
-- [ ] **Monitoreo de Celery** (estado de tasks/colas, alertas de fallo)
+- [x] **Monitoreo de Celery** — HECHO (2026-07-03): Flower (`flower` en compose, :5555). Prod: proteger con `--basic-auth`
 - [ ] **Notificaciones in-app / centro de notificaciones** (además de email/WhatsApp)
 - [x] Versionado de releases (`Version` model + `docs/CHANGELOG.md`)
 
@@ -48,7 +48,9 @@
 - [ ] **Backups y política de retención** (respaldo por schema + restauración probada)
 
 ### Entrega
-- [ ] **CI/CD pipeline** (lint + tests + build + deploy)
+- [x] **CI/CD pipeline** — HECHO (2026-07-03): `.github/workflows/ci.yml` (backend pytest + frontend
+      build de las 4 SPAs). `ruff` advisory hasta limpiar los 348 hallazgos (ver abajo)
+- [ ] **Limpiar lint (ruff)** — 348 hallazgos (E501, orden de imports); luego hacer `ruff` bloqueante en CI
 - [ ] Deploy a producción (Nginx prod, secrets por entorno, `DEBUG=False`)
 - [ ] `requirements-dev.txt` reproducible en la imagen (hoy `pytest` se instala a mano)
 

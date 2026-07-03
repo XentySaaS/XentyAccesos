@@ -46,6 +46,15 @@ services:
     volumes: ["./backend:/app", "/app/.venv"]
     depends_on: [backend, redis]
 
+  # Monitoreo de Celery (tasks/colas). En prod protegerlo con --basic-auth y no exponerlo público.
+  flower:
+    build: ./backend
+    command: sh -c "pip install --quiet flower==2.0.1 && celery -A config flower --port=5555"
+    env_file: [.env]
+    volumes: ["./backend:/app", "/app/.venv"]
+    ports: ["5555:5555"]
+    depends_on: [redis, celery-worker]
+
   # Control plane (super-admin / signup): schema public.
   superadmin-backend:
     build: ./backend

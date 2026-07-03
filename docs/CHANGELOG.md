@@ -7,6 +7,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **CI/CD (GitHub Actions)** (`.github/workflows/ci.yml`): job **backend** (Postgres 15 + Redis 7
+  como services, instala requirements + dev, `pytest` incluyendo la suite de aislamiento; `ruff`
+  advisory por ahora — 348 hallazgos pendientes de limpiar) y job **frontend** (matriz de las 4 SPAs:
+  `npm ci` + `npm run build`). Corre en push a main y en PRs.
+- **Monitoreo de Celery (Flower)**: servicio `flower` en compose (puerto 5555) que observa
+  tasks/colas del worker. En prod protegerlo con `--basic-auth`. Verificado: UI → 200.
 - **Health / readiness endpoints** (baseline suite): `GET /health/` (liveness, 200) y
   `GET /health/ready/` (readiness: verifica DB + Redis, 200/503) en `common/health.py`, montados en
   data plane y control plane y ruteados por nginx (`/health/`) al backend correspondiente. Sin auth

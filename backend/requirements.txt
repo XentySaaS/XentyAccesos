@@ -25,3 +25,4 @@ openpyxl==3.1.5
 reportlab==4.2.2
 requests==2.32.3
 python-magic>=0.4.27
+flower==2.0.1                # monitoreo de Celery (tasks/colas)
