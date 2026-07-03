@@ -22,6 +22,9 @@
 ### Identidad y seguridad
 - [x] MFA TOTP (enrolar/activar/verificar) en control plane y tenant
 - [ ] **MFA WebAuthn** — el playbook define MFA = TOTP **+ WebAuthn**; solo TOTP está hecho
+- [ ] **SSO / login unificado entre productos de la suite** (Fiscal / Nómina / Acceso)
+- [ ] **Doble opt-in de email** — verificación obligatoria del correo al alta (hoy hay
+      `email_verificado` pero falta forzar el flujo de confirmación)
 - [x] Roles + permisos granulares (`RequiereRol` / `PermisoUsuario`)
 - [x] Rate limiting (login, signup, onboarding, edge, ocr) + `Ratelimited`→429
 - [x] Aislamiento multitenant probado (suite `pytest -k aislamiento`)
@@ -35,6 +38,7 @@
 - [ ] **Health / readiness endpoint** (`/health`, `/readyz`) — no existe; necesario para deploy,
       balanceador y monitoreo
 - [ ] **Monitoreo de Celery** (estado de tasks/colas, alertas de fallo)
+- [ ] **Notificaciones in-app / centro de notificaciones** (además de email/WhatsApp)
 - [x] Versionado de releases (`Version` model + `docs/CHANGELOG.md`)
 
 ### Cumplimiento y datos (LFPDPPP / privacidad)
