@@ -81,6 +81,16 @@ class TenantAdminSerializer(serializers.ModelSerializer):
         return s.saldo if s else 0
 
 
+class AcreditarCreditosSerializer(serializers.Serializer):
+    cantidad = serializers.IntegerField()  # + acredita / - ajuste
+    motivo = serializers.CharField(max_length=160)
+
+    def validate_cantidad(self, v: int) -> int:
+        if v == 0:
+            raise serializers.ValidationError("La cantidad no puede ser cero.")
+        return v
+
+
 class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
     """Lista y administra TODOS los tenants (suspender/activar/cancelar)."""
 
@@ -106,6 +116,19 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=["post"])
     def cancelar(self, request, pk=None):
         return self._accion(billing.cancelar)
+
+    @action(detail=True, methods=["post"])
+    def creditos(self, request, pk=None):
+        """Acredita (o ajusta) créditos del tenant y registra el movimiento en el ledger."""
+        tenant = self.get_object()
+        s = AcreditarCreditosSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        billing.acreditar_creditos(
+            tenant, s.validated_data["cantidad"], s.validated_data["motivo"],
+            referencia=f"admin:{request.user.pk}",
+        )
+        tenant.refresh_from_db()
+        return Response(self.get_serializer(tenant).data)
 
 
 class PlanAdminSerializer(serializers.ModelSerializer):

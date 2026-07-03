@@ -7,6 +7,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **frontend-admin — otorgar créditos a un tenant** (sección en `TenantDetalle.tsx`): acredita o
+  ajusta créditos con cantidad + motivo. Backend: acción `creditos` en `TenantAdminViewSet`
+  (`/api/admin/tenants/{id}/creditos/`) que llama a `billing.acreditar_creditos` (ledger
+  append-only) con referencia `admin:<pk>`. Con esto el control plane queda funcionalmente completo.
 - **frontend-admin — gestión de Planes (CRUD)** (`frontend-admin/src/pages/Planes.tsx`, ruta
   `/planes`): alta/edición/baja de planes comerciales (precio, módulos incluidos con checkboxes,
   límites como JSON, stripe_price_id, activo). Backend nuevo: `PlanAdminViewSet` (ModelViewSet) en

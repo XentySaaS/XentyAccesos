@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import api from "../api/client";
 
@@ -41,6 +41,9 @@ export default function TenantDetalle() {
   const [error, setError]   = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null); // acción en curso
   const [checkout, setCheckout] = useState<Checkout | null>(null);
+  const [cantidad, setCantidad] = useState("");
+  const [motivo, setMotivo]     = useState("");
+  const [creditoMsg, setCreditoMsg] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -80,6 +83,29 @@ export default function TenantDetalle() {
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } }).response?.data?.detail;
       setError(detail ?? "No se pudo generar el checkout.");
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function acreditar(e: FormEvent) {
+    e.preventDefault();
+    setOcupado("creditos");
+    setError(null);
+    setCreditoMsg(null);
+    try {
+      const { data } = await api.post<Tenant>(`/api/admin/tenants/${id}/creditos/`, {
+        cantidad: Number(cantidad),
+        motivo,
+      });
+      setT(data);
+      setCantidad("");
+      setMotivo("");
+      setCreditoMsg(`Saldo actualizado: ${data.saldo} créditos.`);
+    } catch (e) {
+      const resp = (e as { response?: { data?: Record<string, unknown> } }).response?.data;
+      const detalle = resp && (resp.detail || resp.cantidad || resp.motivo);
+      setError(Array.isArray(detalle) ? detalle.join(" ") : (detalle as string) ?? "No se pudieron acreditar los créditos.");
     } finally {
       setOcupado(null);
     }
@@ -209,6 +235,50 @@ export default function TenantDetalle() {
             </a>
           </div>
         )}
+      </div>
+
+      {/* Créditos */}
+      <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">Créditos</h2>
+          <span className="tabular text-sm text-slate-500">Saldo: <span className="font-semibold text-slate-800">{t.saldo}</span></span>
+        </div>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Acredita o ajusta créditos manualmente. Cada movimiento queda en el ledger (usa un número
+          negativo para descontar).
+        </p>
+        {creditoMsg && (
+          <div className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 ring-1 ring-green-100">
+            {creditoMsg}
+          </div>
+        )}
+        <form onSubmit={acreditar} className="mt-3 flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Cantidad</span>
+            <input
+              type="number" required value={cantidad}
+              onChange={(e) => setCantidad(e.target.value)}
+              className="w-32 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="100"
+            />
+          </label>
+          <label className="flex-1 text-sm">
+            <span className="mb-1 block font-medium text-slate-700">Motivo</span>
+            <input
+              type="text" required value={motivo} maxLength={160}
+              onChange={(e) => setMotivo(e.target.value)}
+              className="w-full min-w-[12rem] rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              placeholder="Cortesía de bienvenida"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={ocupado !== null || !cantidad || !motivo}
+            className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {ocupado === "creditos" ? "Aplicando…" : "Acreditar"}
+          </button>
+        </form>
       </div>
     </div>
   );

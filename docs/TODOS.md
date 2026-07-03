@@ -27,12 +27,12 @@
   Contexto: backend completo (`cumplimiento/services.py` importar_efos, `tasks.py` con retry vía
   Celery); falta UI para ver resultados de validación EFOS
 
-- [~] Frontend-admin funcionalidad completa
-  Estado: en progreso (2026-07-02)
-  Contexto: Login (**con paso MFA**) + **dashboard** (`Dashboard.tsx`) + lista Tenants + **detalle
-  de tenant** (`TenantDetalle.tsx`: billing/checkout) + **Planes CRUD** (`Planes.tsx` +
-  `PlanAdminViewSet`) + **Seguridad/MFA TOTP** (`Seguridad.tsx`) HECHO. Falta: otorgar créditos a
-  un tenant (requiere endpoint que llame a `billing.acreditar_creditos`)
+- [x] Frontend-admin funcionalidad completa
+  Estado: HECHO (2026-07-02)
+  Contexto: Login (con paso MFA) + dashboard (`Dashboard.tsx`) + Tenants + detalle de tenant
+  (`TenantDetalle.tsx`: billing/checkout + créditos) + Planes CRUD (`Planes.tsx` +
+  `PlanAdminViewSet`) + Seguridad/MFA TOTP (`Seguridad.tsx`). Alcance de control plane completo.
+  Nota: verificación visual autenticada pendiente (requiere login super-admin en dev)
 
 - [ ] Soporte Mesa de Ayuda (Nivel B)
   Estado: pendiente

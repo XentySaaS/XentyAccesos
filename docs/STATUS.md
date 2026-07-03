@@ -30,7 +30,7 @@
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación |
 | frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos |
-| frontend-admin | ⚠ | **Dashboard** + Tenants + **detalle de tenant** (billing/checkout Stripe) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Falta: otorgar créditos a un tenant |
+| frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (billing/checkout Stripe + **créditos**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Alcance de control plane funcionalmente completo |
 
 ## Infraestructura
 
