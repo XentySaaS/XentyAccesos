@@ -20,7 +20,9 @@ import unicodedata
 
 from django.conf import settings
 
-from .models import ConsultaLista69b, ResultadoLista69b, SatEfo
+from apps.efos.models import SatEfo
+
+from .models import ConsultaLista69b, ResultadoLista69b
 
 
 def _norm(texto: str | None) -> str:

@@ -21,12 +21,27 @@ class SandboxWhatsApp:
 
 class UltraMsgWhatsApp:
     def enviar(self, telefono: str, cuerpo: str, archivo=None) -> str:
+        """Envía texto; si ``archivo`` es una URL pública, manda un documento con caption.
+
+        UltraMsg recibe el adjunto por URL (no subida), por eso ``archivo`` debe ser una URL
+        alcanzable desde internet. Si no lo es (dev/localhost), el envío degrada a texto.
+        """
         import requests
 
-        url = f"https://api.ultramsg.com/{settings.ULTRAMSG_INSTANCE_ID}/messages/chat"
-        resp = requests.post(
-            url, data={"token": settings.ULTRAMSG_TOKEN, "to": telefono, "body": cuerpo}, timeout=15
-        )
+        base = f"https://api.ultramsg.com/{settings.ULTRAMSG_INSTANCE_ID}"
+        if archivo:
+            resp = requests.post(
+                f"{base}/messages/document",
+                data={"token": settings.ULTRAMSG_TOKEN, "to": telefono,
+                      "document": archivo, "filename": archivo.rsplit("/", 1)[-1], "caption": cuerpo},
+                timeout=20,
+            )
+        else:
+            resp = requests.post(
+                f"{base}/messages/chat",
+                data={"token": settings.ULTRAMSG_TOKEN, "to": telefono, "body": cuerpo},
+                timeout=15,
+            )
         resp.raise_for_status()
         return str(resp.json().get("id", ""))
 
@@ -89,12 +104,20 @@ def procesar_envio(mensaje_id: int) -> dict:
     mensaje.estado = Mensaje.Estado.EN_PROGRESO
     mensaje.save(update_fields=["estado"])
 
+    # Adjunto (opcional): UltraMsg lo recibe por URL pública. Se arma con MEDIA_PUBLIC_BASE_URL
+    # (dominio público del despliegue); si no está configurada, se envía solo texto.
+    archivo_url = None
+    if mensaje.archivo:
+        base = getattr(settings, "MEDIA_PUBLIC_BASE_URL", "") or ""
+        if base:
+            archivo_url = base.rstrip("/") + mensaje.archivo.url
+
     destinatarios = list(mensaje.destinatarios.filter(estado=DestinatarioMensaje.Estado.PENDIENTE))
     total = len(destinatarios) or 1
     enviados = fallidos = 0
     for i, dest in enumerate(destinatarios, start=1):
         try:
-            dest.external_id = cliente.enviar(dest.empleado.telefono or "", mensaje.cuerpo)
+            dest.external_id = cliente.enviar(dest.empleado.telefono or "", mensaje.cuerpo, archivo_url)
             dest.estado = DestinatarioMensaje.Estado.ENVIADO
             enviados += 1
         except Exception:

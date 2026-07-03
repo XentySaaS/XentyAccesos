@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from django.db import connection
 from rest_framework import viewsets
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 
 from apps.config.services import AuditViewSetMixin
 from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
@@ -16,6 +17,8 @@ from .tasks import enviar_campana
 class MensajeViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     queryset = Mensaje.objects.all().order_by("-creado")
     serializer_class = MensajeSerializer
+    # Multipart para permitir adjuntar un archivo a la campaña (además de JSON sin adjunto).
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     permission_classes = [
         *PERMISOS_BASE(), ContextoAcceso, RequiereModulo("mensajeria"),
         RequiereRol("administrador", "editor", "usuario"),

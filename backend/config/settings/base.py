@@ -23,6 +23,7 @@ TENANT_BASE_DOMAIN = config("TENANT_BASE_DOMAIN", default="localhost")
 SHARED_APPS = [
     "django_tenants",
     "apps.tenants",                  # F0: Tenant, Domain, Plan, billing, DispositivoEdge…
+    "apps.efos",                     # padrón SAT 69-B global (una copia, schema público)
     "django.contrib.contenttypes",
     "django.contrib.staticfiles",
 ]
@@ -185,6 +186,9 @@ STORAGES = {
 MULTITENANT_RELATIVE_MEDIA_ROOT = "%s"
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
+# Base pública (https://tenant.dominio) para adjuntos que un tercero debe descargar por URL
+# (p. ej. documentos de WhatsApp/UltraMsg). Vacío en dev → los envíos degradan a solo texto.
+MEDIA_PUBLIC_BASE_URL = config("MEDIA_PUBLIC_BASE_URL", default="")
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 

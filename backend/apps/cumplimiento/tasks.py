@@ -30,46 +30,53 @@ def _descargar_csv() -> bytes:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=600)
-def importar_efos_task(self, schema_name: str):
-    """Importa + revalida el padrón para UN tenant. Descarga el CSV del SAT."""
+def importar_efos_task(self, schema_name: str | None = None):
+    """Actualiza el padrón GLOBAL (una copia) y revalida un tenant (auto-reparación diferida).
+
+    El padrón EFOS es compartido: se importa en el schema público. Luego revalida al tenant que
+    disparó la tarea (p. ej. al abrir Cumplimiento con el padrón vacío).
+    """
     from django_tenants.utils import schema_context
 
     try:
         contenido = _descargar_csv()
-        with schema_context(schema_name):
-            res = importar_efos(contenido)
-            rev = revalidar_todos()
-        return {"schema": schema_name, **res, "encontrados": rev["encontrados"]}
+        res = importar_efos(contenido)  # escribe en el padrón compartido (público)
+        encontrados = None
+        if schema_name:
+            with schema_context(schema_name):
+                encontrados = revalidar_todos()["encontrados"]
+        return {"schema": schema_name, **res, "encontrados": encontrados}
     except Exception as exc:  # noqa: BLE001
         raise self.retry(exc=exc)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=900)
 def sincronizar_efos_todos(self):
-    """Descarga el CSV del SAT una sola vez y lo importa + revalida en cada tenant.
+    """Descarga el CSV del SAT UNA vez, actualiza el padrón global y revalida en cada tenant.
 
-    Best-effort por tenant: si uno falla, se registra y se continúa con los demás.
+    La importación corre una sola vez (padrón compartido). La revalidación es por tenant y
+    best-effort: si uno falla, se registra y se continúa con los demás.
     """
     from django_tenants.utils import get_public_schema_name, get_tenant_model, schema_context
 
     try:
         contenido = _descargar_csv()
+        padron = importar_efos(contenido)  # una sola vez, en el schema público
     except Exception as exc:  # noqa: BLE001 — sin CSV no hay nada que hacer; reintenta la tarea.
         raise self.retry(exc=exc)
 
     publico = get_public_schema_name()
-    resumen = {"tenants": 0, "ok": 0, "errores": 0}
+    resumen = {"padron": padron, "tenants": 0, "ok": 0, "errores": 0}
     for tenant in get_tenant_model().objects.all():
         if tenant.schema_name == publico:
             continue
         resumen["tenants"] += 1
         try:
             with schema_context(tenant.schema_name):
-                importar_efos(contenido)
                 revalidar_todos()
             resumen["ok"] += 1
         except Exception as exc:  # noqa: BLE001 — no dejar que un tenant tumbe al resto.
             resumen["errores"] += 1
-            logger.warning("EFOS no sincronizado en tenant %s: %s", tenant.schema_name, exc)
+            logger.warning("Revalidación 69-B falló en tenant %s: %s", tenant.schema_name, exc)
     logger.info("Sincronización EFOS 69-B: %s", resumen)
     return resumen

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import ResultadoLista69b, SatEfo
+from apps.efos.models import SatEfo
+
+from .models import ResultadoLista69b
 
 
 class SatEfoSerializer(serializers.ModelSerializer):

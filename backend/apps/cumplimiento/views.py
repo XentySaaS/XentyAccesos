@@ -5,10 +5,11 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.efos.models import SatEfo
 from apps.proveedores.models import Proveedor
 from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequiereRol
 
-from .models import ResultadoLista69b, SatEfo
+from .models import ResultadoLista69b
 from .serializers import ResultadoLista69bSerializer, SatEfoSerializer
 from .services import revalidar_todos, validar_69b
 

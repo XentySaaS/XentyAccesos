@@ -52,6 +52,7 @@ export default function Mensajeria() {
   const [loading,   setLoading]   = useState(true);
   const [showForm,  setShowForm]  = useState(false);
   const [form,      setForm]      = useState({ cuerpo: "", segmento: "todos_recintos", segmento_id: "" });
+  const [archivo,   setArchivo]   = useState<File | null>(null);
   const [saving,    setSaving]    = useState(false);
   const [error,     setError]     = useState("");
 
@@ -72,15 +73,25 @@ export default function Mensajeria() {
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError("");
+    const segId = SEGMENTO_NECESITA_ID.includes(form.segmento) && form.segmento_id
+      ? Number(form.segmento_id) : null;
     try {
-      await api.post("/api/mensajes/", {
-        cuerpo: form.cuerpo,
-        segmento: form.segmento,
-        segmento_id: SEGMENTO_NECESITA_ID.includes(form.segmento) && form.segmento_id
-          ? Number(form.segmento_id) : null,
-      });
+      if (archivo) {
+        // Con adjunto: multipart.
+        const fd = new FormData();
+        fd.append("cuerpo", form.cuerpo);
+        fd.append("segmento", form.segmento);
+        if (segId != null) fd.append("segmento_id", String(segId));
+        fd.append("archivo", archivo);
+        await api.post("/api/mensajes/", fd);
+      } else {
+        await api.post("/api/mensajes/", {
+          cuerpo: form.cuerpo, segmento: form.segmento, segmento_id: segId,
+        });
+      }
       setShowForm(false);
       setForm({ cuerpo: "", segmento: "todos_recintos", segmento_id: "" });
+      setArchivo(null);
       cargar();
     } catch (err: unknown) {
       const e = err as { response?: { data?: unknown } };
@@ -233,6 +244,23 @@ export default function Mensajeria() {
                   onChange={e => setForm({ ...form, cuerpo: e.target.value })}
                   className="w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
                   placeholder="Hola {nombre}, te informamos que…" />
+              </div>
+
+              <div>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label htmlFor="msg-archivo" className="text-xs font-semibold text-slate-600">Archivo adjunto (opcional)</label>
+                  <Ayuda>Documento o imagen que se envía junto al mensaje (PDF, Word, Excel, imagen). Se adjunta a la campaña de WhatsApp.</Ayuda>
+                </div>
+                <input id="msg-archivo" type="file"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,image/*"
+                  onChange={e => setArchivo(e.target.files?.[0] ?? null)}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-600" />
+                {archivo && (
+                  <p className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
+                    <span className="truncate">{archivo.name}</span>
+                    <button type="button" onClick={() => setArchivo(null)} className="text-red-500 hover:underline">quitar</button>
+                  </p>
+                )}
               </div>
 
               <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-800">

@@ -6,18 +6,8 @@ from __future__ import annotations
 
 from django.db import models
 
-
-class SatEfo(models.Model):  # sat_efos (espejo del CSV oficial)
-    rfc = models.CharField(max_length=13, unique=True, db_index=True)
-    # La razón social del SAT puede superar los 500 caracteres → TextField sin límite fijo.
-    nombre = models.TextField(null=True, blank=True)
-    situacion = models.CharField(max_length=60)  # Presunto|Definitivo|Desvirtuado|Sentencia Favorable
-    meta = models.JSONField(null=True, blank=True)
-    creado = models.DateTimeField(auto_now_add=True)
-    actualizado = models.DateTimeField(auto_now=True)
-
-    def __str__(self) -> str:
-        return f"{self.rfc} ({self.situacion})"
+# El padrón EFOS (SatEfo) es GLOBAL: vive en el app compartido ``apps.efos`` (schema público),
+# no aquí. Este app (por tenant) solo guarda las consultas y resultados de validación.
 
 
 class ConsultaLista69b(models.Model):  # lista_69bs

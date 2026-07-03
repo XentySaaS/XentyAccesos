@@ -1,12 +1,14 @@
-"""Importa el padrón SAT 69-B (EFOS) al espejo del tenant y revalida proveedores.
+"""Actualiza el padrón SAT 69-B (EFOS) GLOBAL y revalida proveedores por tenant.
 
-Fuente (gratuita): el CSV público del SAT. Se puede tomar de un archivo local o de una URL.
+El padrón es compartido (schema público): se importa UNA vez. La validación es por tenant.
+Fuente gratuita: el CSV público del SAT (archivo local o URL).
 
 Ejemplos:
-  python manage.py importar_efos --schema rayados --archivo lista69b.csv
-  python manage.py importar_efos --schema rayados --url http://omawww.sat.gob.mx/cifras_sat/Documents/Listado_Completo_69-B.csv
-  python manage.py importar_efos --all-tenants          # usa SAT_EFOS_CSV_URL
-  python manage.py importar_efos --schema rayados --no-revalidar
+  python manage.py importar_efos                       # descarga del SAT + revalida todos los tenants
+  python manage.py importar_efos --archivo lista69b.csv
+  python manage.py importar_efos --url http://omawww.sat.gob.mx/cifras_sat/Documents/Listado_Completo_69-B.csv
+  python manage.py importar_efos --schema rayados      # revalida solo ese tenant
+  python manage.py importar_efos --no-revalidar        # solo actualiza el padrón
 """
 from __future__ import annotations
 
@@ -20,34 +22,32 @@ _SAT_URL_DEFAULT = "http://omawww.sat.gob.mx/cifras_sat/Documents/Listado_Comple
 
 
 class Command(BaseCommand):
-    help = "Importa el CSV de EFOS (SAT 69-B) al espejo del tenant y revalida proveedores."
+    help = "Actualiza el padrón EFOS (SAT 69-B) global y revalida proveedores por tenant."
 
     def add_arguments(self, parser):
-        parser.add_argument("--schema", help="Schema del tenant destino.")
-        parser.add_argument("--all-tenants", action="store_true", help="Aplica a todos los tenants.")
+        parser.add_argument("--schema", help="Revalidar solo este tenant (por defecto: todos).")
         parser.add_argument("--archivo", help="Ruta a un CSV local (bytes, cualquier codificación).")
         parser.add_argument("--url", help="URL del CSV (default: SAT_EFOS_CSV_URL o la del SAT).")
         parser.add_argument("--no-revalidar", action="store_true",
-                            help="No revalida proveedores tras importar.")
+                            help="Solo actualiza el padrón; no revalida proveedores.")
 
     def handle(self, *args, **opts):
         contenido = self._obtener_contenido(opts)  # bytes
 
-        if opts["all_tenants"]:
-            schemas = self._tenants()
-        elif opts["schema"]:
-            schemas = [opts["schema"]]
-        else:
-            raise CommandError("Indica --schema <slug> o --all-tenants.")
+        # Padrón GLOBAL: se importa una sola vez (schema público).
+        res = importar_efos(contenido)
+        self.stdout.write(self.style.SUCCESS(f"Padrón EFOS actualizado (global): {res}"))
 
+        if opts["no_revalidar"]:
+            return
+
+        schemas = [opts["schema"]] if opts["schema"] else self._tenants()
         for schema in schemas:
             with schema_context(schema):
-                res = importar_efos(contenido)
-                msg = f"[{schema}] EFOS: {res}"
-                if not opts["no_revalidar"]:
-                    rev = revalidar_todos()
-                    msg += f" · revalidados={rev['revisados']} encontrados={rev['encontrados']}"
-                self.stdout.write(self.style.SUCCESS(msg))
+                rev = revalidar_todos()
+            self.stdout.write(
+                f"[{schema}] revalidados={rev['revisados']} encontrados={rev['encontrados']}"
+            )
 
     def _obtener_contenido(self, opts) -> bytes:
         if opts["archivo"]:

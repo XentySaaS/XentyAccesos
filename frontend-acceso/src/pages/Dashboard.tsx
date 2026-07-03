@@ -22,7 +22,10 @@ function colorBarra(index: number, total: number) {
 }
 
 interface Prov69b { id: number; nombre: string; rfc: string | null; situacion: string | null; }
-interface Resumen69b { padron_cargado: boolean; marcados: number; proveedores: Prov69b[]; }
+interface Resumen69b {
+  padron_cargado: boolean; importando?: boolean; total_efos?: number;
+  marcados: number; proveedores: Prov69b[];
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -107,6 +110,30 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Cumplimiento 69-B — estado limpio / actualizándose (visible para admin) */}
+      {cumpl && cumpl.marcados === 0 && (
+        <button onClick={() => navigate("/cumplimiento")}
+          className={`flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left transition ${
+            cumpl.padron_cargado ? "border-green-200 bg-[#F0FDF4] hover:bg-green-50" : "border-blue-200 bg-blue-50 hover:bg-blue-100/60"
+          }`}>
+          {cumpl.padron_cargado ? (
+            <>
+              <svg className="h-5 w-5 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+              <span className="flex-1 text-sm font-semibold text-green-700">
+                Ningún proveedor en la lista 69-B del SAT
+                {cumpl.total_efos ? ` · padrón: ${cumpl.total_efos.toLocaleString("es-MX")} RFCs` : ""}
+              </span>
+            </>
+          ) : (
+            <>
+              <svg className="h-5 w-5 flex-shrink-0 animate-spin text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>
+              <span className="flex-1 text-sm font-semibold text-blue-700">Actualizando el padrón 69-B del SAT…</span>
+            </>
+          )}
+          <span className="text-xs font-medium text-slate-500">Cumplimiento →</span>
+        </button>
       )}
 
       {/* KPI cards */}
