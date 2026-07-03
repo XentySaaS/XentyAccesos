@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereModulo, RequierePermisoPersonalizado, RequiereRol
 
+from .detalle import construir_contexto
 from .models import RegistroAcceso
 from .serializers import RegistroAccesoSerializer
 from .services import procesar_escaneo
@@ -69,6 +70,7 @@ class EscanearView(APIView):
             "registro_id": reg.id,
             "tipo_acceso": getattr(reg, "tipo_acceso", None),
             **_identidad(request, reg),
+            **construir_contexto(request, reg),
         })
 
 

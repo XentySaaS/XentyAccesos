@@ -13,6 +13,11 @@ const PREF_CAMARA_KEY = "xenty_escaner_camara";
 
 type Estado = "espera" | "leyendo" | "permitido" | "denegado" | "advertencia";
 
+interface CampoDetalle { label: string; valor: string | number | null; }
+interface Detalle { tipo: string; titulo: string; campos: CampoDetalle[]; }
+interface Documento { nombre: string; estado: string; url: string; }
+interface AccesoHist { tipo_acceso: string; hora_entrada: string; hora_salida: string | null; }
+
 interface Resultado {
   permitido: boolean;
   motivo: string;
@@ -22,6 +27,10 @@ interface Resultado {
   empresa?: string;
   foto_url?: string;
   nota?: string;
+  contacto?: { email?: string | null; telefono?: string | null };
+  detalle?: Detalle | null;
+  documentos?: Documento[];
+  historial?: AccesoHist[];
 }
 
 export default function Escaner() {
@@ -339,6 +348,7 @@ export default function Escaner() {
             nota="Toca para continuar"
             onContinuar={resetear}
             boton="Continuar · siguiente persona"
+            ctx={resultado}
           />
           {/* Override del guardia: solo tiene sentido si hay una identidad que cotejar (evento/cita) */}
           {resultado.nombre && resultado.registro_id && (
@@ -410,6 +420,7 @@ export default function Escaner() {
           nota="Toca para continuar"
           onContinuar={resetear}
           boton="Entendido · continuar"
+          ctx={resultado}
         />
       )}
 
@@ -427,6 +438,7 @@ export default function Escaner() {
           nota="Se regresa al escáner automáticamente…"
           onContinuar={resetear}
           boton="Permitir el paso"
+          ctx={resultado}
         />
       )}
     </div>
@@ -434,80 +446,180 @@ export default function Escaner() {
 }
 
 /* ── Veredicto fullscreen ─────────────────────────────────────── */
+function fmtFechaHora(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("es-MX", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+    });
+  } catch { return iso; }
+}
+
 function Veredicto({
   color, shadowColor, icono, titulo, nombre, empresa, fotoUrl,
-  detalle, nota, onContinuar, boton,
+  detalle, nota, onContinuar, boton, ctx,
 }: {
   color: string; shadowColor: string;
   icono: React.ReactNode; titulo: string;
   nombre?: string; empresa?: string; fotoUrl?: string;
   detalle: string[]; nota: string;
   onContinuar: () => void; boton: string | null;
+  ctx?: Resultado;
 }) {
+  const [verDetalle, setVerDetalle] = useState(false);
+  const [verHistorial, setVerHistorial] = useState(false);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+
+  const contacto = ctx?.contacto;
+  const info = ctx?.detalle;
+  const documentos = ctx?.documentos ?? [];
+  const historial = ctx?.historial ?? [];
+
   return (
     <div
-      className="flex flex-1 flex-col items-center justify-center gap-6 px-8 py-12 text-center"
+      className="flex flex-1 flex-col overflow-y-auto"
       style={{ backgroundColor: color }}
       onClick={onContinuar}
     >
-      {/* Ícono grande */}
-      <div
-        className="flex h-20 w-20 items-center justify-center rounded-full"
-        style={{ backgroundColor: "rgba(255,255,255,.2)", boxShadow: `0 16px 48px ${shadowColor}` }}
-      >
-        {icono}
-      </div>
-
-      {/* Veredicto */}
-      <p className="text-[46px] font-extrabold leading-none tracking-tight text-white"
-        style={{ letterSpacing: "-.01em" }}>
-        {titulo}
-      </p>
-
-      {/* Foto + nombre */}
-      {(fotoUrl || nombre) && (
-        <div className="flex flex-col items-center gap-3">
-          {fotoUrl ? (
-            <img src={fotoUrl} alt={nombre}
-              className="h-24 w-24 rounded-full object-cover"
-              style={{ border: "4px solid rgba(255,255,255,.4)" }} />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-full text-2xl font-bold text-white"
-              style={{ backgroundColor: "rgba(255,255,255,.2)" }}>
-              {(nombre ?? "?")[0].toUpperCase()}
-            </div>
-          )}
-          {nombre && (
-            <p className="text-[26px] font-extrabold text-white">{nombre}</p>
-          )}
-          {empresa && (
-            <p className="text-base font-medium" style={{ color: "rgba(255,255,255,.8)" }}>{empresa}</p>
-          )}
-        </div>
-      )}
-
-      {/* Detalle */}
-      <div
-        className="rounded-xl px-6 py-4 text-center"
-        style={{ backgroundColor: "rgba(0,0,0,.2)", maxWidth: 420 }}
-      >
-        {detalle.map((d, i) => (
-          <p key={i} className="text-base font-semibold text-white">{d}</p>
-        ))}
-      </div>
-
-      {/* Nota / botón */}
-      {boton ? (
-        <button
-          onClick={e => { e.stopPropagation(); onContinuar(); }}
-          className="rounded-xl px-8 py-3 text-base font-bold transition hover:opacity-90"
-          style={{ backgroundColor: "rgba(255,255,255,.95)", color }}
+      <div className="m-auto flex w-full flex-col items-center gap-6 px-8 py-12 text-center">
+        {/* Ícono grande */}
+        <div
+          className="flex h-20 w-20 items-center justify-center rounded-full"
+          style={{ backgroundColor: "rgba(255,255,255,.2)", boxShadow: `0 16px 48px ${shadowColor}` }}
         >
-          {boton}
-        </button>
-      ) : (
-        <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,.7)" }}>{nota}</p>
-      )}
+          {icono}
+        </div>
+
+        {/* Veredicto */}
+        <p className="text-[46px] font-extrabold leading-none tracking-tight text-white"
+          style={{ letterSpacing: "-.01em" }}>
+          {titulo}
+        </p>
+
+        {/* Foto + nombre */}
+        {(fotoUrl || nombre) && (
+          <div className="flex flex-col items-center gap-3">
+            {fotoUrl ? (
+              <img src={fotoUrl} alt={nombre}
+                className="h-24 w-24 rounded-full object-cover"
+                style={{ border: "4px solid rgba(255,255,255,.4)" }} />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-full text-2xl font-bold text-white"
+                style={{ backgroundColor: "rgba(255,255,255,.2)" }}>
+                {(nombre ?? "?")[0].toUpperCase()}
+              </div>
+            )}
+            {nombre && (
+              <p className="text-[26px] font-extrabold text-white">{nombre}</p>
+            )}
+            {empresa && (
+              <p className="text-base font-medium" style={{ color: "rgba(255,255,255,.8)" }}>{empresa}</p>
+            )}
+            {contacto && (contacto.email || contacto.telefono) && (
+              <p className="text-sm" style={{ color: "rgba(255,255,255,.7)" }}>
+                {[contacto.email, contacto.telefono].filter(Boolean).join(" · ")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Detalle (motivo) */}
+        <div
+          className="rounded-xl px-6 py-4 text-center"
+          style={{ backgroundColor: "rgba(0,0,0,.2)", maxWidth: 420 }}
+        >
+          {detalle.map((d, i) => (
+            <p key={i} className="text-base font-semibold text-white">{d}</p>
+          ))}
+        </div>
+
+        {/* Documentos requeridos */}
+        {documentos.length > 0 && (
+          <div className="w-full max-w-md" onClick={stop}>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest" style={{ color: "rgba(255,255,255,.7)" }}>
+              Documentos
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {documentos.map((d, i) => (
+                <a key={i} href={d.url} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-white"
+                  style={{ backgroundColor: "rgba(255,255,255,.18)" }}>
+                  {d.nombre}
+                  <span style={{ color: "rgba(255,255,255,.6)" }}>· {d.estado}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Detalles (colapsable) */}
+        {info && info.campos.length > 0 && (
+          <div className="w-full max-w-md text-left" onClick={stop}>
+            <button
+              onClick={() => setVerDetalle(v => !v)}
+              className="flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-sm font-semibold text-white"
+              style={{ backgroundColor: "rgba(255,255,255,.15)" }}
+            >
+              <span>Detalles {info.tipo === "cita" ? "de la cita" : info.tipo === "parking" ? "del estacionamiento" : "del evento"}</span>
+              <span>{verDetalle ? "▲" : "▼"}</span>
+            </button>
+            {verDetalle && (
+              <div className="mt-1 rounded-lg px-4 py-3" style={{ backgroundColor: "rgba(0,0,0,.2)" }}>
+                {info.campos.map((c, i) => (
+                  <p key={i} className="py-0.5 text-sm text-white">
+                    <span style={{ color: "rgba(255,255,255,.65)" }}>{c.label}: </span>
+                    {c.valor === null || c.valor === "" ? "—" : String(c.valor)}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Historial de accesos (colapsable) */}
+        {historial.length > 0 && (
+          <div className="w-full max-w-md text-left" onClick={stop}>
+            <button
+              onClick={() => setVerHistorial(v => !v)}
+              className="flex w-full items-center justify-between rounded-lg px-4 py-2.5 text-sm font-semibold text-white"
+              style={{ backgroundColor: "rgba(255,255,255,.15)" }}
+            >
+              <span>Historial de accesos ({historial.length})</span>
+              <span>{verHistorial ? "▲" : "▼"}</span>
+            </button>
+            {verHistorial && (
+              <ul className="mt-1 rounded-lg px-4 py-3" style={{ backgroundColor: "rgba(0,0,0,.2)" }}>
+                {historial.map((h, i) => (
+                  <li key={i} className="py-0.5 text-sm text-white">
+                    {h.tipo_acceso === "denegado" ? (
+                      <><span style={{ color: "#FCA5A5" }}>Denegado</span> · {fmtFechaHora(h.hora_entrada)}</>
+                    ) : (
+                      <>
+                        <span style={{ color: "#86EFAC" }}>E</span> {fmtFechaHora(h.hora_entrada)}
+                        {" · "}
+                        <span style={{ color: "#FCA5A5" }}>S</span> {h.hora_salida ? fmtFechaHora(h.hora_salida) : "—"}
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Nota / botón */}
+        {boton ? (
+          <button
+            onClick={e => { e.stopPropagation(); onContinuar(); }}
+            className="rounded-xl px-8 py-3 text-base font-bold transition hover:opacity-90"
+            style={{ backgroundColor: "rgba(255,255,255,.95)", color }}
+          >
+            {boton}
+          </button>
+        ) : (
+          <p className="text-sm font-medium" style={{ color: "rgba(255,255,255,.7)" }}>{nota}</p>
+        )}
+      </div>
     </div>
   );
 }

@@ -7,6 +7,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **Escáner enriquecido (paridad con el original + mejoras)**: al escanear, la pantalla de veredicto
+  ahora muestra —además de foto/nombre/empresa/motivo— el **contacto** (correo/teléfono), un panel
+  colapsable de **Detalles** del evento (recinto, vigencia, horario, protocolo, zona, punto de acceso,
+  áreas, estacionamiento, notas) o de la cita (ubicación, punto de acceso, protocolo, fecha/horario,
+  detalles), los **documentos** requeridos con enlace autenticado, y el **historial de accesos**
+  (últimas entradas/salidas/denegados). Backend: `apps/acceso/detalle.py` (`construir_contexto`,
+  best-effort) integrado en `EscanearView`. Verificado con datos reales (cita y evento).
 - **Doble opt-in de email en el alta pública de tenant** (baseline suite): el signup ya **no**
   auto-verifica; envía un correo con enlace firmado (`django.core.signing`, 48 h) al admin y este
   confirma en `GET /api/auth/verificar-email/` (`common/email_verify.py`), que valida que el token
