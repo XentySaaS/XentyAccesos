@@ -62,6 +62,30 @@ def enviar_invitacion_proveedor(
     _notificar_wa(telefono, cuerpo)
 
 
+def enviar_verificacion_email(
+    *,
+    email_destino: str,
+    nombre: str,
+    nombre_tenant: str,
+    url: str,
+) -> None:
+    """Envía el correo de verificación (doble opt-in) al admin de un tenant recién dado de alta."""
+    asunto = f"Confirma tu correo — {nombre_tenant} · Xenty Acceso"
+    cuerpo = (
+        f"Hola {nombre},\n\n"
+        f"Gracias por registrar {nombre_tenant} en Xenty Acceso.\n\n"
+        f"Para activar tu cuenta confirma tu correo en el siguiente enlace (válido 48 horas):\n\n"
+        f"  {url}\n\n"
+        f"Si no realizaste este registro puedes ignorar este mensaje.\n\n"
+        f"— Xenty Acceso"
+    )
+    try:
+        send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
+    except Exception as exc:  # noqa: BLE001
+        import logging
+        logging.getLogger(__name__).error("Error enviando verificación a %s: %s", email_destino, exc)
+
+
 def enviar_activacion_proveedor(
     *,
     email_destino: str,

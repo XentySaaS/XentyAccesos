@@ -26,8 +26,13 @@ class ProvisionError(ValueError):
 def provisionar_tenant(
     *, slug: str, dominio: str, nombre: str, admin_email: str, admin_nombre: str,
     admin_password: str | None = None, plan_clave: str | None = None, trial_dias: int = TRIAL_DIAS,
+    verificar_email: bool = True,
 ):
-    """Aprovisiona el tenant y su admin. Devuelve ``(tenant, password)``."""
+    """Aprovisiona el tenant y su admin. Devuelve ``(tenant, password)``.
+
+    ``verificar_email=True`` (CLI/provisioning de confianza) marca el email como verificado al alta.
+    El alta pública lo pasa en ``False`` para exigir doble opt-in (confirmación por correo).
+    """
     slug = slug.strip().lower()
     if not _SLUG_RE.match(slug):
         raise ProvisionError("Subdominio inválido (3-31 chars, [a-z0-9], inicia con letra).")
@@ -56,9 +61,10 @@ def provisionar_tenant(
         admin = Usuario.objects.create_superuser(
             email=admin_email, nombre=admin_nombre, password=password,
         )
-        # El primer usuario del tenant es el responsable; su email se considera verificado
-        # en el momento del alta porque el propio tenant lo registró en el control plane.
-        admin.email_verificado = timezone.now()
-        admin.save(update_fields=["email_verificado"])
+        # Provisioning de confianza (CLI): se marca verificado. El alta pública exige doble opt-in
+        # (verificar_email=False): el admin confirma su correo por el enlace enviado (common.email_verify).
+        if verificar_email:
+            admin.email_verificado = timezone.now()
+            admin.save(update_fields=["email_verificado"])
 
     return tenant, password

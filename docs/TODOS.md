@@ -23,8 +23,11 @@
 - [x] MFA TOTP (enrolar/activar/verificar) en control plane y tenant
 - [ ] **MFA WebAuthn** — el playbook define MFA = TOTP **+ WebAuthn**; solo TOTP está hecho
 - [ ] **SSO / login unificado entre productos de la suite** (Fiscal / Nómina / Acceso)
-- [ ] **Doble opt-in de email** — verificación obligatoria del correo al alta (hoy hay
-      `email_verificado` pero falta forzar el flujo de confirmación)
+- [x] **Doble opt-in de email** — HECHO (2026-07-03) para el **alta pública de tenant**: token
+      firmado + correo + `GET /api/auth/verificar-email/` (anti cross-tenant); bloqueo por
+      `EmailVerificado` hasta confirmar. Onboarding proveedor ya prueba email vía invitación; usuarios
+      internos (creados por admin) siguen auto-verificados. Nota dev: `.env` usa SMTP real (Gmail);
+      para pruebas apuntar a Mailpit (`EMAIL_HOST=mailpit`, `PORT=1025`)
 - [x] Roles + permisos granulares (`RequiereRol` / `PermisoUsuario`)
 - [x] Rate limiting (login, signup, onboarding, edge, ocr) + `Ratelimited`→429
 - [x] Aislamiento multitenant probado (suite `pytest -k aislamiento`)

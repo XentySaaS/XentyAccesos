@@ -57,11 +57,31 @@ class SignupView(APIView):
                 slug=slug, dominio=dominio, nombre=d["nombre"],
                 admin_email=d["admin_email"], admin_nombre=d["admin_nombre"],
                 admin_password=d["admin_password"], plan_clave=d.get("plan") or None,
+                verificar_email=False,  # alta pública: doble opt-in por correo
             )
         except ProvisionError as exc:
             return Response({"detail": str(exc)}, status=400)
+
+        # Doble opt-in: enviar enlace de verificación al correo del admin (en su schema de tenant).
+        from django_tenants.utils import schema_context
+
+        from apps.accounts.models import Usuario
+        from common.email_verify import build_verify_url, generar_token
+        from common.emails import enviar_verificacion_email
+
+        with schema_context(slug):
+            admin = Usuario.objects.get(email=d["admin_email"].lower())
+            token = generar_token(admin, "acceso")
+        enviar_verificacion_email(
+            email_destino=d["admin_email"], nombre=d["admin_nombre"],
+            nombre_tenant=d["nombre"], url=build_verify_url(request, slug, token),
+        )
         return Response(
-            {"tenant": tenant.schema_name, "dominio": dominio, "estado": tenant.estado},
+            {
+                "tenant": tenant.schema_name, "dominio": dominio, "estado": tenant.estado,
+                "verificacion_requerida": True,
+                "detail": "Registro creado. Revisa tu correo para confirmar tu cuenta.",
+            },
             status=201,
         )
 

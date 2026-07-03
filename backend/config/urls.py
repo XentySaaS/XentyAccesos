@@ -22,6 +22,7 @@ from apps.proveedores.api import ProveedorLoginView
 from apps.proveedores.views import OnboardingProveedorView
 from apps.soporte.api import SaludConfiguracionView
 from common.auth_api import LogoutView, MeView
+from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
 
@@ -37,6 +38,7 @@ urlpatterns = [
     path("api/auth/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="mfa-totp-enrolar"),
     path("api/auth/mfa/totp/activar/", ActivarTOTPView.as_view(), name="mfa-totp-activar"),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
+    path("api/auth/verificar-email/", VerificarEmailView.as_view(), name="verificar-email"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
     path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"),

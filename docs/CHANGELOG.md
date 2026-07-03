@@ -7,6 +7,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **Doble opt-in de email en el alta pública de tenant** (baseline suite): el signup ya **no**
+  auto-verifica; envía un correo con enlace firmado (`django.core.signing`, 48 h) al admin y este
+  confirma en `GET /api/auth/verificar-email/` (`common/email_verify.py`), que valida que el token
+  sea de ese tenant (anti cross-tenant) y marca `email_verificado`. Hasta confirmar, el permiso
+  `EmailVerificado` bloquea la API (403). Verificado E2E: signup→None, /me→403, cross-tenant→400,
+  verify→200, /me→200. (Onboarding de proveedor ya prueba el correo vía el enlace de invitación;
+  usuarios internos creados por un admin siguen auto-verificados.)
 - **CI/CD (GitHub Actions)** (`.github/workflows/ci.yml`): job **backend** (Postgres 15 + Redis 7
   como services, instala requirements + dev, `pytest` incluyendo la suite de aislamiento; `ruff`
   advisory por ahora — 348 hallazgos pendientes de limpiar) y job **frontend** (matriz de las 4 SPAs:
