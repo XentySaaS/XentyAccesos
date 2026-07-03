@@ -23,6 +23,7 @@ const NAV_ITEMS: { to: string; label: string; roles?: string[]; badge?: string }
   { to: "/usuarios",    label: "Usuarios",     roles: ["administrador"] },
   { to: "/catalogos",   label: "Catálogos",    roles: ["administrador"] },
   { to: "/historial",   label: "Historial",    roles: ["administrador"] },
+  { to: "/soporte",     label: "Soporte",      roles: ["administrador"] },
 ];
 
 const ROL_LABEL: Record<string, string> = {

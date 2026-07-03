@@ -20,7 +20,12 @@ from apps.accounts.api import AccesoLoginView
 from apps.ocr.views import ExtraerIneView
 from apps.proveedores.api import ProveedorLoginView
 from apps.proveedores.views import OnboardingProveedorView
-from apps.soporte.api import SaludConfiguracionView
+from apps.soporte.api import (
+    ConfiguracionMesaView,
+    EnviarDiagnosticoView,
+    ProbarConexionView,
+    SaludConfiguracionView,
+)
 from common.auth_api import LogoutView, MeView
 from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
@@ -40,6 +45,9 @@ urlpatterns = [
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
     path("api/auth/verificar-email/", VerificarEmailView.as_view(), name="verificar-email"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
+    path("api/soporte/configuracion/", ConfiguracionMesaView.as_view(), name="soporte-config"),
+    path("api/soporte/probar-conexion/", ProbarConexionView.as_view(), name="soporte-probar"),
+    path("api/soporte/enviar-diagnostico/", EnviarDiagnosticoView.as_view(), name="soporte-diag"),
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
     path("api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"),
     path("api/", include("apps.accounts.urls")),  # F1: gestión de usuarios del tenant

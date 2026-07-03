@@ -15,9 +15,10 @@
 - [x] Créditos con ledger append-only (`MovimientoCredito` / `SaldoCreditos`)
 - [x] Panel super-admin (control plane): tenants, planes, detalle, gracia, checkout
 - [x] Onboarding self-service (`/api/signup`) + landing pública separada
-- [ ] **Mesa de Ayuda (Nivel B) completa** — hoy solo `SaludConfiguracionView` (stub). Falta la
-      integración real (registro/consulta de tickets, credenciales por tenant cifradas). *Requisito
-      explícito del playbook §5.*
+- [x] **Mesa de Ayuda (Nivel B)** — HECHO (2026-07-03): cliente con sandbox (`apps/soporte/services`:
+      `probar_conexion`, `enviar_diagnostico`, `leer/guardar_configuracion`), endpoints admin y pantalla
+      `Soporte.tsx`. Solo lee salud de config (CLAUDE.md §9). Nota: el contrato del API externo de la
+      Mesa se asume (`/health`, `/diagnosticos` con Bearer); ajustar cuando exista el servicio real.
 
 ### Identidad y seguridad
 - [x] MFA TOTP (enrolar/activar/verificar) en control plane y tenant

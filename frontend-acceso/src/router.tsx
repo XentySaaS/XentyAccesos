@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Escaner from "./pages/Escaner";
 import Eventos from "./pages/Eventos";
 import Historial from "./pages/Historial";
+import Soporte from "./pages/Soporte";
 import Login from "./pages/Login";
 import Mensajeria from "./pages/Mensajeria";
 import Proveedores from "./pages/Proveedores";
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },
       { path: "/historial",   element: <Historial /> },
+      { path: "/soporte",     element: <Soporte /> },
     ],
   },
 ]);

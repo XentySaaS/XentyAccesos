@@ -7,6 +7,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 ## [Sin release] — 2026-07-02
 
 ### Agregado
+- **Mesa de Ayuda (Nivel B) completa** (baseline suite): cliente detrás de interfaz con **modo
+  sandbox** (sin red si no está configurada), en `apps/soporte/services.py` — `probar_conexion` y
+  `enviar_diagnostico` (solo envía salud de config, nunca datos de dominio; CLAUDE.md §9) +
+  `leer/guardar_configuracion` (base_url/habilitada/api_key cifrada por tenant). Endpoints admin:
+  `/api/soporte/{salud,configuracion,probar-conexion,enviar-diagnostico}/`. Pantalla
+  `frontend-acceso/src/pages/Soporte.tsx` (checklist de salud + config con Ayuda ⓘ + probar/enviar).
+  Verificado: lógica sandbox y no-sandbox (error de red manejado), endpoints protegidos (401).
 - **Escáner enriquecido (paridad con el original + mejoras)**: al escanear, la pantalla de veredicto
   ahora muestra —además de foto/nombre/empresa/motivo— el **contacto** (correo/teléfono), un panel
   colapsable de **Detalles** del evento (recinto, vigencia, horario, protocolo, zona, punto de acceso,
