@@ -4,6 +4,7 @@ Evita que RFC, CURP, email, NSS o datos de INE lleguen a los logs o a Sentry en 
 """
 from __future__ import annotations
 
+import logging
 import re
 
 _PATRONES = [
@@ -40,6 +41,22 @@ def redactar(valor):
 def procesador_structlog(logger, method_name, event_dict):
     """Processor de structlog: redacta PII de cada evento antes de emitir."""
     return redactar(event_dict)
+
+
+class RedaccionPIIFilter(logging.Filter):
+    """Filtro de logging estándar: redacta PII (RFC/CURP/email) del mensaje ya formateado.
+
+    Se cablea en ``LOGGING`` (REMEDIACION §A7). Cubre las llamadas ``logging.getLogger`` existentes
+    sin refactorizarlas: aplica la redacción sobre ``record.getMessage()`` antes de emitir.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        try:
+            record.msg = redactar_texto(record.getMessage())
+            record.args = ()
+        except Exception:
+            pass
+        return True
 
 
 def scrub_event(event, hint):

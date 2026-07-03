@@ -57,6 +57,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Solo agregar,
 - NAV_ITEMS filtrado por rol en Layout.tsx
 
 ### Corregido
+- **Hardening — redacción de PII en logs (REMEDIACION §A7)**: se cableó `LOGGING` con
+  `common.observability.RedaccionPIIFilter`, que borra RFC/CURP/email de cada mensaje antes de
+  emitirlo (el redactor existía pero no estaba conectado; la app usa `logging` estándar, no structlog).
+  Verificado: `logger.info("Correo a %s curp %s", email, curp)` → `Correo a [EMAIL] curp [CURP]`.
 - **Hardening — rate limiting de login + semántica 429** (REMEDIACION §A4): los tres logins (acceso,
   proveedores, super-admin) ahora tienen rate limit (`10/m` por IP, heredado de `BaseLoginView`);
   antes no tenían ninguno (fuerza bruta). Nuevo `EXCEPTION_HANDLER` (`common/exceptions.py`) convierte

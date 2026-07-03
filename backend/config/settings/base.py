@@ -201,6 +201,23 @@ CORS_ALLOWED_ORIGINS = config(
     cast=Csv(),
 )
 
+# ── Logging con redacción de PII (REMEDIACION §A7) ───────────────────────────
+# Todo log pasa por RedaccionPIIFilter, que borra RFC/CURP/email del mensaje antes de emitir.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {"redaccion_pii": {"()": "common.observability.RedaccionPIIFilter"}},
+    "formatters": {"simple": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"}},
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "filters": ["redaccion_pii"],
+            "formatter": "simple",
+        }
+    },
+    "root": {"handlers": ["console"], "level": config("LOG_LEVEL", default="INFO")},
+}
+
 # ── i18n / tz ────────────────────────────────────────────────────────────────
 LANGUAGE_CODE = "es-mx"
 TIME_ZONE = "America/Mexico_City"
