@@ -20,7 +20,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.accounts.api import AccesoLoginView
 from apps.ocr.views import ExtraerIneView
 from apps.proveedores.api import ProveedorLoginView
-from apps.proveedores.views import OnboardingProveedorView
+from apps.proveedores.views import DocumentoOnboardingView, OnboardingProveedorView
 from apps.soporte.api import (
     ConfiguracionMesaView,
     EnviarDiagnosticoView,
@@ -31,6 +31,18 @@ from common.auth_api import LogoutView, MeView
 from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
+from common.webauthn_api import (
+    LoginOpcionesView as WALoginOpcionesView,
+)
+from common.webauthn_api import (
+    LoginVerificarView as WALoginVerificarView,
+)
+from common.webauthn_api import (
+    RegistroOpcionesView as WARegistroOpcionesView,
+)
+from common.webauthn_api import (
+    RegistroVerificarView as WARegistroVerificarView,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -44,6 +56,26 @@ urlpatterns = [
     path("api/auth/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="mfa-totp-enrolar"),
     path("api/auth/mfa/totp/activar/", ActivarTOTPView.as_view(), name="mfa-totp-activar"),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
+    path(
+        "api/auth/mfa/webauthn/registro/opciones/",
+        WARegistroOpcionesView.as_view(),
+        name="mfa-wa-reg-opciones",
+    ),
+    path(
+        "api/auth/mfa/webauthn/registro/verificar/",
+        WARegistroVerificarView.as_view(),
+        name="mfa-wa-reg-verificar",
+    ),
+    path(
+        "api/auth/mfa/webauthn/login/opciones/",
+        WALoginOpcionesView.as_view(),
+        name="mfa-wa-login-opciones",
+    ),
+    path(
+        "api/auth/mfa/webauthn/login/verificar/",
+        WALoginVerificarView.as_view(),
+        name="mfa-wa-login-verificar",
+    ),
     path("api/auth/verificar-email/", VerificarEmailView.as_view(), name="verificar-email"),
     path("api/soporte/salud/", SaludConfiguracionView.as_view(), name="soporte-salud"),
     path("api/soporte/configuracion/", ConfiguracionMesaView.as_view(), name="soporte-config"),
@@ -52,6 +84,11 @@ urlpatterns = [
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
     path(
         "api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"
+    ),
+    path(
+        "api/onboarding/documento/",
+        DocumentoOnboardingView.as_view(),
+        name="onboarding-documento",
     ),
     path("api/", include("apps.accounts.urls")),  # F1: gestión de usuarios del tenant
     path("api/", include("apps.recintos.urls")),  # F1: topología de recintos

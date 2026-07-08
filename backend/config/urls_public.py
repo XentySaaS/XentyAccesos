@@ -10,7 +10,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.ocr.views import ExtraerIneView
-from apps.proveedores.views import OnboardingProveedorView
+from apps.proveedores.views import DocumentoOnboardingView, OnboardingProveedorView
 from apps.tenants.admin_api import (
     ConfiguracionConnectorView,
     CrearCheckoutView,
@@ -23,6 +23,18 @@ from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.health import LivenessView, ReadinessView
 from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
+from common.webauthn_api import (
+    LoginOpcionesView as WALoginOpcionesView,
+)
+from common.webauthn_api import (
+    LoginVerificarView as WALoginVerificarView,
+)
+from common.webauthn_api import (
+    RegistroOpcionesView as WARegistroOpcionesView,
+)
+from common.webauthn_api import (
+    RegistroVerificarView as WARegistroVerificarView,
+)
 
 router = DefaultRouter()
 router.register("api/admin/tenants", TenantAdminViewSet, basename="admin-tenant")
@@ -41,6 +53,11 @@ urlpatterns = [
         OnboardingProveedorView.as_view(),
         name="onboarding-proveedor-public",
     ),
+    path(
+        "api/onboarding/documento/",
+        DocumentoOnboardingView.as_view(),
+        name="onboarding-documento-public",
+    ),
     # Alta pública self-service de tenants
     path("api/signup/", SignupView.as_view(), name="signup"),
     # Control plane (super-admin)
@@ -50,6 +67,26 @@ urlpatterns = [
     path("api/admin/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="admin-mfa-enrolar"),
     path("api/admin/mfa/totp/activar/", ActivarTOTPView.as_view(), name="admin-mfa-activar"),
     path("api/admin/mfa/verificar/", VerificarMFAView.as_view(), name="admin-mfa-verificar"),
+    path(
+        "api/admin/mfa/webauthn/registro/opciones/",
+        WARegistroOpcionesView.as_view(),
+        name="admin-wa-reg-opciones",
+    ),
+    path(
+        "api/admin/mfa/webauthn/registro/verificar/",
+        WARegistroVerificarView.as_view(),
+        name="admin-wa-reg-verificar",
+    ),
+    path(
+        "api/admin/mfa/webauthn/login/opciones/",
+        WALoginOpcionesView.as_view(),
+        name="admin-wa-login-opciones",
+    ),
+    path(
+        "api/admin/mfa/webauthn/login/verificar/",
+        WALoginVerificarView.as_view(),
+        name="admin-wa-login-verificar",
+    ),
     path(
         "api/admin/tenants/<int:tenant_id>/checkout/",
         CrearCheckoutView.as_view(),

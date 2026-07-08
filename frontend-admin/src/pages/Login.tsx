@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { mfaPendiente } from "../lib/jwt";
+import { autenticarLlave, webauthnDisponible } from "../lib/webauthn";
 import { useAuth } from "../store/auth";
 
 export default function Login() {
@@ -46,6 +47,20 @@ export default function Login() {
       navigate("/dashboard");
     } catch {
       setError("Código inválido. Revisa tu app autenticadora.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onLlave() {
+    setError(null);
+    setLoading(true);
+    try {
+      const data = await autenticarLlave();
+      setTokens(data.access, data.refresh);
+      navigate("/dashboard");
+    } catch {
+      setError("No se pudo verificar con la llave de seguridad.");
     } finally {
       setLoading(false);
     }
@@ -136,6 +151,22 @@ export default function Login() {
               >
                 {loading ? "Verificando…" : "Verificar"}
               </button>
+              {webauthnDisponible() && (
+                <>
+                  <div className="flex items-center gap-3 py-1">
+                    <span className="h-px flex-1 bg-slate-100" />
+                    <span className="text-[11px] uppercase tracking-wide text-slate-400">o</span>
+                    <span className="h-px flex-1 bg-slate-100" />
+                  </div>
+                  <button
+                    type="button" onClick={onLlave} disabled={loading}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Usar llave de seguridad
+                  </button>
+                </>
+              )}
               <button
                 type="button" onClick={cancelarMfa}
                 className="w-full text-center text-xs text-slate-400 hover:text-slate-600"

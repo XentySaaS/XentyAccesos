@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import { registrarLlave, webauthnDisponible } from "../lib/webauthn";
 
-interface Me { email?: string; mfa_habilitado?: boolean; }
+interface Me { email?: string; mfa_habilitado?: boolean; webauthn_credenciales?: number; }
 interface Enrolamiento { secret: string; otpauth_uri: string; qr: string; }
 
 const INK = "#0F1B2D";
@@ -10,8 +11,24 @@ export default function Seguridad() {
   const [me, setMe]             = useState<Me | null>(null);
   const [enrol, setEnrol]       = useState<Enrolamiento | null>(null);
   const [codigo, setCodigo]     = useState("");
+  const [nombreLlave, setNombreLlave] = useState("");
   const [msg, setMsg]           = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
-  const [cargando, setCargando] = useState<"me" | "enrolar" | "activar" | null>("me");
+  const [cargando, setCargando] = useState<"me" | "enrolar" | "activar" | "llave" | null>("me");
+
+  async function registrar() {
+    setMsg(null);
+    setCargando("llave");
+    try {
+      await registrarLlave(nombreLlave.trim() || "Llave de seguridad");
+      setNombreLlave("");
+      setMsg({ tipo: "ok", texto: "Llave registrada correctamente." });
+      await cargarMe();
+    } catch {
+      setMsg({ tipo: "error", texto: "No se pudo registrar la llave (cancelada o no compatible)." });
+    } finally {
+      setCargando(null);
+    }
+  }
 
   async function cargarMe() {
     setCargando("me");
@@ -159,6 +176,42 @@ export default function Seguridad() {
               </li>
             </ol>
           </div>
+        )}
+      </div>
+
+      {/* WebAuthn / llaves de seguridad */}
+      <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-700">Llaves de seguridad (WebAuthn)</h2>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Passkeys o llaves físicas (FIDO2) como segundo factor, además del código TOTP.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+            {me?.webauthn_credenciales ?? 0} registrada(s)
+          </span>
+        </div>
+
+        {webauthnDisponible() ? (
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text" value={nombreLlave} maxLength={80}
+              onChange={(e) => setNombreLlave(e.target.value)}
+              placeholder="Nombre de la llave (ej. YubiKey, iPhone)"
+              className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            />
+            <button
+              onClick={registrar} disabled={cargando !== null}
+              className="rounded-lg bg-[#2563EB] px-3.5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {cargando === "llave" ? "Registrando…" : "Registrar llave"}
+            </button>
+          </div>
+        ) : (
+          <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+            Tu navegador no soporta WebAuthn.
+          </p>
         )}
       </div>
     </div>

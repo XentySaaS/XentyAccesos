@@ -13,9 +13,11 @@ import Historial from "./pages/Historial";
 import Soporte from "./pages/Soporte";
 import Login from "./pages/Login";
 import Mensajeria from "./pages/Mensajeria";
+import Privacidad from "./pages/Privacidad";
 import ProveedoresMensajeria from "./pages/ProveedoresMensajeria";
 import Proveedores from "./pages/Proveedores";
 import Recintos from "./pages/Recintos";
+import Seguridad from "./pages/Seguridad";
 import Sanciones from "./pages/Sanciones";
 import Usuarios from "./pages/Usuarios";
 import Verificacion from "./pages/Verificacion";
@@ -52,6 +54,8 @@ export const router = createBrowserRouter([
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },
       { path: "/historial",   element: <Historial /> },
+      { path: "/privacidad",  element: <Privacidad /> },
+      { path: "/seguridad",   element: <Seguridad /> },
       { path: "/soporte",     element: <Soporte /> },
     ],
   },

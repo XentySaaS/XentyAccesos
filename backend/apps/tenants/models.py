@@ -15,6 +15,7 @@ from django.db import models
 from django_tenants.models import DomainMixin, TenantMixin
 
 from common.fields import EncryptedCharField
+from common.webauthn import CredencialWebAuthnBase
 
 
 class Tenant(TenantMixin):
@@ -196,6 +197,14 @@ class SuperAdmin(AbstractBaseUser):
 
     def __str__(self) -> str:
         return self.email
+
+
+class CredencialWebAuthnAdmin(CredencialWebAuthnBase):
+    """Credencial WebAuthn (FIDO2) de un super-admin. Vive en ``public`` (como SuperAdmin)."""
+
+    superadmin = models.ForeignKey(
+        SuperAdmin, on_delete=models.CASCADE, related_name="credenciales_webauthn"
+    )
 
 
 class Version(models.Model):

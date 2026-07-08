@@ -14,6 +14,7 @@ from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
 from common.fields import EncryptedCharField
+from common.webauthn import CredencialWebAuthnBase
 
 
 class UsuarioManager(BaseUserManager):
@@ -81,6 +82,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.email
+
+
+class CredencialWebAuthn(CredencialWebAuthnBase):
+    """Credencial WebAuthn (FIDO2) de un ``Usuario`` del tenant. Vive en el schema del tenant."""
+
+    usuario = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, related_name="credenciales_webauthn"
+    )
 
 
 class PermisoUsuario(models.Model):

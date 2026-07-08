@@ -20,6 +20,15 @@ ADMIN_IP_ALLOWLIST = config("ADMIN_IP_ALLOWLIST", default="", cast=Csv())
 # Dominio base para los subdominios de tenant (alta self-service). Dev: localhost.
 TENANT_BASE_DOMAIN = config("TENANT_BASE_DOMAIN", default="localhost")
 
+# ── WebAuthn / FIDO2 (2º factor MFA) ─────────────────────────────────────────
+# RP_ID = dominio registrable que ve el navegador (sin puerto ni esquema). Dev: localhost.
+# ORIGINS = orígenes completos permitidos (con esquema y puerto) para validar la attestation.
+WEBAUTHN_RP_ID = config("WEBAUTHN_RP_ID", default="localhost")
+WEBAUTHN_RP_NAME = config("WEBAUTHN_RP_NAME", default="Xenty Acceso")
+WEBAUTHN_ORIGINS = config(
+    "WEBAUTHN_ORIGINS", default="http://localhost:8080,http://localhost:8081", cast=Csv()
+)
+
 # ── Multitenancy (django-tenants) ────────────────────────────────────────────
 SHARED_APPS = [
     "django_tenants",

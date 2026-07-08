@@ -55,6 +55,8 @@ class MeView(APIView):
 
     def get(self, request):
         u = request.user
+        # Métodos MFA disponibles del actor (para que la UI muestre estado y ofrezca cada uno).
+        webauthn_n = u.credenciales_webauthn.count() if hasattr(u, "credenciales_webauthn") else 0
         return Response(
             {
                 "id": u.pk,
@@ -63,6 +65,8 @@ class MeView(APIView):
                 "ctx": (request.auth or {}).get("ctx"),
                 "rol": getattr(u, "rol", None),
                 "mfa_habilitado": bool(getattr(u, "mfa_habilitado", False)),
+                "totp_habilitado": bool(getattr(u, "mfa_totp_secret", None)),
+                "webauthn_credenciales": webauthn_n,
             }
         )
 
