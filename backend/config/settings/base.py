@@ -20,6 +20,13 @@ ADMIN_IP_ALLOWLIST = config("ADMIN_IP_ALLOWLIST", default="", cast=Csv())
 # Dominio base para los subdominios de tenant (alta self-service). Dev: localhost.
 TENANT_BASE_DOMAIN = config("TENANT_BASE_DOMAIN", default="localhost")
 
+# Super-admin del control plane: se auto-siembra al arrancar (comando bootstrap_superadmin) SOLO si
+# ambas variables están definidas y aún no existe ninguno. Se crea con MFA obligatorio (sin factor
+# enrolado): el primer login queda en sesión pendiente hasta enrolar+verificar el 2º factor.
+SUPERADMIN_EMAIL = config("SUPERADMIN_EMAIL", default="")
+SUPERADMIN_PASSWORD = config("SUPERADMIN_PASSWORD", default="")
+SUPERADMIN_NOMBRE = config("SUPERADMIN_NOMBRE", default="Super Admin")
+
 # ── WebAuthn / FIDO2 (2º factor MFA) ─────────────────────────────────────────
 # RP_ID = dominio registrable que ve el navegador (sin puerto ni esquema). Dev: localhost.
 # ORIGINS = orígenes completos permitidos (con esquema y puerto) para validar la attestation.

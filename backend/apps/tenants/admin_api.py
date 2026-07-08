@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from common.auth_api import BaseLoginView
+from common.jwt import build_tokens
 from common.permissions import EsSuperAdmin, MFASesionCompleta
 
 from .models import ConfiguracionConnector, Plan, SaldoCreditos, SuperAdmin, Tenant
@@ -25,9 +26,40 @@ from .services.stripe_gateway import crear_checkout_suscripcion
 
 
 # ── Auth del super-admin ─────────────────────────────────────────────────────
+class _CredencialesSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
 class SuperAdminLoginView(BaseLoginView):
+    """Login del super-admin con MFA obligatorio.
+
+    Además de los tokens, informa al SPA si debe **enrolar** el 2º factor o solo **verificarlo**:
+    - ``mfa_pendiente``: la sesión aún no completa el 2º factor (token ``mfa="pending"``).
+    - ``mfa_enrolar``:  pendiente **y** sin ningún factor enrolado (ni TOTP ni passkey) → el SPA
+      debe mostrar el enrolamiento (QR) en vez del campo de código.
+    """
+
     model = SuperAdmin
     ctx = "superadmin"
+
+    def post(self, request):
+        s = _CredencialesSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        invalidas = Response({"detail": "Credenciales inválidas."}, status=401)
+        try:
+            actor = SuperAdmin.objects.get(email=s.validated_data["email"].lower())
+        except SuperAdmin.DoesNotExist:
+            return invalidas
+        if not actor.check_password(s.validated_data["password"]) or not actor.is_active:
+            return invalidas
+        pendiente = bool(actor.mfa_habilitado)
+        enrolado = bool(actor.mfa_totp_secret) or actor.credenciales_webauthn.exists()
+        data = build_tokens(actor, self.ctx, mfa_pendiente=pendiente)
+        data["mfa_pendiente"] = pendiente
+        data["mfa_enrolar"] = pendiente and not enrolado
+        return Response(data)
 
 
 # ── Alta pública self-service de tenants ─────────────────────────────────────

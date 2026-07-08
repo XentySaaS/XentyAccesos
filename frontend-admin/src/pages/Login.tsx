@@ -5,11 +5,15 @@ import { mfaPendiente } from "../lib/jwt";
 import { autenticarLlave, webauthnDisponible } from "../lib/webauthn";
 import { useAuth } from "../store/auth";
 
+type Fase = "credenciales" | "mfa" | "enrolar";
+
 export default function Login() {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
   const [codigo,   setCodigo]   = useState("");
-  const [fase,     setFase]     = useState<"credenciales" | "mfa">("credenciales");
+  const [fase,     setFase]     = useState<Fase>("credenciales");
+  const [qr,       setQr]       = useState<string | null>(null);
+  const [secret,   setSecret]   = useState<string | null>(null);
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
   const setTokens = useAuth((s) => s.setTokens);
@@ -23,15 +27,37 @@ export default function Login() {
     try {
       const { data } = await api.post("/api/admin/login/", { email, password });
       // Se guardan los tokens (aunque sean de sesión MFA pendiente): el cliente los usa como
-      // Authorization para el paso de verificación.
+      // Authorization para enrolar/verificar el 2º factor.
       setTokens(data.access, data.refresh);
-      if (mfaPendiente(data.access)) {
+      if (data.mfa_enrolar) {
+        // MFA obligatorio y sin factor enrolado: pedir el enrolamiento (QR) a fuerza.
+        const { data: enrol } = await api.post("/api/admin/mfa/totp/enrolar/", {});
+        setQr(enrol.qr);
+        setSecret(enrol.secret);
+        setFase("enrolar");
+      } else if (data.mfa_pendiente || mfaPendiente(data.access)) {
         setFase("mfa");
       } else {
         navigate("/dashboard");
       }
     } catch {
       setError("Correo o contraseña incorrectos.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Enrolamiento obligatorio: activar prueba el 2º factor y devuelve tokens 'full' en un solo paso.
+  async function onEnrolar(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const { data } = await api.post("/api/admin/mfa/totp/activar/", { codigo });
+      setTokens(data.access, data.refresh);
+      navigate("/dashboard");
+    } catch {
+      setError("Código inválido. Revisa tu app autenticadora e inténtalo de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -66,13 +92,22 @@ export default function Login() {
     }
   }
 
-  function cancelarMfa() {
+  function cancelar() {
     logout();
     setFase("credenciales");
     setCodigo("");
     setPassword("");
+    setQr(null);
+    setSecret(null);
     setError(null);
   }
+
+  const titulo =
+    fase === "credenciales"
+      ? "Iniciar sesión"
+      : fase === "enrolar"
+        ? "Configura tu segundo factor"
+        : "Verificación en dos pasos";
 
   return (
     <div
@@ -89,7 +124,7 @@ export default function Login() {
         {/* Card */}
         <div className="rounded-2xl bg-white p-8 shadow-panel">
           <h2 className="mb-6 text-base font-bold" style={{ color: "#0F1B2D" }}>
-            {fase === "credenciales" ? "Iniciar sesión" : "Verificación en dos pasos"}
+            {titulo}
           </h2>
 
           {error && (
@@ -98,7 +133,7 @@ export default function Login() {
             </div>
           )}
 
-          {fase === "credenciales" ? (
+          {fase === "credenciales" && (
             <form onSubmit={onSubmit} className="space-y-4">
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-slate-700">Correo electrónico</span>
@@ -128,7 +163,54 @@ export default function Login() {
                 {loading ? "Verificando…" : "Entrar"}
               </button>
             </form>
-          ) : (
+          )}
+
+          {fase === "enrolar" && (
+            <form onSubmit={onEnrolar} className="space-y-4">
+              <p className="text-sm text-slate-500">
+                Este panel exige verificación en dos pasos. Escanea el código con tu app autenticadora
+                (Google Authenticator, 1Password, Authy…) y escribe el código de 6 dígitos que genere.
+              </p>
+              {qr && (
+                <div className="flex justify-center">
+                  <img
+                    src={qr} alt="Código QR de configuración MFA"
+                    className="h-44 w-44 rounded-lg border border-slate-200 p-2"
+                  />
+                </div>
+              )}
+              {secret && (
+                <p className="text-center text-[11px] text-slate-400">
+                  ¿No puedes escanear? Clave: <span className="font-mono text-slate-600">{secret}</span>
+                </p>
+              )}
+              <label className="block text-sm">
+                <span className="mb-1 block font-medium text-slate-700">Código de verificación</span>
+                <input
+                  type="text" required autoFocus inputMode="numeric" autoComplete="one-time-code"
+                  maxLength={6} value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-center text-lg tracking-[0.4em] outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  placeholder="000000"
+                />
+              </label>
+              <button
+                type="submit" disabled={loading || codigo.length < 6}
+                className="mt-2 w-full rounded-lg py-2.5 text-sm font-semibold text-white transition disabled:opacity-60"
+                style={{ backgroundColor: "#2563EB" }}
+              >
+                {loading ? "Activando…" : "Activar y entrar"}
+              </button>
+              <button
+                type="button" onClick={cancelar}
+                className="w-full text-center text-xs text-slate-400 hover:text-slate-600"
+              >
+                Cancelar y volver
+              </button>
+            </form>
+          )}
+
+          {fase === "mfa" && (
             <form onSubmit={onVerificar} className="space-y-4">
               <p className="text-sm text-slate-500">
                 Ingresa el código de 6 dígitos de tu app autenticadora.
@@ -168,7 +250,7 @@ export default function Login() {
                 </>
               )}
               <button
-                type="button" onClick={cancelarMfa}
+                type="button" onClick={cancelar}
                 className="w-full text-center text-xs text-slate-400 hover:text-slate-600"
               >
                 Cancelar y volver

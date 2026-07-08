@@ -55,7 +55,12 @@ class EnrolarTOTPView(APIView):
 
 
 class ActivarTOTPView(APIView):
-    """Verifica el primer código y activa el MFA del actor."""
+    """Verifica el primer código y activa el MFA del actor.
+
+    Si se invoca dentro de una sesión MFA **pendiente** (enrolamiento obligatorio tras el login),
+    la activación prueba de por sí el 2º factor, así que además se emiten tokens 'full' para no
+    exigir un segundo código en la vista de verificación.
+    """
 
     permission_classes = [IsAuthenticated]
 
@@ -69,7 +74,10 @@ class ActivarTOTPView(APIView):
             return Response({"detail": "Código TOTP inválido."}, status=400)
         user.mfa_habilitado = True
         user.save(update_fields=["mfa_habilitado"])
-        return Response({"detail": "MFA activado."})
+        data = {"detail": "MFA activado."}
+        if (request.auth or {}).get("mfa") == "pending":
+            data.update(build_tokens(user, _ctx_de(request), mfa_pendiente=False))
+        return Response(data)
 
 
 class VerificarMFAView(APIView):
