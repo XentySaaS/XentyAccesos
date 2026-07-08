@@ -20,20 +20,32 @@ El repo del sistema viejo es **referencia de solo lectura**. Se consulta para en
 **nunca** se copia su código ni sus patrones (ver §4).
 
 ### Estado actual y layout en disco (verificado)
-- **Fase F0 (esqueleto generado por el bootstrap, ya ejecutado).** Existe `backend/` con su árbol
-  completo (config, settings split, las 17 apps bajo `apps/`), pero los modelos de cada app están
-  **vacíos** (stub de 1 línea), `config/middleware/` solo tiene `__init__.py`, y aún **no hay tests
-  ni frontends**. Implementar F0 = crear `apps.tenants.Tenant`/`Domain` y `apps.accounts.Usuario`
-  antes de poder migrar.
-- **El repo git es esta carpeta raíz** (`C:\xampp\htdocs\xenty`, todo aún sin commitear). Aquí viven
-  `CLAUDE.md`, `README.md`, `bootstrap.sh` (Mac/Linux) y `bootstrap.bat` (Windows). Los 5 `.md`
-  restantes de la suite están en `docs/` (`PROMPT_CLAUDE_DESIGN_SAR.md` aún **no existe**; lo
-  referencian varios documentos pero falta crearlo).
-- **Bootstrap**: en Windows se usa `bootstrap.bat` (genera todo en esta misma carpeta raíz, sin crear
-  subcarpeta); `bootstrap.sh` es el equivalente original Mac/Linux. Re-ejecutar el `.bat` es
-  idempotente para lo que falte (p. ej. crea las SPAs si Node está instalado).
-- El árbol de §3 describe el **objetivo**; hoy existe `backend/` pero **no** los tres `frontend-*`
-  (Node no estaba instalado al generar). Se crean en fases posteriores o re-corriendo el bootstrap.
+> El proyecto ya **no** está en F0: casi todas las apps y las SPAs están construidas. La fuente de
+> verdad viva del avance es [`docs/STATUS.md`](docs/STATUS.md) (léela al empezar sesión); esto es un
+> resumen. **Verifica el código real antes de documentar estado** — no asumas desde nombres de
+> carpetas ni memoria de sesión (lección registrada en STATUS.md, 2026-07-02).
+- **Backend feature-complete en casi todas las apps.** Los 18 modelos bajo `apps/` están poblados
+  (p. ej. `tenants` ~320 líneas, `eventos` ~180, `citas` ~150), con migraciones, ViewSets DRF,
+  servicios y tareas Celery (`enviar_campana`, `importar_efos_task`, ambas con retry). App nueva
+  respecto al árbol original: **`apps/efos`** (padrón EFOS **global**, no por tenant, para 69-B).
+- **Librería compartida `backend/common/`** (transversal, no es una app Django): `crypto.py` (Fernet
+  PII), `signing.py` (QR firmado), `jwt.py` (`TenantAwareJWTAuthentication`), `mfa.py`/`webauthn.py`
+  (+ sus `*_api.py`), `permissions.py` (incl. slots 5 y 9 del middleware como permisos DRF),
+  `validators.py`, `fields.py`, `cache.py`, `emails.py`/`email_*`, `health.py`, `observability.py`,
+  `exceptions.py`, `auth_api.py`. **Reutiliza de aquí** antes de escribir cripto/auth/validación nueva.
+- **4 SPAs construidas** (no 3): `frontend-acceso`, `frontend-proveedores`, `frontend-admin` y
+  `frontend-landing` (marketing/onboarding público). Estado por SPA en STATUS.md.
+- **Tests activos** en `backend/tests/`: aislamiento entre tenants, ARCO, connector provider, modelos
+  F0, router de mensajería, WebAuthn. Config pytest en `backend/pyproject.toml`
+  (`DJANGO_SETTINGS_MODULE = config.settings.dev`).
+- **ETL descartado**: el SAR original solo tuvo datos de prueba → no hay migración. Este build es la
+  implementación final (go-live con tenants nuevos vía onboarding self-service). `backend/etl/` y las
+  referencias a "F8 migración" quedan como legado; ignóralas salvo instrucción explícita.
+- **El repo git es esta carpeta raíz** (`C:\Users\ADMIN\Documents\ProyectosElevation\XentyAccesos`).
+  Aquí viven `CLAUDE.md`, `README.md` y ambos bootstrap. Los `.md` de la suite están en `docs/`
+  (ARCHITECTURE, DECISIONS, STATUS, ROADMAP, KNOWN_ISSUES, PLAYBOOK/MODELO/REMEDIACION/SAR_*, etc.).
+  Los **handoffs** de sesión viven en `handoffs/` (`HANDOFF_LATEST.md` + `history/`); léelos para
+  contexto reciente. `bootstrap.bat` (Windows) / `bootstrap.sh` (Mac/Linux) son idempotentes.
 
 ---
 
@@ -48,9 +60,9 @@ django-ratelimit 4.1.0 · python-decouple 3.8.
 **Dominio SAR**: qrcode[pil] 7.4.2 + Pillow (gafetes) · boto3 (Textract OCR) · openpyxl 3.1.5 (Excel) ·
 reportlab 4.2.2 (PDF protocolos) · requests 2.32.3 (UltraMsg WhatsApp) · validador RFC.
 
-**Frontend (×3 SPA)**: TypeScript 5.5 · React 18.3 · Vite 5.3 · shadcn/ui (Radix) · TailwindCSS 3.4 ·
+**Frontend (×4 SPA)**: TypeScript 5.5 · React 18.3 · Vite 5.3 · shadcn/ui (Radix) · TailwindCSS 3.4 ·
 Zustand 4.5 · React Router 6.24 · Axios 1.7 · Recharts 2.12 · lucide-react · qrcode.react 4.2.
-SPA `admin` añade `@stripe/react-stripe-js`.
+SPA `admin` añade `@stripe/react-stripe-js`; SPA `acceso` añade `html5-qrcode` + `@simplewebauthn/browser`.
 
 **Infra**: Docker Compose (Postgres 15 Alpine, Redis 7, Mailpit) · Nginx (prod) · Node 20.
 
@@ -66,23 +78,29 @@ xenty-acceso/
 │   │   ├── urls.py            # data plane (schema del tenant)
 │   │   ├── urls_public.py     # control plane (schema public) + webhooks Stripe
 │   │   ├── celery.py
-│   │   └── middleware/        # enforcement (orden en §6)
+│   │   └── middleware/        # enforcement.py + idempotency.py (orden en §6)
+│   ├── common/                # librería compartida: crypto, signing, jwt, mfa, webauthn,
+│   │                          #   permissions, validators, fields, cache, emails, health…
 │   ├── apps/
 │   │   ├── tenants/           # public: Tenant, Plan, billing, MFA, DispositivoEdge, ComandoEdge…
-│   │   ├── accounts/          # tenant: Usuario (contexto acceso)
+│   │   ├── accounts/          # tenant: Usuario (contexto acceso), PermisoUsuario, roles
 │   │   ├── proveedores/ empleados/ recintos/ documentos/ eventos/ citas/
 │   │   ├── acceso/ gafetes/ sanciones/ dispositivos/ mensajeria/ cumplimiento/ ocr/
-│   │   ├── config/            # Opcion, HistorialCambio
+│   │   ├── efos/              # padrón EFOS GLOBAL (SAT 69-B) — no por tenant
+│   │   ├── config/            # Opcion, HistorialCambio, dashboards/export
 │   │   └── soporte/           # cliente Mesa de Ayuda (Nivel B)
-│   ├── etl/                   # ETL MySQL→Postgres (F8)
-│   ├── tests/
+│   ├── etl/                   # legado (ETL descartado — ver §1)
+│   ├── tests/                 # aislamiento, ARCO, connector, WebAuthn, mensajería…
+│   ├── conftest.py · pyproject.toml   # config pytest (settings.dev)
 │   └── manage.py
-├── frontend-acceso/          # SPA operación (auth users)
+├── frontend-acceso/          # SPA operación (auth users) — + scanner QR, WebAuthn
 ├── frontend-proveedores/     # SPA autoservicio (auth providers)
-├── frontend-admin/           # SPA super-admin (control plane)
-├── docker-compose.yml
+├── frontend-admin/           # SPA super-admin (control plane) — + Stripe
+├── frontend-landing/         # SPA marketing / onboarding público
+├── handoffs/                 # HANDOFF_LATEST.md + history/ — contexto de sesiones previas
+├── design/ · nginx/ · docker-compose.yml
 ├── .env.example              # COMPLETO y verificado; nunca .env real en git
-└── docs/                     # los 7 .md de la suite
+└── docs/                     # suite de documentación (STATUS.md = estado vivo)
 ```
 
 ---
@@ -166,6 +184,14 @@ seguridad de la fase cerrados, `.env.example` actualizado si hubo variables nuev
 ```
 Cada enforcement tiene whitelist (health, auth, billing, logout) para que el cliente siempre pueda pagar.
 
+> **Cómo está implementado (verificado en `config/settings/base.py`):** los slots **5**
+> (email no verificado) y **9** (sesión MFA incompleta) **no** son middleware — se aplican como
+> permisos DRF en `common/permissions.py` (`EmailVerificado`, `MFASesionCompleta`), porque requieren
+> el actor JWT ya resuelto. El middleware real es solo `enforcement.py` (RestringirAdminPorIP,
+> EnforceMantenimiento, BloquearTenantsInactivos, BloquearTrialExpirado, EnforceModoSoloLectura) +
+> `idempotency.Idempotency`. El orden numerado de arriba es el **modelo conceptual**; sigue el listado
+> `MIDDLEWARE` de `base.py` como fuente de verdad al tocar el pipeline.
+
 ---
 
 ## 7. Comandos
@@ -182,10 +208,13 @@ python manage.py migrate_schemas --tenant
 python manage.py create_tenant <slug> <dominio>        # provisioning
 python manage.py migrate_schemas --schema=<slug>
 
-# Tests
+# Tests (se corren desde backend/; los tests viven en backend/tests/)
 pytest                              # toda la suite
-pytest apps/eventos -q              # un módulo
-pytest -k aislamiento               # suite de aislamiento entre tenants
+pytest tests/test_webauthn.py -q    # un archivo
+pytest -k aislamiento               # suite de aislamiento entre tenants (~2.5 min: crea schemas)
+# La imagen backend solo trae requirements.txt (prod). Para correr tests en el contenedor:
+#   docker compose exec backend pip install -r requirements-dev.txt
+#   docker compose exec backend python -m pytest -k aislamiento
 
 # Calidad
 ruff check . && ruff format .       # Python
