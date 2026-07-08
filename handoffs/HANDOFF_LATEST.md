@@ -1,90 +1,94 @@
 # Handoff — Xenty Acceso
 
 > **Lee primero:** `CLAUDE.md` (reglas operativas) → este archivo (estado actual).
-> Actualizado: **2026-07-08**. El anterior está en `handoffs/history/HANDOFF_2026-07-03.md`.
+> Actualizado: **2026-07-08** (2ª tanda del día). El anterior está en
+> `handoffs/history/HANDOFF_2026-07-08_a.md` (Connector F-B/C/D).
 
 ## Resumen ejecutivo
 
-Sesión centrada en el **Xenty Communication Connector (XCC)** — el respaldo/failover de WhatsApp.
-Se cerraron **F-B, F-C y F-D** de un tirón; el respaldo queda **operativo end-to-end** (solo falta
-escanear un QR real para enviar de verdad — eso es operación, no código). Lo demás del producto
-(F0–F8) seguía completo desde la sesión previa.
+Sesión enfocada en el **baseline de cumplimiento/seguridad (bucket #2)**. Sobre el trabajo previo
+(producto F0–F8 completo + Connector de WhatsApp F-A→F-D), se cerraron:
 
-1. **F-B · Config por UI**: `ConfiguracionConnector` (global, super-admin, schema public: master
-   switch + secreto HMAC cifrado + timeouts + umbrales de breaker) y `PreferenciaMensajeria` (por
-   tenant, schema del tenant: orden de proveedores + failover + reintentos + timeout). El Router lee
-   ambas (precedencia master switch → preferencia). APIs `/api/admin/comunicaciones/` (control plane)
-   y `/api/mensajeria/preferencia/` (tenant, admin). Pantallas **"Comunicaciones"** (frontend-admin) y
-   **"Proveedores WA"** (frontend-acceso, con Ayuda ⓘ).
-2. **F-C · Connector MVP**: **repo separado** `xenty-connector` (Node 20 + TS + Fastify + Baileys).
-   API REST `/v1` con HMAC+nonce, sesiones por `(tenant, connection_id)` con QR/pairing + reconexión +
-   recuperación tras reinicio, **media completa**, persistencia por tenant, `/healthz`+`/v1/status`,
-   logs sin PII. Verificado en Docker (healthz, 401/409, **QR real generado**).
-3. **F-D · `ConnectorProvider` + failover real**: cliente REST del XCC en el principal
-   (`apps/mensajeria/connector_provider.py`), registrado en `proveedores.registro_proveedores`. El
-   Router hace **failover real** xcc→UltraMsg/Sandbox. **Interop en vivo Django↔XCC verificada**
-   (firma Python aceptada por el Connector Node → 409 por sesión inexistente, no 401).
+1. **ARCO / LFPDPPP** (`apps.cumplimiento`): motor de derechos del titular — **export** (acceso,
+   descifra PII) y **cancelación** (anonimización in-place: sobrescribe PII, borra archivos privados,
+   baja lógica, **preserva fila y bitácora**). `SolicitudArco` (con plazo legal 20 días) +
+   `DocumentoLegal` versionado por tipo (aviso de privacidad + términos). UI "Privacidad · ARCO" en
+   frontend-acceso. Titulares cubiertos: Empleado, CuentaProveedor, AsistenteCita.
+2. **Onboarding de proveedores**: el Aviso de Privacidad y los Términos ahora son **enlaces legibles**
+   (modal, leídos por token vía `DocumentoOnboardingView`), y **REPSE/SUA pasan a obligatorios**
+   (cliente + serializer).
+3. **WebAuthn (FIDO2 / passkeys)** como 2º factor de MFA para **super-admin y usuarios del tenant**,
+   reutilizando el flujo de sesión del TOTP (`mfa="pending"→"ok"`). Backend compartido
+   (`common/webauthn*`), credenciales por schema, y **UI de MFA nueva en frontend-acceso** (verificación
+   post-login + página Seguridad) que antes no existía.
 
-Tests verdes: backend `test_connector_provider` (5) + `test_mensajeria_router` (9) + aislamiento (9,
-incluye preferencia por tenant); connector `vitest` (15). `ruff` + `tsc` limpios.
+Todo **commiteado y pusheado** a `origin/main` (`a5bd9c9..0a379df`, 3 commits: cumplimiento, onboarding,
+mfa). `ruff` + `tsc` limpios; tests nuevos verdes (ARCO 8, WebAuthn 6) + suites previas.
 
 ## Estado por módulo
 
 | Área | Estado | Notas |
 |---|---|---|
-| F0–F8 producto + 3 SPAs | ✔ | Completo desde sesiones previas |
-| Mensajería / Connector | ✔ F-A→F-D | Respaldo WhatsApp operativo; **falta F-E** (métricas/webhook/escala) |
-| `xenty-connector` (repo separado) | ✔ F-C | `C:\xampp\htdocs\xenty-connector` · Node+Baileys · ver su `README.md` |
-| Tests | ✔ | Backend (aislamiento 9 + router 9 + connector 5 + F0 2) · connector 15 (vitest) |
+| Producto F0–F8 + 3 SPAs | ✔ | Completo |
+| Connector WhatsApp (XCC) | ✔ F-A→F-D · falta F-E | Repo separado `../xenty-connector` (ver §NO obvio) |
+| ARCO / LFPDPPP | ✔ | Export + cancelación + solicitudes + documentos legales |
+| Onboarding proveedores | ✔ | Docs legales legibles + REPSE/SUA obligatorios |
+| MFA | ✔ TOTP + WebAuthn | super-admin (control plane) y Usuario (tenant). **Falta**: CuentaProveedor sin UI de MFA |
+| Tests | ✔ | ARCO 8, WebAuthn 6, connector-provider 5, router 9, aislamiento 9, F0 2 |
 
 ## Contexto NO obvio (IMPORTANTE)
 
-1. **El Connector es un repo SEPARADO**: `C:\xampp\htdocs\xenty-connector` (git propio, rama `main`).
-   NO vive dentro de este repo. Opcional: si no está levantado, el Router usa solo UltraMsg (failover).
-2. **Esquema de firma HMAC XCC** (lo comparten `connector_provider.py` y `xenty-connector/src/hmac.ts`):
-   `HMAC_SHA256(secret, f"{METHOD}\n{PATH}\n{TENANT}\n{TIMESTAMP}\n{NONCE}\n{SHA256_HEX(body)}")`,
-   cabeceras `X-XCC-{Tenant,Timestamp,Nonce,Signature}`, ventana 300s, nonce single-use. Se firma y
-   envía **el mismo cuerpo en bytes** (`data=`, no `json=`) para que el hash coincida byte a byte.
-   `XCC_HMAC_SECRET` (env del connector) **debe** igualar `ConfiguracionConnector.hmac_secret` (UI).
-3. **Master switch**: `ConfiguracionConnector.habilitado=False` apaga el Connector para todos al
-   instante (rollback sin desplegar). El Router cachea el snapshot de config **20s** (Redis, por
-   tenant) → los cambios del super-admin propagan en segundos.
-4. **`connection_id`** del `ConnectorProvider` es `"principal"` por defecto (constante). Hacerlo
-   configurable por tenant es parte de F-E.
-5. **Interop/verificación local**: el backend (docker) alcanza un XCC levantado en el host vía
-   `host.docker.internal:8091`. El 409 (sesión inexistente) es señal de éxito de auth; 202 real exige
-   escanear el QR con un teléfono.
-6. **`--noreload`** (gotcha vigente): el backend no recarga código Python solo. Tras cambios `.py`:
-   `docker compose restart backend superadmin-backend nginx` (nginx por el punto #7). El entrypoint
-   corre migraciones al arrancar (tarda ~30-60s en levantar el runserver).
-7. **Nginx cachea la IP del backend**: tras reiniciar el backend, `docker compose restart nginx` o
-   `/api/` da 502/404.
-8. **Dev-deps para tests**: `docker compose exec backend pip install -r requirements-dev.txt` y luego
-   `python -m pytest`. La suite crea schemas (lenta, ~3 min).
+1. **Cancelación ARCO = anonimización, NO borrado físico** (obligado por baja lógica + FKs `PROTECT`
+   + retención legal). `apps/cumplimiento/arco.py`: sobrescribe PII a placeholder/null, borra archivos
+   del disco privado por tenant, marca baja. Idempotente. La fila y la bitácora (`RegistroAcceso`) se
+   conservan.
+2. **`DocumentoLegal`** (schema tenant) es genérico por `tipo` (`aviso_privacidad`,
+   `terminos_condiciones`), **versionado**: cada edición crea una versión nueva (histórico legal). El
+   admin lo edita en "Privacidad"; el onboarding lo lee por token; hay endpoint público por tenant.
+   Ya hay **plantillas de texto** listas (aviso + términos, con placeholders del recinto) — se
+   generaron en chat esta sesión; aún no sembradas en ningún tenant.
+3. **WebAuthn es 2º factor** (no passwordless). Credenciales por schema: `CredencialWebAuthnAdmin`
+   (public, SuperAdmin) y `CredencialWebAuthn` (tenant, Usuario). Retos en cache (Redis, TTL 5 min).
+   **En prod hay que fijar** `WEBAUTHN_RP_ID` al dominio real y `WEBAUTHN_ORIGINS` a los orígenes
+   HTTPS de cada SPA (el navegador exige que RP_ID == dominio visible). Dev: `localhost`.
+   La verificación E2E real de WebAuthn requiere un navegador con autenticador (no se puede vía curl);
+   los tests cubren mi lógica, la cripto de attestation la valida `py_webauthn`.
+4. **El Connector es un repo SEPARADO**: `C:\xampp\htdocs\xenty-connector` (git propio, rama `main`,
+   **commiteado local, SIN push** — no tiene remoto aún). Node+Baileys. Firma HMAC que debe calcar
+   `ConnectorProvider`: `HMAC_SHA256(secret, METHOD\nPATH\nTENANT\nTIMESTAMP\nNONCE\nSHA256HEX(body))`,
+   cabeceras `X-XCC-*`, ventana 300s. `XCC_HMAC_SECRET` = `ConfiguracionConnector.hmac_secret`.
+5. **`--noreload`** (gotcha vigente): el backend no recarga `.py` solo. Tras cambios:
+   `docker compose restart backend superadmin-backend nginx`. El entrypoint corre migraciones al
+   arrancar → tarda ~60-90s en levantar el runserver (health 000 mientras tanto; es normal).
+6. **Nginx cachea la IP del backend**: tras reiniciar backend, reiniciar nginx o `/api/` da 502/404.
+7. **Tests**: `docker compose exec backend pip install -r requirements-dev.txt` y luego
+   `python -m pytest`. Crea schemas → lento (~2-3 min por archivo pesado).
+8. **Onboarding sirve en AMBOS urlconfs**: las rutas `/api/onboarding/*` (incl. `documento/`) están en
+   `config/urls_public.py` Y `config/urls.py` porque la SPA de proveedores vive bajo el subdominio del
+   tenant. Al añadir una ruta de onboarding, ponerla en los dos.
 
 ## Próximos pasos sugeridos
 
-1. **F-E del Connector**: métricas Prometheus (`/metrics`), webhook de estados de entrega
-   (delivered/read), escala horizontal (routing sticky por `connection_id` + nonce en Redis),
-   `connection_id` configurable por tenant (hoy fijo `"principal"`).
-2. **Operación real**: escanear el QR de una sesión (`POST /v1/tenants/{t}/sessions` → `GET .../qr`)
-   para habilitar envíos reales por el Connector.
-3. **Deploy del Connector**: contenedor propio con volumen de sesiones y `XCC_HMAC_SECRET` seguro;
-   `url_base` accesible desde el backend. `xenty-connector` no tiene remoto git aún.
-4. **Baseline pendiente** (heredado): servir `/media` en prod (`DEBUG=False`), WebAuthn opcional,
-   ARCO/LFPDPPP, backups/retención, SSO entre productos, reactivar `B904`.
+1. **Baseline #2 restante**: backups/retención, SSO entre productos de la suite, notificaciones
+   in-app, y el quick win de **reactivar `B904`** en ruff (hoy diferido).
+2. **Connector F-E**: métricas Prometheus, webhook de estados de entrega, escala horizontal (nonce en
+   Redis + routing sticky), `connection_id` configurable por tenant. Y **crear el repo remoto** del
+   `xenty-connector` + push + deploy.
+3. **MFA de CuentaProveedor** (proveedores): el backend TOTP/WebAuthn es genérico pero el ctx
+   `proveedores` no está soportado en las vistas WebAuthn ni tiene UI de MFA en frontend-proveedores.
+4. **Deploy a producción**: servir `/media` con `DEBUG=False`, Nginx prod + secrets, `WEBAUTHN_*` de
+   prod, CI de deploy.
+5. **Sembrar** el aviso/términos (plantillas ya redactadas) en los tenants y QA visual E2E autenticado.
 
 ## Verificar servicios
 
 ```bash
 docker compose ps                                   # todos Up
-docker compose restart backend nginx                # tras cambios .py
+docker compose restart backend superadmin-backend nginx   # tras cambios .py
 docker compose exec backend pip install -r requirements-dev.txt && \
-  docker compose exec backend python -m pytest tests/test_connector_provider.py tests/test_mensajeria_router.py -q
-
-# Connector (repo separado):
-cd ../xenty-connector && npm install && npm test    # 15 tests
-docker build -t xenty-connector:test . && \
-  docker run -d --name xcc -e XCC_HMAC_SECRET=dev -p 8091:8090 xenty-connector:test
-curl -s -o /dev/null -w "%{http_code}" http://localhost:8091/healthz   # 200
+  docker compose exec backend python -m pytest tests/test_arco.py tests/test_webauthn.py -q
+docker compose exec backend ruff check .            # bloqueante en CI
+# rutas MFA WebAuthn (401 = auth requerida, ruta OK):
+curl -s -o /dev/null -w "%{http_code}" -X POST -H "Host: rayados.localhost" \
+  http://localhost:8002/api/auth/mfa/webauthn/registro/opciones/
 ```
