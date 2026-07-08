@@ -29,6 +29,21 @@ WEBAUTHN_ORIGINS = config(
     "WEBAUTHN_ORIGINS", default="http://localhost:8080,http://localhost:8081", cast=Csv()
 )
 
+# ── Email (transaccional) ────────────────────────────────────────────────────
+# Config compartida por ambos planos: el signup (doble opt-in) corre en el control plane, así que
+# el backend de correo debe estar aquí y no solo en dev.py. Dev: Mailpit (SMTP plano en :1025, sin
+# TLS/SSL). Prod: fija EMAIL_HOST/PORT/USE_TLS + credenciales por env.
+EMAIL_BACKEND = config(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+)
+EMAIL_HOST = config("EMAIL_HOST", default="mailpit")
+EMAIL_PORT = config("EMAIL_PORT", default=1025, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=False, cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", default=False, cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@xenty.mx")
+
 # ── Multitenancy (django-tenants) ────────────────────────────────────────────
 SHARED_APPS = [
     "django_tenants",
