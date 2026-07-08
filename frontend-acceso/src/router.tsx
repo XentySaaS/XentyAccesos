@@ -13,6 +13,7 @@ import Historial from "./pages/Historial";
 import Soporte from "./pages/Soporte";
 import Login from "./pages/Login";
 import Mensajeria from "./pages/Mensajeria";
+import ProveedoresMensajeria from "./pages/ProveedoresMensajeria";
 import Proveedores from "./pages/Proveedores";
 import Recintos from "./pages/Recintos";
 import Sanciones from "./pages/Sanciones";
@@ -46,6 +47,7 @@ export const router = createBrowserRouter([
       { path: "/verificacion",element: <Verificacion /> },
       { path: "/cumplimiento",element: <Cumplimiento /> },
       { path: "/mensajeria",  element: <Mensajeria /> },
+      { path: "/mensajeria/proveedores", element: <ProveedoresMensajeria /> },
       { path: "/escaner",     element: <Escaner /> },
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },

@@ -6,6 +6,7 @@ import Tenants from "./pages/Tenants";
 import TenantDetalle from "./pages/TenantDetalle";
 import Planes from "./pages/Planes";
 import Seguridad from "./pages/Seguridad";
+import Comunicaciones from "./pages/Comunicaciones";
 import { useAuth } from "./store/auth";
 
 function Protegida({ children }: { children: JSX.Element }) {
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
       { path: "/tenants", element: <Tenants /> },
       { path: "/tenants/:id", element: <TenantDetalle /> },
       { path: "/planes", element: <Planes /> },
+      { path: "/comunicaciones", element: <Comunicaciones /> },
       { path: "/seguridad", element: <Seguridad /> },
     ],
   },

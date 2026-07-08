@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.ocr.views import ExtraerIneView
 from apps.proveedores.views import OnboardingProveedorView
 from apps.tenants.admin_api import (
+    ConfiguracionConnectorView,
     CrearCheckoutView,
     PlanAdminViewSet,
     SignupView,
@@ -53,6 +54,11 @@ urlpatterns = [
         "api/admin/tenants/<int:tenant_id>/checkout/",
         CrearCheckoutView.as_view(),
         name="admin-checkout",
+    ),
+    path(
+        "api/admin/comunicaciones/",
+        ConfiguracionConnectorView.as_view(),
+        name="admin-comunicaciones",
     ),
     *router.urls,
 ]

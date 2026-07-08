@@ -65,6 +65,29 @@ def test_aislamiento_proveedores_no_filtran_entre_tenants(dos_tenants):
         ), "Fuga: proveedores del tenant 1 visibles desde el tenant 2"
 
 
+def test_aislamiento_preferencia_mensajeria_por_tenant(dos_tenants):
+    """La ``PreferenciaMensajeria`` (F-B) vive en el schema del tenant → no filtra entre tenants."""
+    from apps.mensajeria.models import PreferenciaMensajeria
+
+    t1, t2 = dos_tenants
+
+    with schema_context(t1.schema_name):
+        pref = PreferenciaMensajeria.cargar()
+        pref.proveedores_orden = ["ultramsg", "xcc"]
+        pref.failover_habilitado = False
+        pref.save()
+
+    with schema_context(t2.schema_name):
+        # El tenant 2 arranca con su propio singleton por defecto, no el del tenant 1.
+        pref2 = PreferenciaMensajeria.cargar()
+        assert pref2.proveedores_orden == []
+        assert pref2.failover_habilitado is True, "Fuga: la preferencia del tenant 1 se ve en el 2"
+
+    with schema_context(t1.schema_name):
+        pref1 = PreferenciaMensajeria.cargar()
+        assert pref1.proveedores_orden == ["ultramsg", "xcc"]
+
+
 # ── Padrón EFOS 69-B: global visible; resultados por tenant ──────────────────
 
 

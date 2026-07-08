@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from common.auth_api import BaseLoginView
 from common.permissions import EsSuperAdmin, MFASesionCompleta
 
-from .models import Plan, SaldoCreditos, SuperAdmin, Tenant
+from .models import ConfiguracionConnector, Plan, SaldoCreditos, SuperAdmin, Tenant
 from .services import billing
 from .services.provisioning import ProvisionError, provisionar_tenant
 from .services.stripe_gateway import crear_checkout_suscripcion
@@ -251,6 +251,64 @@ class PlanAdminViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_409_CONFLICT,
             )
+
+
+# ── Comunicaciones: config global del Connector (XCC) ────────────────────────
+class ConfiguracionConnectorSerializer(serializers.ModelSerializer):
+    # El secreto HMAC es write-only: entra para guardarse (cifrado) y jamás se devuelve en claro.
+    hmac_secret = serializers.CharField(
+        required=False, allow_blank=True, write_only=True, trim_whitespace=False
+    )
+    hmac_configurado = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ConfiguracionConnector
+        fields = [
+            "habilitado",
+            "url_base",
+            "hmac_secret",
+            "hmac_configurado",
+            "timeout_ms",
+            "intervalo_health",
+            "reintentos_default",
+            "estrategia_failover",
+            "cb_umbral",
+            "cb_cooldown",
+            "cb_ventana",
+            "recuperacion_automatica",
+            "actualizado",
+        ]
+        read_only_fields = ["actualizado"]
+
+    def get_hmac_configurado(self, obj) -> bool:
+        return bool(obj.hmac_secret)
+
+    def update(self, instance, validated_data):
+        # Un hmac_secret vacío NO borra el existente (misma semántica que api_key en Mesa).
+        if not validated_data.get("hmac_secret"):
+            validated_data.pop("hmac_secret", None)
+        return super().update(instance, validated_data)
+
+
+class ConfiguracionConnectorView(APIView):
+    """GET/PUT /api/admin/comunicaciones/ — config global del Connector (master switch + failover)."""
+
+    permission_classes = [IsAuthenticated, MFASesionCompleta, EsSuperAdmin]
+
+    def get(self, request):
+        cfg = ConfiguracionConnector.cargar()
+        return Response(ConfiguracionConnectorSerializer(cfg).data)
+
+    def put(self, request):
+        cfg = ConfiguracionConnector.cargar()
+        s = ConfiguracionConnectorSerializer(cfg, data=request.data, partial=True)
+        s.is_valid(raise_exception=True)
+        s.save()
+        # Propaga el cambio al Router de inmediato (invalida su snapshot cacheado).
+        from django.core.cache import cache
+
+        cache.delete("connector:config")
+        return Response(ConfiguracionConnectorSerializer(cfg).data)
 
 
 class CrearCheckoutView(APIView):

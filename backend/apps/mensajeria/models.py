@@ -53,6 +53,35 @@ class DestinatarioMensaje(models.Model):  # message_recipients
     actualizado = models.DateTimeField(auto_now=True)
 
 
+class PreferenciaMensajeria(models.Model):
+    """Preferencia de proveedores de WhatsApp del tenant (ARQUITECTURA_CONNECTOR §8.2).
+
+    Singleton por tenant (vive en el schema del tenant). Gobierna qué proveedores usa el Router y en
+    qué orden. ``proveedores_orden`` es una lista de claves (``"ultramsg"``, ``"xcc"``, ``"sandbox"``);
+    el Router filtra a las implementaciones realmente registradas y respeta el master switch global
+    del Connector, así que listar ``"xcc"`` sin Connector activo simplemente lo salta (no rompe nada).
+    """
+
+    proveedores_orden = models.JSONField(default=list, blank=True)  # ["ultramsg", "xcc"]
+    failover_habilitado = models.BooleanField(default=True)
+    reintentos = models.PositiveSmallIntegerField(default=1)
+    timeout_ms = models.PositiveIntegerField(default=15000)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Preferencia de mensajería"
+
+    @classmethod
+    def cargar(cls) -> PreferenciaMensajeria:
+        """Única fila del tenant (creada con defaults si no existe). Singleton por schema."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # singleton por tenant
+        super().save(*args, **kwargs)
+
+
 class RegistroEnvio(models.Model):
     """Ledger append-only de notificaciones sueltas (ARQUITECTURA_CONNECTOR §9).
 

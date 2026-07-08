@@ -225,6 +225,47 @@ class ConfiguracionMesa(models.Model):
     habilitada = models.BooleanField(default=False)
 
 
+class ConfiguracionConnector(models.Model):
+    """Configuración GLOBAL del Xenty Communication Connector (XCC), editable por super-admin.
+
+    Singleton en ``public`` (ARQUITECTURA_CONNECTOR §8.1). ``habilitado`` es el **master switch**:
+    con él en ``False`` el Router jamás usa el Connector, sin importar la preferencia de un tenant
+    (rollback instantáneo, §14). El secreto HMAC se guarda cifrado (Fernet), nunca en env ni en git.
+    """
+
+    class Estrategia(models.TextChoices):
+        SECUENCIAL = "secuencial", "Secuencial (failover en orden)"
+
+    habilitado = models.BooleanField(default=False)  # master switch global del Connector
+    url_base = models.URLField(null=True, blank=True)  # p. ej. https://xcc.interno:8090
+    hmac_secret = EncryptedCharField(max_length=255, null=True, blank=True)
+    timeout_ms = models.PositiveIntegerField(default=8000)
+    intervalo_health = models.PositiveIntegerField(default=30)  # segundos entre sondas de salud
+    reintentos_default = models.PositiveSmallIntegerField(default=1)
+    estrategia_failover = models.CharField(
+        max_length=20, choices=Estrategia.choices, default=Estrategia.SECUENCIAL
+    )
+    # Umbrales del circuit breaker por proveedor (alimenta apps.mensajeria.breaker).
+    cb_umbral = models.PositiveSmallIntegerField(default=5)  # fallos para abrir
+    cb_cooldown = models.PositiveIntegerField(default=60)  # segundos abierto antes de sondear
+    cb_ventana = models.PositiveIntegerField(default=300)  # ventana de conteo de fallos
+    recuperacion_automatica = models.BooleanField(default=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuración del Connector"
+
+    @classmethod
+    def cargar(cls) -> ConfiguracionConnector:
+        """Devuelve la única fila (la crea con defaults si no existe). Singleton global."""
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # fuerza singleton: siempre la misma fila
+        super().save(*args, **kwargs)
+
+
 class DispositivoEdge(models.Model):
     """Raspberry Pi en torniquetes/plumas. Origen: ``devices_tenants`` (BD central)."""
 

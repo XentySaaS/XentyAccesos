@@ -76,3 +76,21 @@ class UltraMsgProvider:
             )
         except Exception as exc:  # noqa: BLE001 — el Router decide failover con ok=False
             return ResultadoEnvio(ok=False, proveedor=self.nombre, error=str(exc))
+
+
+def registro_proveedores() -> dict[str, type]:
+    """Proveedores con implementación disponible, indexados por su clave (``nombre``).
+
+    Punto único de extensión: sumar un proveedor = añadirlo aquí, sin tocar el Router ni el dominio
+    (ARQUITECTURA_CONNECTOR §6). El Connector (``"xcc"``, F-D) queda registrado, pero el Router solo lo
+    usa si el master switch global (``ConfiguracionConnector.habilitado``) está activo; si está
+    apagado, ``proveedores_para`` lo salta aunque un tenant lo liste.
+    """
+    from .connector_provider import ConnectorProvider
+
+    reg: dict[str, type] = {
+        UltraMsgProvider.nombre: UltraMsgProvider,
+        SandboxProvider.nombre: SandboxProvider,
+        ConnectorProvider.nombre: ConnectorProvider,
+    }
+    return reg
