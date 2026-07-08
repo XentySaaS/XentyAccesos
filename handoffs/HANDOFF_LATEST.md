@@ -175,9 +175,12 @@ Health: `GET /health/` (raíz, **no** `/api/health/`). Readiness: `/health/ready
 2. **QA end-to-end de onboarding** con un correo real: crear tenant desde la UI
    (`xenty.localhost:8080`), recibir el enlace de verificación en el buzón, confirmarlo, y comprobar
    que el SPA del tenant ya carga todos los módulos.
-3. **Tests** de la feature MFA: cubrir `bootstrap_superadmin` (idempotencia, MFA obligatorio),
-   `SuperAdminLoginView` (banderas `mfa_pendiente`/`mfa_enrolar`) y `ActivarTOTPView` (tokens full en
-   sesión pendiente). Correr con `requirements-dev.txt` (ruff/pytest no están en la imagen runtime).
+3. ✔ ~~**Tests** de la feature MFA~~ **HECHO**: `backend/tests/test_mfa_superadmin.py` (12 tests,
+   verdes). Cubre `bootstrap_superadmin` (idempotencia + singleton, MFA obligatorio, siembra
+   env-driven), `SuperAdminLoginView` (banderas `mfa_pendiente`/`mfa_enrolar` con TOTP y passkey,
+   401 en credenciales malas) y `ActivarTOTPView` (tokens `full` en sesión pendiente, 400 en código
+   inválido / sin secreto). Suite completa 42/42. Correr: `docker compose exec backend pip install -r
+   requirements-dev.txt` (una vez) → `docker compose exec backend python -m pytest tests/test_mfa_superadmin.py`.
 4. **Brecha de UX (no bloqueante)**: cuando `/api/auth/me/` da 403 por email no verificado, el SPA
    `frontend-acceso` muestra un menú vacío en vez de un aviso "verifica tu correo". Manejar ese 403.
 5. **MFA obligatorio también para el Usuario del tenant** (si se quiere paridad con el super-admin) y
