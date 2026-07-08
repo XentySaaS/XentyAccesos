@@ -7,8 +7,8 @@
 ## Resumen ejecutivo
 
 Sesión de **puesta en marcha del entorno local en una máquina nueva** (`C:\Users\ADMIN\Documents\
-ProyectosElevation\XentyAccesos`, Windows) + diagnóstico y **fix de tres bloqueos** que impedían usar
-el producto de punta a punta:
+ProyectosElevation\XentyAccesos`, Windows) + diagnóstico y **fix de tres bloqueos** + una **feature
+nueva** (auto-siembra del super-admin con MFA obligatorio):
 
 1. **Entorno levantado desde cero**: no existía `.env` → contenedores no arrancaban. Se generó `.env`
    desde `.env.example` con secretos reales de dev, y se levantó todo el stack (13 servicios).
@@ -18,10 +18,13 @@ el producto de punta a punta:
    **email sin verificar**, y el correo de verificación **nunca se enviaba** porque el control plane
    no tenía backend de correo configurado. Se corrigió la config de email (código) y se puso SMTP de
    Gmail real (`.env`).
+4. **Feature: auto-siembra del super-admin + MFA obligatorio** (modo estricto): al arrancar, si no
+   existe super-admin y hay credenciales en el entorno, se crea con `mfa_habilitado=True` sin factor
+   enrolado. El primer login queda en sesión pendiente y **no da acceso hasta enrolar+verificar** el
+   2º factor (TOTP/passkey). Nueva pantalla de enrolamiento (QR) en el login del `frontend-admin`.
 
-**Ningún cambio commiteado aún** (ver §Próximos pasos). Hay 2 archivos de código modificados
-(`base.py`, `dev.py`) que sí son fix reales y conviene commitear; el resto son cambios locales de
-entorno (`.env`, no versionado).
+**Commiteado y pusheado a `origin/main`**: `fix(email)` + `docs` (handoff previo) y luego
+`feat(mfa)` (auto-siembra + 2FA) + `docs` (este handoff). `.env` nunca se versiona.
 
 ## Cómo se levanta el entorno (máquina nueva) — PASO A PASO
 
@@ -37,16 +40,19 @@ entorno (`.env`, no versionado).
        ```
        (`SECRET_KEY` = otro token url-safe de 50 bytes.)
    - `ALLOWED_HOSTS=localhost,127.0.0.1,.localhost` ← **el `.localhost` es clave** (ver §Contexto NO
-     obvio #1). El `.env.example` NO lo trae; hay que añadirlo.
-   - Email: **SMTP de Gmail real** ya configurado en este `.env` (ver §Contexto NO obvio #2).
+     obvio #1). Ya viene en `.env.example` (se documentó esta sesión).
+   - Email: dev usa Mailpit por defecto (`.env.example`). En este `.env` está **SMTP de Gmail real**
+     (ver §Contexto NO obvio #2).
+   - `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`: si se definen, el super-admin se **auto-siembra** al
+     arrancar (con MFA obligatorio). Vacías = no se crea (fallback: `crear_superadmin`).
 2. **Verificar que `.env` esté ignorado**: `git check-ignore .env` → debe imprimir `.env`.
-3. **Levantar**: `docker compose up -d` (la 1ª vez descarga imágenes y construye; ~varios min).
-4. **Sembrar el super-admin** (la tabla `tenants_superadmin` arranca vacía; sin esto no hay login):
-   ```bash
-   docker compose exec superadmin-backend python manage.py crear_superadmin \
-     --email admin@xenty.mx --nombre "Super Admin" --password "<define-una-en-dev>"
-   ```
-   (Solo permite **uno**; si ya existe, avisa y no crea otro.)
+3. **Levantar**: `docker compose up -d` (la 1ª vez descarga imágenes y construye; ~varios min). El
+   arranque del backend corre `bootstrap_public` + `bootstrap_superadmin` (ambos idempotentes).
+4. **Super-admin**: se **auto-siembra** si `SUPERADMIN_*` está en el entorno (ya no hace falta el
+   `crear_superadmin` manual). Se crea con **MFA obligatorio** → el primer login exige enrolar el 2º
+   factor (escanear el QR en `admin.localhost:8080`). Si prefieres crearlo a mano o sin las env:
+   `docker compose exec superadmin-backend python manage.py crear_superadmin --email ... --password ...`
+   (singleton: solo permite uno).
 5. **Esperar** ~60-90s a que el backend termine migraciones + provisioning del tenant público
    (health 000/404 mientras tanto; es normal).
 
@@ -69,7 +75,7 @@ Health: `GET /health/` (raíz, **no** `/api/health/`). Readiness: `/health/ready
 | Área | Estado | Notas |
 |---|---|---|
 | Entorno local (Docker) | ✔ Levantado | 13 servicios Up; público provisionado |
-| Login super-admin | ✔ | `admin@xenty.mx` (contraseña de dev definida al sembrar; no se versiona) |
+| Login super-admin | ✔ | `admin@xenty.mx`; auto-sembrado con **MFA obligatorio** (1er login exige enrolar 2FA) |
 | Alta self-service de tenants | ✔ | signup 201; envía verificación por correo real |
 | Verificación de email | ✔ (arreglada) | Ahora el correo sale de verdad (Gmail) |
 | Envío SMTP | ✔ | Gmail `smtp.gmail.com:587` STARTTLS — probado, `send_mail -> 1` |
@@ -78,20 +84,27 @@ Health: `GET /health/` (raíz, **no** `/api/health/`). Readiness: `/health/ready
 
 ## Cambios de esta sesión
 
-### Código (versionado — CONVIENE COMMITEAR)
-- **`backend/config/settings/base.py`**: se añadió el bloque **Email (transaccional)** env-driven
-  (`EMAIL_BACKEND/HOST/PORT/USE_TLS/USE_SSL/HOST_USER/HOST_PASSWORD/DEFAULT_FROM_EMAIL`). Antes la
-  config de correo solo vivía en `dev.py`, pero **el signup corre en el control plane** (que usa
-  `prod`, no `dev`) → sin backend de correo → usaba el SMTP default (`localhost:25`) →
-  `Connection refused` → correo perdido en silencio.
-- **`backend/config/settings/dev.py`**: se **eliminó** el bloque de email duplicado (que además
-  tenía el bug `EMAIL_USE_SSL=True`, incompatible con SMTP plano/STARTTLS). Ahora hereda de `base`.
-
-  Commit sugerido: `fix(email): configurar SMTP en base.py para que el control plane envíe verificación`
+### Código (versionado — YA COMMITEADO Y PUSHEADO)
+- **`fix(email)`** — `backend/config/settings/base.py` + `dev.py`: la config de email se movió a
+  `base.py` (env-driven) porque **el signup corre en el control plane** (usa `prod`, no `dev`) → antes
+  no heredaba backend de correo → SMTP default (`localhost:25`) → `Connection refused` → verificación
+  perdida en silencio. Se eliminó el duplicado de `dev.py` (que tenía `EMAIL_USE_SSL=True`, roto para
+  STARTTLS).
+- **`feat(mfa)`** — auto-siembra del super-admin + 2FA obligatorio (modo estricto):
+  - `base.py`: env `SUPERADMIN_EMAIL/PASSWORD/NOMBRE`.
+  - `apps/tenants/management/commands/bootstrap_superadmin.py` (nuevo): idempotente; crea el admin con
+    `mfa_habilitado=True` sin factor. Se añadió a la cadena de arranque en `docker-compose.yml`.
+  - `apps/tenants/admin_api.py` (`SuperAdminLoginView`): el login devuelve `mfa_pendiente` y
+    `mfa_enrolar` para que el SPA sepa si **enrolar** o solo **verificar** (conserva el rate-limit).
+  - `common/mfa_api.py` (`ActivarTOTPView`): si la sesión es pendiente, la activación emite tokens
+    `full` → enrolamiento en **un solo código**.
+  - `frontend-admin/src/pages/Login.tsx`: nueva fase **"Configura tu segundo factor"** (QR + código).
+- **`docs`** — `.env.example`: se documentó `ALLOWED_HOSTS=...,.localhost`, las vars de email
+  (`EMAIL_USE_TLS/SSL`, `USER/PASSWORD`, `DEFAULT_FROM_EMAIL`) y las vars `SUPERADMIN_*`.
 
 ### Entorno (NO versionado)
-- **`.env`** creado. Claves reales de dev + `ALLOWED_HOSTS` con `.localhost` + **SMTP Gmail real**.
-- Super-admin sembrado (`admin@xenty.mx`).
+- **`.env`** creado. Claves reales de dev + `ALLOWED_HOSTS` con `.localhost` + **SMTP Gmail real** +
+  `SUPERADMIN_EMAIL/PASSWORD` (para la auto-siembra).
 - Se marcó `email_verificado` (a mano, dev) del admin del tenant `museos` para desbloquearlo.
 
 ### Datos de prueba
@@ -101,9 +114,10 @@ Health: `GET /health/` (raíz, **no** `/api/health/`). Readiness: `/health/ready
 
 ## Credenciales (DEV — no son secretos de prod)
 
-- **Super-admin control plane**: `admin@xenty.mx` en `admin.localhost:8080`. La contraseña se
-  definió con `crear_superadmin --password ...` al sembrar; **no se versiona**. Si se pierde, borrar
-  la fila de `tenants_superadmin` y volver a sembrar.
+- **Super-admin control plane**: `admin@xenty.mx` en `admin.localhost:8080`. La contraseña vive en
+  `SUPERADMIN_PASSWORD` del `.env` (no se versiona). **MFA obligatorio**: en el primer login hay que
+  escanear el QR con una app autenticadora; sin eso no se entra. Para re-forzar el enrolamiento (dev):
+  poner `mfa_totp_secret=None` (y `mfa_habilitado=True`) en la fila de `tenants_superadmin`.
 - **SMTP Gmail**: `infofin2025@gmail.com`, app password en `.env` (`EMAIL_HOST_PASSWORD`). Si se
   filtra, **revocar en Google** y regenerar. Nunca pegar en archivos versionados.
 
@@ -136,27 +150,40 @@ Health: `GET /health/` (raíz, **no** `/api/health/`). Readiness: `/health/ready
    - Campos de signup: `nombre`, `subdominio`, `admin_nombre`, `admin_email`, `admin_password`.
 5. **Las env se cargan al CREAR el contenedor, no al `restart`**: tras tocar `.env` hay que
    `docker compose up -d --force-recreate <servicios>`. Tras tocar solo `.py` (van por volumen
-   montado) basta `docker compose restart backend superadmin-backend nginx`.
-6. **Sin Python en el host** de esta máquina: todo se ejecuta dentro de contenedores
+   montado) basta `docker compose restart <servicios>`.
+6. **`/api/admin/*` y `/api/signup/` los sirve `superadmin-backend` (8003), NO `backend` (8002)**.
+   Al editar código del control plane (`admin_api.py`, `common/mfa_api.py`, `urls_public.py`…) hay
+   que **`docker compose restart superadmin-backend`** — reiniciar solo `backend` no surte efecto
+   (gotcha real de esta sesión: las ediciones "no cargaban" por reiniciar el contenedor equivocado).
+7. **MFA obligatorio del super-admin (modo estricto)**: se modela con `mfa_habilitado=True` +
+   `mfa_totp_secret=None`. El login emite token `mfa="pending"` y las banderas `mfa_enrolar=True`
+   (pendiente y sin factor). Los endpoints `mfa/totp/enrolar` y `activar` usan solo `IsAuthenticated`
+   (NO `MFASesionCompleta`), así que **aceptan la sesión pendiente** → se puede enrolar antes de
+   completar el 2º factor. `activar` en sesión pendiente devuelve tokens `full` (enrolamiento en un
+   solo código). WebAuthn sigue disponible como alternativa desde Seguridad.
+8. **Sin Python en el host** de esta máquina: todo se ejecuta dentro de contenedores
    (`docker compose exec ...`). Para el shell de Django usar `manage.py shell -c "..."` (un
    `python -c` suelto falla con `DJANGO_SETTINGS_MODULE` no configurado).
-7. **Borrar un tenant** en dev: `Tenant.objects.get(schema_name=...).delete(force_drop=True)` (hace
+9. **Borrar un tenant** en dev: `Tenant.objects.get(schema_name=...).delete(force_drop=True)` (hace
    DROP SCHEMA). Vía `manage.py shell` en cualquiera de los dos backends.
 
 ## Próximos pasos sugeridos
 
-1. **Commitear el fix de email** (`base.py` + `dev.py`). No commitear `.env`.
+1. **QA end-to-end de la feature MFA** en navegador: entrar a `admin.localhost:8080`, escanear el QR
+   con una app autenticadora y confirmar que la activación entra al dashboard (falta el paso con
+   autenticador real; backend + `tsc` ya verificados por API).
 2. **QA end-to-end de onboarding** con un correo real: crear tenant desde la UI
    (`xenty.localhost:8080`), recibir el enlace de verificación en el buzón, confirmarlo, y comprobar
    que el SPA del tenant ya carga todos los módulos.
-3. **Brecha de UX (no bloqueante)**: cuando `/api/auth/me/` da 403 por email no verificado, el SPA
-   muestra un menú vacío en vez de un aviso "verifica tu correo". Manejar ese 403 con una pantalla
-   dedicada.
-4. **Baseline #2 restante** (del handoff anterior): backups/retención, SSO suite, notificaciones
-   in-app, reactivar `B904` en ruff. **Connector F-E** + crear repo remoto. **MFA de CuentaProveedor**.
-5. **`.env.example`**: considerar documentar `ALLOWED_HOSTS=...,.localhost` y las vars de email
-   (`EMAIL_USE_TLS/SSL`, `EMAIL_HOST_USER/PASSWORD`, `DEFAULT_FROM_EMAIL`) para que la próxima
-   máquina no repita el diagnóstico. (Sin valores reales, solo placeholders.)
+3. **Tests** de la feature MFA: cubrir `bootstrap_superadmin` (idempotencia, MFA obligatorio),
+   `SuperAdminLoginView` (banderas `mfa_pendiente`/`mfa_enrolar`) y `ActivarTOTPView` (tokens full en
+   sesión pendiente). Correr con `requirements-dev.txt` (ruff/pytest no están en la imagen runtime).
+4. **Brecha de UX (no bloqueante)**: cuando `/api/auth/me/` da 403 por email no verificado, el SPA
+   `frontend-acceso` muestra un menú vacío en vez de un aviso "verifica tu correo". Manejar ese 403.
+5. **MFA obligatorio también para el Usuario del tenant** (si se quiere paridad con el super-admin) y
+   **MFA de `CuentaProveedor`** (pendiente de handoffs previos).
+6. **Baseline #2 restante**: backups/retención, SSO suite, notificaciones in-app, reactivar `B904` en
+   ruff. **Connector F-E** + crear repo remoto.
 
 ## Verificar servicios
 
