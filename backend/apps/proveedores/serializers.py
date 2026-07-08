@@ -102,8 +102,9 @@ class OnboardingProveedorSerializer(serializers.Serializer):
     # ── Paso 1: Empresa ─────────────────────────────────────────────────────
     email_empresa = serializers.EmailField(required=False, allow_blank=True)
     telefono_empresa = serializers.CharField(max_length=30, required=False, allow_blank=True)
-    repse = serializers.FileField(required=False, allow_null=True)
-    sua = serializers.FileField(required=False, allow_null=True)
+    # REPSE y SUA son obligatorios: sin ellos no se puede validar al proveedor (cumplimiento laboral).
+    repse = serializers.FileField(required=True, allow_null=False)
+    sua = serializers.FileField(required=True, allow_null=False)
 
     # ── Paso 2: Responsable ─────────────────────────────────────────────────
     nombre = serializers.CharField(max_length=160)

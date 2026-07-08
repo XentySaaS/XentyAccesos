@@ -487,6 +487,32 @@ export default function Onboarding() {
   const [tokenErr,    setTokenErr]   = useState<string | null>(null);
   const [yaRegistrado, setYaRegistrado] = useState(false);
   const [success,     setSuccess]    = useState(false);
+  // Modal de documentos legales (aviso / términos) leídos desde el backend por token.
+  const [docModal,   setDocModal]   = useState<{ tipo: string; titulo: string } | null>(null);
+  const [docTexto,   setDocTexto]   = useState("");
+  const [docLoading, setDocLoading] = useState(false);
+  const [docError,   setDocError]   = useState<string | null>(null);
+
+  async function abrirDoc(tipo: string, titulo: string) {
+    setDocModal({ tipo, titulo });
+    setDocTexto("");
+    setDocError(null);
+    setDocLoading(true);
+    try {
+      const { data } = await http.get<{ texto: string }>(
+        `/api/onboarding/documento/?token=${encodeURIComponent(token)}&tipo=${tipo}`,
+      );
+      setDocTexto(data.texto || "");
+    } catch (err: any) {
+      setDocError(
+        err?.response?.status === 404
+          ? "Este documento aún no ha sido publicado por el recinto. Consúltalo con el administrador."
+          : "No se pudo cargar el documento.",
+      );
+    } finally {
+      setDocLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!token) { setLoading(false); return; }
@@ -530,6 +556,8 @@ export default function Onboarding() {
       if (!form.telefono_empresa.trim()) e.telefono_empresa = "Requerido";
       if (form.rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(form.rfc))
         e.rfc = "Formato inválido";
+      if (!form.repse) e.repse = "Sube el documento REPSE";
+      if (!form.sua)   e.sua   = "Sube el documento SUA";
     }
     if (s === 2) {
       if (!form.nombre_resp.trim()) e.nombre_resp = "Requerido";
@@ -756,12 +784,12 @@ export default function Onboarding() {
 
                 <SectionTitle>Documentos</SectionTitle>
                 <div className="grid grid-cols-2 gap-4">
-                  <FileZone label="Documento REPSE" accept=".pdf,.jpg,.jpeg,.png"
-                    file={form.repse} onChange={f => set("repse", f)}
-                    hint="PDF o imagen · máx. 10 MB" />
-                  <FileZone label="Documento SUA" accept=".pdf,.jpg,.jpeg,.png"
-                    file={form.sua} onChange={f => set("sua", f)}
-                    hint="PDF o imagen · máx. 10 MB" />
+                  <FileZone label="Documento REPSE" accept=".pdf,.jpg,.jpeg,.png" req
+                    file={form.repse} onChange={f => { set("repse", f); clr("repse"); }}
+                    hint="PDF o imagen · máx. 10 MB" error={errs.repse} />
+                  <FileZone label="Documento SUA" accept=".pdf,.jpg,.jpeg,.png" req
+                    file={form.sua} onChange={f => { set("sua", f); clr("sua"); }}
+                    hint="PDF o imagen · máx. 10 MB" error={errs.sua} />
                 </div>
               </div>
             )}
@@ -875,16 +903,22 @@ export default function Onboarding() {
                 <SectionTitle>Consentimiento</SectionTitle>
                 <div className="space-y-3">
                   {[
-                    { k: "privacy" as const, label: "Acepto el Aviso de Privacidad" },
-                    { k: "terms"   as const, label: "Acepto los Términos y Condiciones" },
-                  ].map(({ k, label }) => (
+                    { k: "privacy" as const, prefix: "Acepto el ", link: "Aviso de Privacidad", tipo: "aviso_privacidad" },
+                    { k: "terms"   as const, prefix: "Acepto los ", link: "Términos y Condiciones", tipo: "terminos_condiciones" },
+                  ].map(({ k, prefix, link, tipo }) => (
                     <div key={k}>
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <input type="checkbox" checked={form[k] as boolean}
+                      <div className="flex items-start gap-3">
+                        <input id={`chk-${k}`} type="checkbox" checked={form[k] as boolean}
                           onChange={e => { set(k, e.target.checked); clr(k); }}
                           className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 accent-blue-600" />
-                        <span className="text-sm text-slate-600">{label}</span>
-                      </label>
+                        <span className="text-sm text-slate-600">
+                          <label htmlFor={`chk-${k}`} className="cursor-pointer">{prefix}</label>
+                          <button type="button" onClick={() => abrirDoc(tipo, link)}
+                            className="font-semibold text-blue-600 underline underline-offset-2 hover:text-blue-700">
+                            {link}
+                          </button>
+                        </span>
+                      </div>
                       <Err msg={errs[k]} />
                     </div>
                   ))}
@@ -927,6 +961,53 @@ export default function Onboarding() {
             )}
           </div>
         </form>
+
+        {/* Modal de documento legal */}
+        {docModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            onClick={() => setDocModal(null)}
+          >
+            <div
+              className="flex max-h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+                <h3 className="text-sm font-bold" style={{ color: INK }}>{docModal.titulo}</h3>
+                <button
+                  type="button"
+                  onClick={() => setDocModal(null)}
+                  className="rounded p-1 text-slate-400 hover:text-slate-600"
+                  aria-label="Cerrar"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div className="overflow-y-auto whitespace-pre-wrap px-5 py-4 text-sm leading-relaxed text-slate-600">
+                {docLoading ? (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                    Cargando…
+                  </div>
+                ) : docError ? (
+                  <span className="text-amber-600">{docError}</span>
+                ) : (
+                  docTexto
+                )}
+              </div>
+              <div className="border-t border-slate-100 px-5 py-3 text-right">
+                <button
+                  type="button"
+                  onClick={() => setDocModal(null)}
+                  className="rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: SIGNAL }}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Scaffold>
   );

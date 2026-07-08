@@ -349,3 +349,36 @@ class OnboardingProveedorView(APIView):
             proveedor.save(update_fields=["responsable", "estado"])
 
         return Response({"detail": "Alta completada.", "proveedor": proveedor.id}, status=201)
+
+
+class DocumentoOnboardingView(APIView):
+    """GET /api/onboarding/documento/?token=…&tipo=… — documento legal del tenant del token.
+
+    Público (sin cuenta): resuelve el tenant desde el token de invitación (igual que el onboarding) y
+    devuelve el aviso de privacidad o los términos vigentes de ESE tenant, para que el proveedor pueda
+    leerlos antes de aceptar. Funciona tanto en el subdominio del tenant como en el host público.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        from apps.cumplimiento.arco_api import documento_vigente
+        from apps.cumplimiento.models import DocumentoLegal
+
+        tipo = request.query_params.get("tipo", "")
+        if tipo not in DocumentoLegal.Tipo.values:
+            return Response({"detail": "Tipo de documento inválido."}, status=400)
+        try:
+            payload = leer_invitacion(request.query_params.get("token", ""))
+        except Exception:  # noqa: BLE001 — cualquier token corrupto/expirado → inválido (fail-closed)
+            payload = None
+        tenant_slug = (payload or {}).get("tenant", "") if payload else ""
+        if not tenant_slug:
+            return Response({"detail": "Invitación inválida o expirada."}, status=400)
+
+        with schema_context(tenant_slug):
+            doc = documento_vigente(tipo)
+            if doc is None:
+                return Response({"detail": "Documento no publicado."}, status=404)
+            return Response({"tipo": doc.tipo, "texto": doc.texto, "version": doc.version})
