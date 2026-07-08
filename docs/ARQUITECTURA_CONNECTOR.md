@@ -340,6 +340,33 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
 
 ---
 
+## Estado de implementación
+- **F-A · Seam en el principal:** ✔ hecho (proveedor tras interfaz + Router + breaker + ledger).
+- **F-B · Config por UI:** ✔ hecho (2026-07-03). `ConfiguracionConnector` (global, super-admin, master
+  switch + umbrales) y `PreferenciaMensajeria` (por tenant, orden de proveedores + failover). Router
+  lee ambas: precedencia master switch global → preferencia del tenant; `xcc` se salta si el switch
+  global está apagado o si aún no hay `ConnectorProvider` registrado. APIs
+  `/api/admin/comunicaciones/` (control plane) y `/api/mensajeria/preferencia/` (tenant, admin);
+  pantallas "Comunicaciones" (frontend-admin) y "Mensajería · Proveedores" (frontend-acceso). Tests:
+  router 9 + aislamiento de preferencia 1. Comportamiento previo intacto (Connector aún no existe).
+- **F-C · Connector (MVP):** ✔ hecho (2026-07-03). Repo **separado** `xenty-connector` (Node 20 +
+  TypeScript + Fastify + Baileys). API REST `/v1` con HMAC+nonce (paridad con el edge; cadena de firma
+  documentada para que F-D la calque), sesiones por `(tenant, connection_id)` con QR/pairing +
+  reconexión con backoff + recuperación tras reinicio, media completa (texto/imagen/documento/audio/
+  video/archivo por URL o b64 con validación de tamaño), persistencia por tenant, `/healthz` +
+  `/v1/health` + `/v1/status`, logs estructurados sin PII. Tests 15 (hmac/media/servidor). Verificado
+  en Docker: healthz 200, 401 sin firma, 409 con firma válida sin sesión, y **QR real generado** al
+  crear sesión. Contrato y esquema HMAC en `xenty-connector/README.md`.
+- **F-D · `ConnectorProvider` + failover real:** ✔ hecho (2026-07-03).
+  `apps/mensajeria/connector_provider.py` = cliente REST del XCC (firma HMAC idéntica a la que valida
+  el Connector), registrado en `proveedores.registro_proveedores`. El Router ya lo ordena por
+  preferencia del tenant y lo gatea con el master switch. **Nunca lanza** → failover a UltraMsg/Sandbox
+  ante caída. Tests: 5 (firma, sin config, HTTP≠202, registro, **failover xcc→sandbox**). Interop en
+  vivo verificada: `ConnectorProvider` de Django firmó contra el XCC en Docker y el Connector aceptó la
+  firma (409 por sesión inexistente, no 401). `connection_id` por defecto `"principal"`.
+- **F-E:** pendiente (métricas Prometheus, webhook de estados de entrega, escala horizontal con routing
+  sticky + nonce en Redis, y `connection_id` configurable por tenant).
+
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)
 - **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).
 - **Nombre**: Xenty Communication Connector (XCC). **Transporte**: REST+HMAC. **Runtime**: Node+Baileys.
