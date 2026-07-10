@@ -1,6 +1,6 @@
 # Estado del Proyecto — Xenty Acceso
 
-> Actualizado: 2026-07-02
+> Actualizado: 2026-07-10 (ver `handoffs/HANDOFF_LATEST.md`)
 
 ## Backend
 
@@ -39,7 +39,8 @@
 | Docker Compose | ✔ Postgres 15 + Redis 7 + backend + Nginx |
 | Celery worker/beat | ✔ Tasks activas: `enviar_campana` (mensajería), `importar_efos_task` (cumplimiento), ambas con retry |
 | Nginx dev proxy | ✔ tenant.localhost:8080 |
-| CI/CD | 🔲 No configurado |
+| CI (GitHub Actions) | ✔ `.github/workflows/ci.yml`: ruff + pytest completo + build de las 4 SPAs en push a `main` y PRs |
+| CD (deploy) | 🔲 Pendiente: sin destino de producción decidido (ver HANDOFF) |
 
 ## Seguridad
 
@@ -50,8 +51,10 @@
 | Fernet QR (jti+exp+tenant) | ✔ |
 | PII cifrada (ine_data, curp) | ✔ |
 | Rate limiting | ✔ Login (10/m/IP), signup, onboarding, edge, ocr; `Ratelimited`→429 (handler DRF). Verificado en runtime (11º login → 429) |
-| MFA TOTP | ✔ Enrolamiento + activación + verificación |
-| WebAuthn | 🔲 |
+| MFA TOTP | ✔ Enrolamiento + activación + verificación (super-admin con MFA obligatorio + tests) |
+| WebAuthn | ✔ Registro/login por passkey (data plane + control plane) |
+| Recuperación de contraseña | ✔ Self-service en acceso y proveedores (token firmado, un solo uso, 1h). QA E2E ✅ |
+| Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill) |
 
 ## Pendientes críticos
 
