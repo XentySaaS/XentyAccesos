@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
 import { mfaPendiente } from "../lib/jwt";
 import { autenticarLlave, webauthnDisponible } from "../lib/webauthn";
@@ -130,6 +130,13 @@ export default function Login() {
               >
                 {loading ? "Verificando…" : "Entrar"}
               </button>
+
+              <Link
+                to="/recuperar"
+                className="block text-center text-xs text-slate-400 transition hover:text-slate-600"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
             </form>
           ) : (
             <form onSubmit={onVerificar} className="space-y-4">

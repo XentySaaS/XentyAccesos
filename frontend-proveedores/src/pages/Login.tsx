@@ -1,5 +1,5 @@
 import { FormEvent, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../store/auth";
 
@@ -88,6 +88,13 @@ export default function Login() {
             >
               {loading ? "Verificando…" : "Entrar"}
             </button>
+
+            <Link
+              to="/recuperar"
+              className="block text-center text-xs text-slate-400 transition hover:text-slate-600"
+            >
+              ¿Olvidaste tu contraseña?
+            </Link>
           </form>
         </div>
 

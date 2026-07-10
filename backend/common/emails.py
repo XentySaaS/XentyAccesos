@@ -1,16 +1,26 @@
 """Funciones de envío de correo transaccional para Xenty Acceso.
 
-Usado por: apps.proveedores (invitación + activación).
+Usado por: apps.proveedores (invitación + activación) y el signup del control plane (verificación).
+Todos usan la plantilla HTML de marca (``common.email_builder``), la misma de las notificaciones de
+eventos/citas/documentos, con fallback en texto plano para clientes sin HTML.
 """
 
 from __future__ import annotations
 
+import re
+
 from django.conf import settings
-from django.core.mail import send_mail
+
+from common.email_builder import construir_correo, enviar_correo_html
+
+_STRONG = re.compile(r"</?strong>")
 
 
-def _from() -> str:
-    return getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@xenty.mx")
+def _plano(saludo: str, parrafos: list[str], *, url: str | None, nombre_tenant: str) -> str:
+    """Versión en texto plano (para el fallback del correo y el cuerpo de WhatsApp)."""
+    cuerpo = "\n\n".join(_STRONG.sub("", p) for p in parrafos)
+    enlace = f"\n\n{url}" if url else ""
+    return f"{saludo}\n\n{cuerpo}{enlace}\n\n— {nombre_tenant} · Xenty Acceso"
 
 
 def _proveedores_url(base_url: str | None = None) -> str:
@@ -47,22 +57,25 @@ def enviar_invitacion_proveedor(
     """Envía la invitación de onboarding al responsable (correo + WhatsApp si tiene teléfono)."""
     url = f"{_proveedores_url(base_url)}/proveedores/onboarding?token={token}"
     asunto = f"Invitación para registrarte como proveedor de {nombre_tenant}"
-    cuerpo = (
-        f"Hola,\n\n"
-        f"Has sido invitado a registrar a {nombre_empresa} como proveedor de {nombre_tenant}.\n\n"
-        f"Completa tu registro en el siguiente enlace (válido 72 horas):\n\n"
-        f"  {url}\n\n"
-        f"En el registro podrás cargar tus documentos (REPSE, SUA) y crear tu contraseña de acceso.\n\n"
-        f"Si no esperabas este correo puedes ignorarlo.\n\n"
-        f"— {nombre_tenant} · Xenty Acceso"
+    saludo = "Hola,"
+    parrafos = [
+        f"Has sido invitado a registrar a <strong>{nombre_empresa}</strong> como proveedor de "
+        f"<strong>{nombre_tenant}</strong>.",
+        "Completa tu registro con el siguiente botón (enlace válido <strong>72 horas</strong>).",
+        "En el registro podrás cargar tus documentos (REPSE, SUA) y crear tu contraseña de acceso.",
+        "Si no esperabas este correo, puedes ignorarlo.",
+    ]
+    texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
+    html = construir_correo(
+        nombre_tenant=nombre_tenant,
+        saludo=saludo,
+        parrafos=parrafos,
+        cta_texto="Completar mi registro",
+        cta_url=url,
+        asunto=asunto,
     )
-    try:
-        send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
-    except Exception as exc:  # noqa: BLE001
-        import logging
-
-        logging.getLogger(__name__).error("Error enviando invitación a %s: %s", email_destino, exc)
-    _notificar_wa(telefono, cuerpo)
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
+    _notificar_wa(telefono, texto_plano)
 
 
 def enviar_verificacion_email(
@@ -74,22 +87,54 @@ def enviar_verificacion_email(
 ) -> None:
     """Envía el correo de verificación (doble opt-in) al admin de un tenant recién dado de alta."""
     asunto = f"Confirma tu correo — {nombre_tenant} · Xenty Acceso"
-    cuerpo = (
-        f"Hola {nombre},\n\n"
-        f"Gracias por registrar {nombre_tenant} en Xenty Acceso.\n\n"
-        f"Para activar tu cuenta confirma tu correo en el siguiente enlace (válido 48 horas):\n\n"
-        f"  {url}\n\n"
-        f"Si no realizaste este registro puedes ignorar este mensaje.\n\n"
-        f"— Xenty Acceso"
+    saludo = f"Hola {nombre},"
+    parrafos = [
+        f"Gracias por registrar <strong>{nombre_tenant}</strong> en Xenty Acceso.",
+        "Para activar tu cuenta confirma tu correo con el siguiente botón "
+        "(enlace válido <strong>48 horas</strong>).",
+        "Si no realizaste este registro, puedes ignorar este mensaje.",
+    ]
+    texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
+    html = construir_correo(
+        nombre_tenant=nombre_tenant,
+        saludo=saludo,
+        parrafos=parrafos,
+        cta_texto="Confirmar mi correo",
+        cta_url=url,
+        asunto=asunto,
     )
-    try:
-        send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
-    except Exception as exc:  # noqa: BLE001
-        import logging
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
 
-        logging.getLogger(__name__).error(
-            "Error enviando verificación a %s: %s", email_destino, exc
-        )
+
+def enviar_reset_password(
+    *,
+    email_destino: str,
+    nombre: str,
+    nombre_tenant: str,
+    url: str,
+    telefono: str | None = None,
+) -> None:
+    """Envía el enlace de restablecimiento de contraseña (correo + WhatsApp si tiene teléfono)."""
+    asunto = f"Restablece tu contraseña — {nombre_tenant} · Xenty Acceso"
+    saludo = f"Hola {nombre}," if nombre else "Hola,"
+    parrafos = [
+        f"Recibimos una solicitud para restablecer la contraseña de tu cuenta en "
+        f"<strong>{nombre_tenant}</strong>.",
+        "Usa el siguiente botón para crear una nueva contraseña "
+        "(enlace válido <strong>1 hora</strong>).",
+        "Si no solicitaste este cambio, ignora este mensaje: tu contraseña seguirá siendo la misma.",
+    ]
+    texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
+    html = construir_correo(
+        nombre_tenant=nombre_tenant,
+        saludo=saludo,
+        parrafos=parrafos,
+        cta_texto="Restablecer mi contraseña",
+        cta_url=url,
+        asunto=asunto,
+    )
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
+    _notificar_wa(telefono, texto_plano)
 
 
 def enviar_activacion_proveedor(
@@ -104,18 +149,21 @@ def enviar_activacion_proveedor(
     """Notifica al responsable que su cuenta fue activada (correo + WhatsApp si tiene teléfono)."""
     url = f"{_proveedores_url(base_url)}/proveedores"
     asunto = f"Tu acceso como proveedor de {nombre_tenant} está listo"
-    cuerpo = (
-        f"Hola {nombre_responsable},\n\n"
-        f"Tu registro como proveedor de {nombre_empresa} en {nombre_tenant} ha sido aprobado.\n\n"
-        f"Ya puedes acceder al panel de proveedores:\n\n"
-        f"  {url}\n\n"
-        f"Ingresa con el correo y contraseña que registraste durante el onboarding.\n\n"
-        f"— {nombre_tenant} · Xenty Acceso"
+    saludo = f"Hola {nombre_responsable},"
+    parrafos = [
+        f"Tu registro como proveedor de <strong>{nombre_empresa}</strong> en "
+        f"<strong>{nombre_tenant}</strong> ha sido aprobado.",
+        "Ya puedes acceder al panel de proveedores.",
+        "Ingresa con el correo y la contraseña que registraste durante el onboarding.",
+    ]
+    texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
+    html = construir_correo(
+        nombre_tenant=nombre_tenant,
+        saludo=saludo,
+        parrafos=parrafos,
+        cta_texto="Ir al panel de proveedor",
+        cta_url=url,
+        asunto=asunto,
     )
-    try:
-        send_mail(asunto, cuerpo, _from(), [email_destino], fail_silently=False)
-    except Exception as exc:  # noqa: BLE001
-        import logging
-
-        logging.getLogger(__name__).error("Error enviando activación a %s: %s", email_destino, exc)
-    _notificar_wa(telefono, cuerpo)
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
+    _notificar_wa(telefono, texto_plano)

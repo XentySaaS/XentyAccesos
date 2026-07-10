@@ -17,6 +17,8 @@ import Privacidad from "./pages/Privacidad";
 import ProveedoresMensajeria from "./pages/ProveedoresMensajeria";
 import Proveedores from "./pages/Proveedores";
 import Recintos from "./pages/Recintos";
+import Recuperar from "./pages/Recuperar";
+import Restablecer from "./pages/Restablecer";
 import Seguridad from "./pages/Seguridad";
 import Sanciones from "./pages/Sanciones";
 import Usuarios from "./pages/Usuarios";
@@ -30,6 +32,8 @@ function Protegida({ children }: { children: JSX.Element }) {
 
 export const router = createBrowserRouter([
   { path: "/", element: <Login /> },
+  { path: "/recuperar", element: <Recuperar /> },
+  { path: "/restablecer", element: <Restablecer /> },
   {
     element: (
       <Protegida>

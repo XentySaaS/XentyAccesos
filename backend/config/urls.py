@@ -3,6 +3,8 @@
 Autenticación de los dos contextos (F0.2):
   POST /api/auth/acceso/login/        -> Usuario (operación)
   POST /api/auth/proveedores/login/   -> CuentaProveedor (autoservicio)
+  POST /api/auth/<ctx>/password/solicitar/  -> envía enlace de restablecimiento (self-service)
+  POST /api/auth/<ctx>/password/confirmar/  -> fija la nueva contraseña con el token del enlace
   POST /api/auth/refresh/             -> rota el refresh (blacklist del anterior)
   POST /api/auth/logout/              -> invalida el refresh
   POST /api/auth/mfa/totp/enrolar/    -> genera secreto + QR (sesión completa)
@@ -17,9 +19,17 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from apps.accounts.api import AccesoLoginView
+from apps.accounts.api import (
+    AccesoConfirmarResetView,
+    AccesoLoginView,
+    AccesoSolicitarResetView,
+)
 from apps.ocr.views import ExtraerIneView
-from apps.proveedores.api import ProveedorLoginView
+from apps.proveedores.api import (
+    ProveedorConfirmarResetView,
+    ProveedorLoginView,
+    ProveedorSolicitarResetView,
+)
 from apps.proveedores.views import DocumentoOnboardingView, OnboardingProveedorView
 from apps.soporte.api import (
     ConfiguracionMesaView,
@@ -50,6 +60,26 @@ urlpatterns = [
     path("health/ready/", ReadinessView.as_view(), name="health-ready"),
     path("api/auth/acceso/login/", AccesoLoginView.as_view(), name="acceso-login"),
     path("api/auth/proveedores/login/", ProveedorLoginView.as_view(), name="proveedores-login"),
+    path(
+        "api/auth/acceso/password/solicitar/",
+        AccesoSolicitarResetView.as_view(),
+        name="acceso-password-solicitar",
+    ),
+    path(
+        "api/auth/acceso/password/confirmar/",
+        AccesoConfirmarResetView.as_view(),
+        name="acceso-password-confirmar",
+    ),
+    path(
+        "api/auth/proveedores/password/solicitar/",
+        ProveedorSolicitarResetView.as_view(),
+        name="proveedores-password-solicitar",
+    ),
+    path(
+        "api/auth/proveedores/password/confirmar/",
+        ProveedorConfirmarResetView.as_view(),
+        name="proveedores-password-confirmar",
+    ),
     path("api/auth/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("api/auth/logout/", LogoutView.as_view(), name="logout"),
     path("api/auth/me/", MeView.as_view(), name="me"),
