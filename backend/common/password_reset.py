@@ -90,7 +90,9 @@ class SolicitarResetBase(APIView):
             from common.emails import enviar_reset_password
 
             token = generar_token_reset(actor, self.ctx)
-            nombre_tenant = getattr(getattr(request, "tenant", None), "nombre", "") or "Xenty Acceso"
+            nombre_tenant = (
+                getattr(getattr(request, "tenant", None), "nombre", "") or "Xenty Acceso"
+            )
             enviar_reset_password(
                 email_destino=actor.email,
                 nombre=getattr(actor, "nombre", "") or "",

@@ -137,6 +137,8 @@ def sembrar_documentos_legales(nombre_tenant: str) -> int:
     creados = 0
     for tipo, generar in _DEFAULTS.items():
         if not DocumentoLegal.objects.filter(tipo=tipo).exists():
-            DocumentoLegal.objects.create(tipo=tipo, texto=generar(nombre_tenant).strip(), version=1)
+            DocumentoLegal.objects.create(
+                tipo=tipo, texto=generar(nombre_tenant).strip(), version=1
+            )
             creados += 1
     return creados

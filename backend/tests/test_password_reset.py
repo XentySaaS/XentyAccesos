@@ -54,7 +54,12 @@ def test_token_es_de_un_solo_uso(dos_tenants):
     with schema_context(t1.schema_name):
         u = _usuario()
         token = generar_token_reset(u, "acceso")
-        assert _post(AccesoConfirmarResetView, {"token": token, "password": "ClaveNueva9!"}).status_code == 200
+        assert (
+            _post(
+                AccesoConfirmarResetView, {"token": token, "password": "ClaveNueva9!"}
+            ).status_code
+            == 200
+        )
 
         # El mismo token ya no sirve: la huella de la contraseña cambió.
         resp = _post(AccesoConfirmarResetView, {"token": token, "password": "Otra12345!"})
@@ -80,7 +85,9 @@ def test_token_invalido_se_rechaza(dos_tenants):
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):
         _usuario()
-        resp = _post(AccesoConfirmarResetView, {"token": "basura.no.firmada", "password": "ClaveNueva9!"})
+        resp = _post(
+            AccesoConfirmarResetView, {"token": "basura.no.firmada", "password": "ClaveNueva9!"}
+        )
         assert resp.status_code == 400
 
 

@@ -15,7 +15,9 @@ from apps.tenants.models import SuperAdmin
 
 
 class Command(BaseCommand):
-    help = "Auto-siembra el super-admin del control plane (env-driven, MFA obligatorio). Idempotente."
+    help = (
+        "Auto-siembra el super-admin del control plane (env-driven, MFA obligatorio). Idempotente."
+    )
 
     def handle(self, *args, **opts):
         if SuperAdmin.objects.exists():
