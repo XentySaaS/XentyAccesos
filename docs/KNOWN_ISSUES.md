@@ -55,3 +55,15 @@
 **Causa raíz:** El placeholder se diseñó para cuando SÍ hay foto (overlay sutil); sin foto, era casi invisible sobre fondo oscuro.
 **Fix aplicado:** Layout adaptativo: sin `foto_bytes` se elimina el recuadro, zona usa ancho completo, fuente más grande, altura reducida.
 **Archivo:** `backend/apps/gafetes/services.py`
+
+---
+
+## ISSUE-006: Mesa de Ayuda (Nivel B) es cliente-only — servicio externo pendiente
+
+**Estado:** Abierto (ocultado temporalmente en UI, 2026-07-10)
+**Módulo:** apps.soporte + frontend-acceso/Soporte
+**Síntoma:** El panel de Soporte permite configurar una "Mesa de Ayuda" con `base_url` + `api_key` y ofrece "Probar conexión" / "Enviar diagnóstico", pero **no existe ningún servicio de Mesa real**. La URL de ejemplo `https://mesa.xenty.mx` (placeholder en `Soporte.tsx`) no resuelve a nada; no hay servicio en `docker-compose.yml` ni variables en `.env`.
+**Causa raíz:** `apps.soporte` es solo el **cliente** de una Mesa de Ayuda externa (Nivel B). El servidor que debe exponer `GET /health` y `POST /diagnosticos` con auth `Bearer` es un sistema aparte que aún no se construye/despliega. Sin config, el cliente corre en **sandbox** (no hace red): "Probar conexión" devuelve *"Mesa de Ayuda no configurada"* y "Enviar diagnóstico" no envía nada (`apps/soporte/services.py:es_sandbox`).
+**Mitigación aplicada:** Se ocultó el ítem "Soporte" del menú (`frontend-acceso/src/components/Layout.tsx`, `NAV_ITEMS` comentado). La ruta `/soporte` sigue registrada en el router (accesible por URL directa), y el backend `/api/soporte/*` sigue activo — solo se retiró el acceso visible para no dar a entender que la Mesa ya funciona.
+**Pendiente:** (1) Construir/desplegar el servicio real de Mesa de Ayuda (endpoints `/health` y `/diagnosticos`, auth Bearer). (2) Reactivar el ítem del menú (descomentar en `Layout.tsx`). (3) Considerar cambiar el placeholder `mesa.xenty.mx` por la URL real. No confundir con `ConfiguracionConnector` (XCC), que es global y del super-admin.
+**Archivos:** `frontend-acceso/src/components/Layout.tsx`, `frontend-acceso/src/pages/Soporte.tsx`, `backend/apps/soporte/`

@@ -26,7 +26,10 @@ const NAV_ITEMS: { to: string; label: string; roles?: string[]; badge?: string }
   { to: "/historial",   label: "Historial",    roles: ["administrador"] },
   { to: "/privacidad",  label: "Privacidad",   roles: ["administrador"] },
   { to: "/seguridad",   label: "Seguridad" },
-  { to: "/soporte",     label: "Soporte",      roles: ["administrador"] },
+  // Oculto temporalmente: la Mesa de Ayuda es cliente-only y el servicio externo aún no existe
+  // (ver docs/KNOWN_ISSUES.md ISSUE-006). La ruta /soporte sigue en el router; reactivar cuando
+  // haya una Mesa real desplegada. — 2026-07-10
+  // { to: "/soporte",     label: "Soporte",      roles: ["administrador"] },
 ];
 
 const ROL_LABEL: Record<string, string> = {

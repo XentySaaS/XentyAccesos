@@ -21,7 +21,7 @@
 | cumplimiento | ✔ | Backend (`importar_efos_task` con retry) + padrón EFOS global (`apps.efos`) + pantalla `Cumplimiento.tsx` en frontend-acceso |
 | ocr | ✔ | Textract + sandbox para INE |
 | config | ✔ | Opcion, HistorialCambio, AuditViewSetMixin, DashboardView, CalendarioView, ExportarAccesosView (F8) |
-| soporte | ✔ | Mesa de Ayuda Nivel B: salud de config + cliente (probar/enviar, sandbox) + config por tenant + pantalla `Soporte.tsx` |
+| soporte | ◑ | Mesa de Ayuda Nivel B: salud de config + cliente (probar/enviar, sandbox) + config por tenant + pantalla `Soporte.tsx`. **Cliente-only**: el servicio externo de Mesa aún no existe → ítem de menú **oculto temporalmente** (KNOWN_ISSUES ISSUE-006) |
 | dispositivos | ✔ | `EdgeHMACAuthentication` con nonce anti-replay (Redis); `DispositivoEdge`/`ComandoEdge` en apps.tenants |
 
 ## Frontends
