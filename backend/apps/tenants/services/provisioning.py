@@ -66,6 +66,7 @@ def provisionar_tenant(
 
     password = admin_password or secrets.token_urlsafe(12)
     from apps.accounts.models import Usuario
+    from apps.cumplimiento.documentos_default import sembrar_documentos_legales
 
     with schema_context(slug):
         admin = Usuario.objects.create_superuser(
@@ -78,5 +79,7 @@ def provisionar_tenant(
         if verificar_email:
             admin.email_verificado = timezone.now()
             admin.save(update_fields=["email_verificado"])
+        # El tenant nace con aviso de privacidad y términos v1 (plantillas editables, LFPDPPP).
+        sembrar_documentos_legales(nombre)
 
     return tenant, password
