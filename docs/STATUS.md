@@ -52,7 +52,7 @@
 |---|---|---|
 | F-C | Servicio XCC (Node 20 + Fastify + **Baileys**): REST `/v1` + HMAC, sesiones por tenant, QR/pairing, media, persistencia, reconexión | ✔ MVP en repo `xenty-connector` (build en `dist/`, `.env.example`, Docker) |
 | F-D | Enchufe al principal: `apps/mensajeria/connector_provider.py` (cliente REST+HMAC) + registro `xcc` en el Router con failover | ✔ Implementado y con tests (`tests/test_connector_provider.py`: firma, no-config, http≠202, **failover xcc→sandbox**) |
-| F-E | Escala horizontal (nonce en Redis, routing sticky), **crear repo remoto del connector**, deploy | 🔲 Pendiente |
+| F-E | Escala horizontal + observabilidad | ◑ En progreso: **nonce en Redis ✔** (2026-07-13, connector `cd2c85e`: `SET NX PX` compartido → habilita múltiples réplicas; fail-closed a 503; Redis propio en su compose; 20 tests). Pendiente: métricas Prometheus, webhook de estados, routing sticky por `connection_id`, `connection_id` por tenant, **crear repo remoto del connector**, deploy |
 
 **Config runtime:** el super-admin activa/configura el Connector en la pantalla **Comunicaciones**
 (`ConfiguracionConnector` global: `habilitado`, `url_base`, `hmac_secret` cifrado, umbrales del breaker).
@@ -100,7 +100,7 @@ Ninguno activo.
 > Este build es la implementación final (go-live con tenants nuevos vía onboarding self-service).
 
 1. **CD / deploy a producción** (Nginx prod, secrets, serving de `/media`) — falta decidir el host. CI ya existe.
-2. **Connector/WhatsApp**: resolver la decisión de proveedor (XCC-primario vs Cloud API oficial vs seguir con UltraMsg), cerrar **F-E** (nonce en Redis, repo remoto del connector, deploy del XCC).
+2. **Connector/WhatsApp**: resolver la decisión de proveedor (XCC-primario vs Cloud API oficial vs seguir con UltraMsg), cerrar **F-E** (nonce en Redis ✔; falta métricas Prometheus, webhook de estados, routing sticky, **repo remoto del connector** y deploy del XCC).
 3. Hardening final (checklist `REMEDIACION_SEGURIDAD_SAR.md`): logs PII con structlog cableado, descarga `/media/` segura con policy de pertenencia.
 4. **QA E2E**: pendiente #3 onboarding (MFA super-admin y recuperación de contraseña ya ✅). Ver HANDOFF.
 5. No bloqueantes: MFA obligatorio para `Usuario`/`CuentaProveedor` del tenant; servicio externo de Mesa de Ayuda (ISSUE-006).

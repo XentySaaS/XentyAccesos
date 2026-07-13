@@ -364,8 +364,17 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
   ante caída. Tests: 5 (firma, sin config, HTTP≠202, registro, **failover xcc→sandbox**). Interop en
   vivo verificada: `ConnectorProvider` de Django firmó contra el XCC en Docker y el Connector aceptó la
   firma (409 por sesión inexistente, no 401). `connection_id` por defecto `"principal"`.
-- **F-E:** pendiente (métricas Prometheus, webhook de estados de entrega, escala horizontal con routing
-  sticky + nonce en Redis, y `connection_id` configurable por tenant).
+- **F-E:** en progreso.
+  - **Nonce en Redis:** ✔ hecho (2026-07-13). `xenty-connector` commit `cd2c85e`. El anti-replay del
+    Connector pasa de un `Map` en proceso a una interfaz `NonceStore` con dos implementaciones
+    (`InMemoryNonceStore` / `RedisNonceStore`) elegidas por `XCC_REDIS_URL`. Redis usa `SET NX PX`
+    atómico compartido → habilita **varias réplicas** del Connector sin aceptar replays entre ellas.
+    Fail-closed: si Redis no responde, `/v1` responde `503` y el Router del principal hace failover.
+    `docker-compose` del connector incluye ahora su propio Redis. Tests 20 (incl. integración contra
+    Redis real, gated por `XCC_TEST_REDIS_URL`).
+  - **Pendiente:** métricas Prometheus (`/metrics`), webhook de estados de entrega, routing sticky por
+    `connection_id`, `connection_id` configurable por tenant, **crear repo remoto del connector** y
+    deploy.
 
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)
 - **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).
