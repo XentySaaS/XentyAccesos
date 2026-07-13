@@ -18,7 +18,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from apps.tenants.admin_api import SuperAdminLoginView
 from apps.tenants.models import SuperAdmin
 from common.mfa import generar_secreto
-from common.mfa_api import ActivarTOTPView
+from common.mfa_api import ActivarTOTPView, EnrolarTOTPView
 
 pytestmark = pytest.mark.django_db
 
@@ -40,11 +40,20 @@ def _login(email, password, ip="198.51.100.1"):
     return SuperAdminLoginView.as_view()(req)
 
 
+def _token(pendiente):
+    return {"ctx": "superadmin", "mfa": "pending" if pendiente else "ok"}
+
+
+def _enrolar(admin, *, pendiente=True):
+    """Genera el QR (cachea el secreto en curso) y devuelve el secreto, como haría el SPA."""
+    req = _factory.post("/api/admin/mfa/totp/enrolar/")
+    force_authenticate(req, user=admin, token=_token(pendiente))
+    return EnrolarTOTPView.as_view()(req).data["secret"]
+
+
 def _activar(admin, codigo, *, pendiente=True):
     req = _factory.post("/api/admin/mfa/totp/activar/", {"codigo": codigo}, format="json")
-    force_authenticate(
-        req, user=admin, token={"ctx": "superadmin", "mfa": "pending" if pendiente else "ok"}
-    )
+    force_authenticate(req, user=admin, token=_token(pendiente))
     return ActivarTOTPView.as_view()(req)
 
 
@@ -133,8 +142,8 @@ def test_login_email_inexistente_401():
 
 # ── ActivarTOTPView (enrolamiento en sesión pendiente) ───────────────────────
 def test_activar_en_sesion_pendiente_emite_tokens_full():
-    secreto = generar_secreto()
-    admin = _crear_admin(totp=secreto)
+    admin = _crear_admin()  # sin secreto persistido
+    secreto = _enrolar(admin, pendiente=True)  # cachea el secreto en curso
     codigo = pyotp.TOTP(secreto).now()
 
     resp = _activar(admin, codigo, pendiente=True)
@@ -144,11 +153,12 @@ def test_activar_en_sesion_pendiente_emite_tokens_full():
     assert AccessToken(resp.data["access"])["mfa"] == "ok"
     admin.refresh_from_db()
     assert admin.mfa_habilitado is True
+    assert bool(admin.mfa_totp_secret) is True, "El secreto se persiste recién al activar"
 
 
 def test_activar_sesion_completa_no_reemite_tokens():
-    secreto = generar_secreto()
-    admin = _crear_admin(totp=secreto)
+    admin = _crear_admin()
+    secreto = _enrolar(admin, pendiente=False)
     codigo = pyotp.TOTP(secreto).now()
 
     resp = _activar(admin, codigo, pendiente=False)
@@ -158,7 +168,8 @@ def test_activar_sesion_completa_no_reemite_tokens():
 
 
 def test_activar_codigo_invalido_400():
-    admin = _crear_admin(totp=generar_secreto())
+    admin = _crear_admin()
+    _enrolar(admin, pendiente=True)  # hay enrolamiento en curso, pero el código no corresponde
 
     resp = _activar(admin, "000000", pendiente=True)
 
@@ -166,9 +177,12 @@ def test_activar_codigo_invalido_400():
     assert "access" not in resp.data
 
 
-def test_activar_sin_secreto_enrolado_400():
+def test_activar_sin_enrolamiento_en_curso_400():
+    # No se generó el QR (o expiró): sin secreto en cache, activar no puede confirmar.
     admin = _crear_admin(totp=None)
 
     resp = _activar(admin, "123456", pendiente=True)
 
     assert resp.status_code == 400
+    admin.refresh_from_db()
+    assert not admin.mfa_totp_secret
