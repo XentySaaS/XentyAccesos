@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Pre-commit de Xenty Acceso: formatea y lintea el backend con ruff ANTES de commitear,
+# para que CI (ruff format --check + ruff check) nunca falle por formato/lint.
+#
+# Como no hay Python en el host, ruff corre DENTRO del contenedor `backend` (docker compose).
+# Si el stack no está arriba, el hook avisa y NO bloquea (para no impedir commits offline).
+#
+# Activación (una vez por clon):  git config core.hooksPath .githooks
+set -euo pipefail
+
+# .py staged bajo backend/ (rutas SIN el prefijo backend/, porque el contenedor trabaja en /app = backend/)
+readarray -t REL < <(git diff --cached --name-only --diff-filter=ACM -- backend | grep -E '\.py$' | sed 's#^backend/##')
+[ ${#REL[@]} -eq 0 ] && exit 0
+
+if ! docker compose exec -T backend true >/dev/null 2>&1; then
+  echo "pre-commit: el contenedor 'backend' no está arriba; omito ruff (súbelo con 'docker compose up -d')." >&2
+  exit 0
+fi
+
+echo "pre-commit: ruff format + check --fix en ${#REL[@]} archivo(s) del backend…"
+docker compose exec -T backend ruff format "${REL[@]}"
+docker compose exec -T backend ruff check --fix "${REL[@]}" || true
+
+# Re-stage lo que ruff haya tocado.
+for f in "${REL[@]}"; do git add "backend/$f"; done
+
+# Bloquea si queda algún problema de lint que ruff no pudo auto-corregir.
+if ! docker compose exec -T backend ruff check "${REL[@]}"; then
+  echo "pre-commit: 'ruff check' encontró problemas no auto-corregibles. Corrígelos y reintenta el commit." >&2
+  exit 1
+fi
+exit 0
