@@ -40,6 +40,8 @@ class DestinatarioMensaje(models.Model):  # message_recipients
     class Estado(models.TextChoices):
         PENDIENTE = "pendiente", "Pendiente"
         ENVIADO = "enviado", "Enviado"
+        ENTREGADO = "entregado", "Entregado"  # confirmado por el webhook del XCC (delivered)
+        LEIDO = "leido", "Leído"  # confirmado por el webhook del XCC (read)
         FALLIDO = "fallido", "Fallido"
 
     mensaje = models.ForeignKey(Mensaje, on_delete=models.CASCADE, related_name="destinatarios")

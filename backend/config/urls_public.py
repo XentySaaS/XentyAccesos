@@ -9,6 +9,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.mensajeria.connector_webhook import ConnectorWebhookView
 from apps.ocr.views import ExtraerIneView
 from apps.proveedores.views import DocumentoOnboardingView, OnboardingProveedorView
 from apps.tenants.admin_api import (
@@ -44,6 +45,11 @@ urlpatterns = [
     path("health/", LivenessView.as_view(), name="health"),
     path("health/ready/", ReadinessView.as_view(), name="health-ready"),
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
+    path(
+        "api/mensajeria/connector/webhook/",
+        ConnectorWebhookView.as_view(),
+        name="connector-webhook",
+    ),
     path("", include("apps.dispositivos.urls")),  # F6: API edge /api/v1/* (HMAC)
     # OCR público — usada en el onboarding antes de tener cuenta
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine-public"),
