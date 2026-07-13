@@ -246,6 +246,98 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
         tenant.refresh_from_db()
         return Response(self.get_serializer(tenant).data)
 
+    # ── Verificación de correo del admin del tenant ──────────────────────────
+    # El admin del tenant (accounts.Usuario) vive en el schema del tenant; estas acciones entran a
+    # su schema. Sirven cuando el correo de doble opt-in no llega y el admin queda bloqueado por el
+    # permiso EmailVerificado.
+    def _admins(self, tenant, *, solo_pendientes=False):
+        from apps.accounts.models import Usuario
+
+        qs = Usuario.objects.filter(rol=Usuario.Rol.ADMINISTRADOR, activo=True)
+        if solo_pendientes:
+            qs = qs.filter(email_verificado__isnull=True)
+        return qs.order_by("id")
+
+    @action(detail=True, methods=["get"])
+    def verificacion(self, request, pk=None):
+        """Estado de verificación de correo de los administradores del tenant."""
+        from django_tenants.utils import schema_context
+
+        tenant = self.get_object()
+        with schema_context(tenant.schema_name):
+            admins = [
+                {"email": u.email, "nombre": u.nombre, "verificado": u.email_verificado is not None}
+                for u in self._admins(tenant)
+            ]
+        return Response({"administradores": admins})
+
+    @action(detail=True, methods=["post"], url_path="reenviar-verificacion")
+    def reenviar_verificacion(self, request, pk=None):
+        """Reenvía el correo de verificación a los administradores con el correo pendiente."""
+        from django_tenants.utils import schema_context
+
+        from common.email_verify import build_verify_url, generar_token
+        from common.emails import enviar_verificacion_email
+
+        tenant = self.get_object()
+        with schema_context(tenant.schema_name):
+            pendientes = [
+                (u.email, u.nombre, generar_token(u, "acceso"))
+                for u in self._admins(tenant, solo_pendientes=True)
+            ]
+        for email, nombre, token in pendientes:
+            enviar_verificacion_email(
+                email_destino=email,
+                nombre=nombre,
+                nombre_tenant=tenant.nombre,
+                url=build_verify_url(request, tenant.schema_name, token),
+            )
+        return Response(
+            {
+                "reenviados": [e for e, _, _ in pendientes],
+                "detail": (
+                    f"Correo de verificación reenviado a {len(pendientes)} administrador(es)."
+                    if pendientes
+                    else "No hay administradores con el correo pendiente de verificar."
+                ),
+            }
+        )
+
+    @action(detail=True, methods=["post"], url_path="verificar-email")
+    def verificar_email(self, request, pk=None):
+        """Marca como verificado el correo de los admins pendientes (fallback sin correo)."""
+        from django_tenants.utils import schema_context
+
+        tenant = self.get_object()
+        verificados = []
+        with schema_context(tenant.schema_name):
+            from apps.config.models import HistorialCambio
+
+            for u in self._admins(tenant, solo_pendientes=True):
+                u.email_verificado = timezone.now()
+                u.save(update_fields=["email_verificado"])
+                verificados.append(u.email)
+                try:
+                    HistorialCambio.objects.create(
+                        descripcion=f"Super-admin verificó manualmente el correo de {u.email}",
+                        modelo="accounts.Usuario",
+                        modelo_id=u.pk,
+                        usuario=None,  # el actor es super-admin (control plane), no un Usuario
+                        accion="actualizado",
+                    )
+                except Exception:  # noqa: BLE001 — la auditoría no debe tumbar la acción
+                    pass
+        return Response(
+            {
+                "verificados": verificados,
+                "detail": (
+                    f"Correo verificado manualmente para {len(verificados)} administrador(es)."
+                    if verificados
+                    else "No hay administradores con el correo pendiente de verificar."
+                ),
+            }
+        )
+
 
 class PlanAdminSerializer(serializers.ModelSerializer):
     class Meta:

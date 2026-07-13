@@ -23,6 +23,8 @@ interface Checkout {
 
 interface PlanOpc { clave: string; nombre: string; activo: boolean; }
 
+interface AdminVerif { email: string; nombre: string; verificado: boolean; }
+
 const INK = "#0F1B2D";
 
 const ESTADO_BADGE: Record<string, { bg: string; text: string; label: string; dot: string }> = {
@@ -50,6 +52,8 @@ export default function TenantDetalle() {
   const [planes, setPlanes]     = useState<PlanOpc[]>([]);
   const [planSel, setPlanSel]   = useState<string>("");
   const [diasGracia, setDiasGracia] = useState("");
+  const [verif, setVerif]       = useState<AdminVerif[]>([]);
+  const [verifMsg, setVerifMsg] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setLoading(true);
@@ -65,7 +69,19 @@ export default function TenantDetalle() {
     }
   }, [id]);
 
+  const cargarVerif = useCallback(async () => {
+    try {
+      const { data } = await api.get<{ administradores: AdminVerif[] }>(
+        `/api/admin/tenants/${id}/verificacion/`,
+      );
+      setVerif(data.administradores);
+    } catch {
+      /* no crítico: la tarjeta simplemente no muestra el estado */
+    }
+  }, [id]);
+
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargarVerif(); }, [cargarVerif]);
 
   useEffect(() => {
     interface Pag { results?: PlanOpc[]; }
@@ -73,6 +89,39 @@ export default function TenantDetalle() {
       .then(({ data }) => setPlanes(Array.isArray(data) ? data : data.results ?? []))
       .catch(() => {});
   }, []);
+
+  async function reenviarVerif() {
+    setOcupado("reenviar");
+    setError(null);
+    setVerifMsg(null);
+    try {
+      const { data } = await api.post<{ detail: string }>(
+        `/api/admin/tenants/${id}/reenviar-verificacion/`,
+      );
+      setVerifMsg(data.detail);
+    } catch {
+      setError("No se pudo reenviar la verificación.");
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  async function verificarManual() {
+    setOcupado("verificar");
+    setError(null);
+    setVerifMsg(null);
+    try {
+      const { data } = await api.post<{ detail: string }>(
+        `/api/admin/tenants/${id}/verificar-email/`,
+      );
+      setVerifMsg(data.detail);
+      await cargarVerif();
+    } catch {
+      setError("No se pudo verificar el correo.");
+    } finally {
+      setOcupado(null);
+    }
+  }
 
   async function accion(nombre: "suspender" | "activar" | "cancelar") {
     setOcupado(nombre);
@@ -241,6 +290,50 @@ export default function TenantDetalle() {
               {ocupado === "cancelar" ? "Cancelando…" : "Cancelar suscripción"}
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Verificación de correo del administrador */}
+      <div className="mt-4 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+        <h2 className="text-sm font-semibold text-slate-700">Verificación de correo del administrador</h2>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Si el correo de verificación no llegó, reenvíalo o marca la cuenta como verificada. La
+          verificación manual queda registrada en la bitácora del tenant.
+        </p>
+        {verif.length > 0 && (
+          <ul className="mt-3 space-y-1.5">
+            {verif.map((a) => (
+              <li key={a.email} className="flex flex-wrap items-center gap-2 text-sm">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${a.verificado ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-700"}`}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: a.verificado ? "#16A34A" : "#D97706" }} />
+                  {a.verificado ? "Verificado" : "Pendiente"}
+                </span>
+                <span className="text-slate-600">{a.nombre}</span>
+                <span className="text-slate-400">· {a.email}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {verifMsg && (
+          <div className="mt-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 ring-1 ring-green-100">
+            {verifMsg}
+          </div>
+        )}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={reenviarVerif}
+            disabled={ocupado !== null}
+            className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {ocupado === "reenviar" ? "Reenviando…" : "Reenviar verificación"}
+          </button>
+          <button
+            onClick={verificarManual}
+            disabled={ocupado !== null}
+            className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {ocupado === "verificar" ? "Verificando…" : "Verificar manualmente"}
+          </button>
         </div>
       </div>
 
