@@ -374,8 +374,16 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
     Redis real, gated por `XCC_TEST_REDIS_URL`).
   - **Repo remoto:** ✔ hecho (2026-07-13). `xenty-connector` publicado en
     `https://github.com/ElevationStudioMX/XentyC.git` (`main` → `origin/main`).
-  - **Pendiente:** métricas Prometheus (`/metrics`), webhook de estados de entrega, routing sticky por
-    `connection_id`, `connection_id` configurable por tenant, y deploy.
+  - **Métricas Prometheus:** ✔ hecho (2026-07-13). `xenty-connector` commit `b3f2f04`. `GET /metrics`
+    (prom-client) con `xcc_messages_total{tenant,type,result}`, `xcc_message_send_duration_seconds`,
+    `xcc_sessions{state}` (gauge por scrape) + métricas del proceso Node. Auth opcional por
+    `XCC_METRICS_TOKEN`.
+  - **Webhook de estados de entrega:** ✔ hecho (2026-07-13). Connector `b3f2f04` emite (engancha
+    `messages.update` de Baileys → `delivered/read/failed`, POST firmado HMAC, opcional por
+    `XCC_WEBHOOK_URL`); principal `ade929e` recibe en `POST /api/mensajeria/connector/webhook/`
+    (control plane, verifica HMAC+ventana+nonce, actualiza `DestinatarioMensaje` por `external_id`,
+    solo avanza el estado). `DestinatarioMensaje` gana estados `entregado`/`leido` (migración 0005).
+  - **Pendiente:** routing sticky por `connection_id`, `connection_id` configurable por tenant, y deploy.
 
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)
 - **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).

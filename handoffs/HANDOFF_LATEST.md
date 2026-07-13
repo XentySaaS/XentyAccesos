@@ -24,8 +24,9 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 
 **Suite completa: 68/68 verdes** (última corrida, ~104 s). `ruff` limpio. Las 4 SPAs compilan.
 
-> **Continuación (misma fecha):** se retomó el **Connector (XCC)** — se implementó **F-E · nonce en
-> Redis** en el repo separado `xenty-connector`. Ver la sección "Connector (XCC) — F-E" abajo.
+> **Continuación (misma fecha):** se retomó el **Connector (XCC)** y se avanzó **F-E**: nonce en Redis,
+> repo remoto, **métricas Prometheus** y **webhook de estados de entrega** (connector + principal). Ver
+> la sección "Connector (XCC) — F-E" abajo.
 
 ---
 
@@ -83,7 +84,7 @@ teardown).
 
 ---
 
-## Connector (XCC) — F-E · nonce en Redis (repo `xenty-connector`)
+## Connector (XCC) — F-E (repo `xenty-connector`)
 
 > El Connector vive en un **repo separado**: `C:\Users\ADMIN\Documents\ProyectosElevation\xenty-connector`
 > (Node 20 + TS + Fastify + Baileys). El repo principal NO depende de él (failover a UltraMsg/Sandbox).
@@ -103,12 +104,26 @@ teardown).
   son efímeros), cableado por defecto (`XCC_REDIS_URL=redis://redis:6379` con override).
   `.env.example` documenta la variable (vacío = in-memory).
 
-**Verificación (todo en contenedor `node:20-slim`, Node no está en el host):**
-- `npm run typecheck` limpio · `npm run build` limpio.
-- `npm test` → **20 tests** (antes 15): `test/nonce.test.ts` nuevo (InMemory accept/replay/expiry/
-  aislamiento + factory). La prueba de integración Redis se **verificó contra un Redis real** (levanté
-  un `redis:7-alpine` en una red Docker y corrí con `XCC_TEST_REDIS_URL` → 5/5 verdes: accept + replay).
-- `docker compose config` valida (el default `redis://redis:6379` se aplica correctamente).
+**Métricas Prometheus** (connector `b3f2f04`): `GET /metrics` (prom-client) con
+`xcc_messages_total{tenant,type,result}`, `xcc_message_send_duration_seconds`, `xcc_sessions{state}`
+(gauge calculado por scrape) + métricas del proceso Node. Sin auth por defecto; `XCC_METRICS_TOKEN`
+opcional exige `Authorization: Bearer`.
+
+**Webhook de estados de entrega** (connector `b3f2f04` emite + principal `ade929e` recibe):
+- Connector: `SessionManager` engancha `messages.update` de Baileys, mapea el status numérico a
+  `delivered/read/failed` y hace `POST` firmado HMAC (mismo esquema que `/v1`) a `XCC_WEBHOOK_URL`
+  (opcional; sin la var no emite nada). Correlación por `message_id`. Best-effort.
+- Principal: `POST /api/mensajeria/connector/webhook/` (control plane, `urls_public`), verifica
+  HMAC+ventana+nonce (cache Redis) y actualiza `DestinatarioMensaje` por `external_id`. `Estado` gana
+  `entregado`/`leido` (**migración `mensajeria.0005`** — ya aplicada al DB dev). **Solo avanza** el
+  estado (delivered tardío no pisa read). Endpoint idempotente.
+
+**Verificación:**
+- **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
+  `npm test` → **26 tests** (nonce/metrics/webhook/server); integración Redis verificada contra
+  `redis:7-alpine` real; `docker compose config` valida.
+- **Principal** (`docker compose exec backend pytest`): `tests/test_connector_webhook.py` **5/5** +
+  suite completa sin aislamiento **64 verdes**; `ruff` limpio (pre-commit hook OK).
 
 **Cómo correr el connector** (recordatorio; Node solo vía Docker en esta máquina):
 ```bash
@@ -167,9 +182,10 @@ cp .env.example .env   # define XCC_HMAC_SECRET; docker compose up levanta conne
 ## Próximos pasos sugeridos
 
 1. **Cerrar QA #3 (onboarding)** en el navegador — ya con la red de seguridad de verificación manual.
-2. **Seguir F-E del Connector** (nonce Redis ✔, repo remoto ✔): métricas Prometheus, webhook de
-   estados, routing sticky por `connection_id`, `connection_id` por tenant, deploy del XCC. Y
-   **resolver el proveedor de WhatsApp** (UltraMsg vs XCC-primario vs Cloud API).
+2. **Cerrar F-E del Connector** (nonce Redis ✔, repo remoto ✔, métricas Prometheus ✔, webhook de
+   estados ✔): falta **routing sticky** por `connection_id`, `connection_id` **configurable por
+   tenant**, y **deploy** del XCC. Y **resolver el proveedor de WhatsApp** (UltraMsg vs XCC-primario
+   vs Cloud API).
 3. **Definir host de producción → armar CD** (workflow deploy + nginx prod + serving `/media` con policy + secrets).
 4. **Backfill de documentos legales** en staging/prod cuando existan (`python manage.py sembrar_documentos_legales`).
 5. No bloqueantes: MFA obligatorio para `Usuario`/`CuentaProveedor` del tenant; hardening de logs PII
