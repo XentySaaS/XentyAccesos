@@ -1,6 +1,6 @@
 # Estado del Proyecto — Xenty Acceso
 
-> Actualizado: 2026-07-10 (ver `handoffs/HANDOFF_LATEST.md`)
+> Actualizado: 2026-07-13 (ver `handoffs/HANDOFF_LATEST.md`)
 
 ## Backend
 
