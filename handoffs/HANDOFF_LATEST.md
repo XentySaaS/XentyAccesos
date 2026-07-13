@@ -88,7 +88,8 @@ teardown).
 > El Connector vive en un **repo separado**: `C:\Users\ADMIN\Documents\ProyectosElevation\xenty-connector`
 > (Node 20 + TS + Fastify + Baileys). El repo principal NO depende de él (failover a UltraMsg/Sandbox).
 
-**Qué se hizo** (commit `cd2c85e` en `xenty-connector`, **local — ver riesgo abajo**):
+**Qué se hizo** (commit `cd2c85e` en `xenty-connector`, ya pusheado a
+`github.com/ElevationStudioMX/XentyC`):
 - El anti-replay pasó de un `Map` en proceso a una **interfaz `NonceStore`** con dos implementaciones
   elegidas por `XCC_REDIS_URL`:
   - `InMemoryNonceStore` — comportamiento actual (una sola instancia).
@@ -119,11 +120,10 @@ cp .env.example .env   # define XCC_HMAC_SECRET; docker compose up levanta conne
 
 ## Contexto NO obvio (IMPORTANTE)
 
-0. **⚠️ El repo `xenty-connector` NO tiene remoto** (`git remote -v` vacío) y ahora tiene **2 commits
-   locales** (`4d0e592` MVP + `cd2c85e` nonce Redis). Todo el Connector existe **solo en disco**: si se
-   pierde la carpeta, se pierde. **Crear el repo remoto** (p. ej. `github.com/XentySaaS/xenty-connector`)
-   y `git push` es lo más urgente de F-E. Su identidad git local ya quedó fijada a
-   `ChuyHR <manuel@elevation.com.mx>`.
+0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):
+   `https://github.com/ElevationStudioMX/XentyC.git` (org **ElevationStudioMX**, distinta del principal
+   en `XentySaaS/XentyAccesos`). `main` sigue a `origin/main`; ambos commits pusheados (`4d0e592` MVP +
+   `cd2c85e` nonce Redis). Identidad git local del repo: `ChuyHR <manuel@elevation.com.mx>`.
 
 1. **El fix de MFA cambió el modelo del handoff anterior.** Ya **no** hay "TOTP reseteado a propósito":
    el enrolamiento es ahora **basado en cache**. `EnrolarTOTPView` genera el secreto y lo guarda en
@@ -166,11 +166,10 @@ cp .env.example .env   # define XCC_HMAC_SECRET; docker compose up levanta conne
 
 ## Próximos pasos sugeridos
 
-1. **Crear el repo remoto de `xenty-connector`** y `git push` — el Connector solo existe local (ver Contexto #0).
-2. **Cerrar QA #3 (onboarding)** en el navegador — ya con la red de seguridad de verificación manual.
-3. **Seguir F-E del Connector** (nonce Redis ✔): métricas Prometheus, webhook de estados, routing
-   sticky por `connection_id`, `connection_id` por tenant, deploy del XCC. Y **resolver el proveedor
-   de WhatsApp** (UltraMsg vs XCC-primario vs Cloud API).
+1. **Cerrar QA #3 (onboarding)** en el navegador — ya con la red de seguridad de verificación manual.
+2. **Seguir F-E del Connector** (nonce Redis ✔, repo remoto ✔): métricas Prometheus, webhook de
+   estados, routing sticky por `connection_id`, `connection_id` por tenant, deploy del XCC. Y
+   **resolver el proveedor de WhatsApp** (UltraMsg vs XCC-primario vs Cloud API).
 3. **Definir host de producción → armar CD** (workflow deploy + nginx prod + serving `/media` con policy + secrets).
 4. **Backfill de documentos legales** en staging/prod cuando existan (`python manage.py sembrar_documentos_legales`).
 5. No bloqueantes: MFA obligatorio para `Usuario`/`CuentaProveedor` del tenant; hardening de logs PII

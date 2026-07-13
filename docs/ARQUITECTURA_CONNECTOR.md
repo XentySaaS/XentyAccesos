@@ -372,9 +372,10 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
     Fail-closed: si Redis no responde, `/v1` responde `503` y el Router del principal hace failover.
     `docker-compose` del connector incluye ahora su propio Redis. Tests 20 (incl. integración contra
     Redis real, gated por `XCC_TEST_REDIS_URL`).
+  - **Repo remoto:** ✔ hecho (2026-07-13). `xenty-connector` publicado en
+    `https://github.com/ElevationStudioMX/XentyC.git` (`main` → `origin/main`).
   - **Pendiente:** métricas Prometheus (`/metrics`), webhook de estados de entrega, routing sticky por
-    `connection_id`, `connection_id` configurable por tenant, **crear repo remoto del connector** y
-    deploy.
+    `connection_id`, `connection_id` configurable por tenant, y deploy.
 
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)
 - **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).

@@ -45,14 +45,14 @@
 ## Connector de comunicaciones (XCC — WhatsApp)
 
 > Diseño: `docs/ARQUITECTURA_CONNECTOR.md`. Repo del servicio: `xenty-connector` (Node + Baileys),
-> **separado** del principal. Es un **proveedor de WhatsApp de respaldo** self-hosted; el principal
-> funciona igual si está apagado (failover a Sandbox/UltraMsg).
+> **separado** del principal → `github.com/ElevationStudioMX/XentyC`. Es un **proveedor de WhatsApp de
+> respaldo** self-hosted; el principal funciona igual si está apagado (failover a Sandbox/UltraMsg).
 
 | Fase | Qué es | Estado |
 |---|---|---|
 | F-C | Servicio XCC (Node 20 + Fastify + **Baileys**): REST `/v1` + HMAC, sesiones por tenant, QR/pairing, media, persistencia, reconexión | ✔ MVP en repo `xenty-connector` (build en `dist/`, `.env.example`, Docker) |
 | F-D | Enchufe al principal: `apps/mensajeria/connector_provider.py` (cliente REST+HMAC) + registro `xcc` en el Router con failover | ✔ Implementado y con tests (`tests/test_connector_provider.py`: firma, no-config, http≠202, **failover xcc→sandbox**) |
-| F-E | Escala horizontal + observabilidad | ◑ En progreso: **nonce en Redis ✔** (2026-07-13, connector `cd2c85e`: `SET NX PX` compartido → habilita múltiples réplicas; fail-closed a 503; Redis propio en su compose; 20 tests). Pendiente: métricas Prometheus, webhook de estados, routing sticky por `connection_id`, `connection_id` por tenant, **crear repo remoto del connector**, deploy |
+| F-E | Escala horizontal + observabilidad | ◑ En progreso: **nonce en Redis ✔** (2026-07-13, connector `cd2c85e`: `SET NX PX` compartido → habilita múltiples réplicas; fail-closed a 503; Redis propio en su compose; 20 tests) · **repo remoto ✔** (`github.com/ElevationStudioMX/XentyC`). Pendiente: métricas Prometheus, webhook de estados, routing sticky por `connection_id`, `connection_id` por tenant, deploy |
 
 **Config runtime:** el super-admin activa/configura el Connector en la pantalla **Comunicaciones**
 (`ConfiguracionConnector` global: `habilitado`, `url_base`, `hmac_secret` cifrado, umbrales del breaker).
