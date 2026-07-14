@@ -76,8 +76,15 @@ def solicitar(
             headers=headers,
             timeout=cfg["timeout_s"],
         )
-    except Exception as exc:  # noqa: BLE001 — red caída → error claro para la UI
-        raise ConnectorNoDisponible(f"No se pudo contactar al Connector: {exc}") from exc
+    except Exception as exc:  # noqa: BLE001 — red caída → mensaje claro para la UI; detalle al log
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Connector inalcanzable en %s: %s", cfg["url_base"], exc
+        )
+        raise ConnectorNoDisponible(
+            "No se pudo contactar al Connector. Verifica que esté encendido y la URL en «Comunicaciones»."
+        ) from exc
 
     try:
         data = resp.json()
