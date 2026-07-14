@@ -314,8 +314,13 @@ stateDiagram-v2
 ---
 
 ## 14. Despliegue, actualización y rollback
-- **Despliegue**: XCC como **servicio/contenedor propio** (compose service o repо separado), con su
-  BD/volumen. Puede vivir en otro servidor (solo cambia `url_base` en la UI).
+- **Despliegue** (decisión DEC-008): el XCC se despliega en el **mismo CD** que el principal, pero
+  como **servicio opcional (opt-in)** — `profiles: ["connector"]` en el compose de deploy o un paso
+  opcional del pipeline. En producción **puede no levantarse**, y su ausencia/caída **no afecta** al
+  principal (garantía estructural: master switch global + Router con failover a UltraMsg/Sandbox +
+  breaker; el XCC nunca es dependencia dura). El servicio corre con su BD/volumen y Redis propios;
+  puede vivir en otro servidor (solo cambia `url_base` en la UI). Runbook y artefactos en
+  `xenty-connector/DEPLOY.md` (+ `docker-compose.prod.yml`, `nginx.xcc.conf.example`).
 - **Actualización**: rolling/blue-green del XCC; el principal no se entera (breaker + failover cubren
   la ventana). Contrato `/v1` estable; cambios incompatibles → `/v2`.
 - **Rollback instantáneo**: **toggle global “deshabilitar Connector”** en la UI → el Router deja de

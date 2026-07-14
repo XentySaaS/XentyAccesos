@@ -84,3 +84,15 @@
 **Justificación:** El gafete de cita es funcional (QR + nombre + fechas); forzar un placeholder vacío degradaba el diseño.
 **Impacto:** `componer_gafete()` tiene dos layouts: con foto (columna estrecha para zona) y sin foto (zona full-width).
 **Archivos:** `backend/apps/gafetes/services.py`, `backend/apps/citas/services.py`
+
+---
+
+## DEC-008: El Connector (XCC) se despliega en el mismo CD, como servicio opcional y no-afectante
+
+**Fecha:** 2026-07-13
+**Problema:** El XCC vive en un repo separado (`ElevationStudioMX/XentyC`) y podría desplegarse por su cuenta. ¿Pipeline/CD separado o unificado con el principal?
+**Alternativas:** (a) CI/CD totalmente separado del XCC (b) Deploy unificado en el mismo CD, pero con el XCC como servicio opcional
+**Decisión:** El XCC se incluye en el **mismo CD** que el principal, pero como servicio **opt-in** (p. ej. `profiles: ["connector"]` en el compose de deploy / paso opcional del pipeline). En producción puede **no levantarse**, y su ausencia o caída **no debe afectar** el funcionamiento del principal.
+**Justificación:** Un solo pipeline simplifica la operación (un release, un host), pero el XCC es un respaldo no-oficial (Baileys) que puede fallar/banearse; acoplarlo como obligatorio arriesgaría al principal. La no-afectación **ya está garantizada por arquitectura**: master switch global (`ConfiguracionConnector.habilitado`) + Router con failover a UltraMsg/Sandbox + breaker. El XCC nunca es dependencia dura.
+**Impacto:** Cuando exista el CD (falta host), el XCC entra como servicio opcional; su imagen se construye del repo del XCC. Con el master switch OFF o el contenedor apagado, el principal opera igual. Artefactos de deploy del XCC: `xenty-connector/DEPLOY.md`, `docker-compose.prod.yml`, `nginx.xcc.conf.example`.
+**Archivos:** `docs/ARQUITECTURA_CONNECTOR.md` §14, `xenty-connector/DEPLOY.md`

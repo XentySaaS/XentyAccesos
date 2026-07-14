@@ -40,7 +40,7 @@
 | Celery worker/beat | ✔ Tasks activas: `enviar_campana` (mensajería), `importar_efos_task` (cumplimiento), ambas con retry |
 | Nginx dev proxy | ✔ tenant.localhost:8080 |
 | CI (GitHub Actions) | ✔ `.github/workflows/ci.yml`: ruff + pytest completo + build de las 4 SPAs en push a `main` y PRs |
-| CD (deploy) | 🔲 Pendiente: sin destino de producción decidido (ver HANDOFF) |
+| CD (deploy) | 🔲 Pendiente: sin destino de producción decidido (ver HANDOFF). El **XCC entra en el mismo CD como servicio opcional/opt-in** (DEC-008): puede no levantarse en prod sin afectar al principal |
 
 ## Connector de comunicaciones (XCC — WhatsApp)
 
