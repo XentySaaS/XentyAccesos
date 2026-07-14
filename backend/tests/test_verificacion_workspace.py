@@ -86,6 +86,47 @@ def test_empleados_del_proveedor(dos_tenants):
         assert [f["emp_nombre"] for f in r2.data["results"]] == ["Juan"]
 
 
+def test_proveedores_orden(dos_tenants):
+    """`orden=az` alfabético; default (pendientes) por más documentos primero."""
+    from apps.documentos.models import DocumentoEmpleado, GrupoDocumentos, TipoDocumento
+    from apps.documentos.verificacion_api import ProveedoresVerificacionView
+    from apps.empleados.models import Empleado
+    from apps.proveedores.models import CuentaProveedor, Proveedor
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        g = GrupoDocumentos.objects.create(nombre="G")
+        td = TipoDocumento.objects.create(nombre="INE", grupo=g)
+        # Zeta: 1 doc; Alfa: 2 docs.
+        pz = Proveedor.objects.create(nombre="Zeta")
+        cz = CuentaProveedor.objects.create_user(
+            email="z@z.com", nombre="Z", password="x", proveedor=pz
+        )
+        DocumentoEmpleado.objects.create(
+            empleado=Empleado.objects.create(nombre="e", proveedor=cz), tipo_documento=td, estado=0
+        )
+        pa = Proveedor.objects.create(nombre="Alfa")
+        ca = CuentaProveedor.objects.create_user(
+            email="a@a.com", nombre="A", password="x", proveedor=pa
+        )
+        for _i in range(2):
+            DocumentoEmpleado.objects.create(
+                empleado=Empleado.objects.create(nombre="e", proveedor=ca),
+                tipo_documento=td,
+                estado=0,
+            )
+
+        # Default (pendientes): Alfa (2 docs) antes que Zeta (1 doc).
+        r = _resp(ProveedoresVerificacionView, "estado=0")
+        assert [x["proveedor_nombre"] for x in r.data["results"]] == ["Alfa", "Zeta"]
+        # A-Z: alfabético.
+        r2 = _resp(ProveedoresVerificacionView, "estado=0&orden=az")
+        assert [x["proveedor_nombre"] for x in r2.data["results"]] == ["Alfa", "Zeta"]
+        # Z-A: inverso.
+        r3 = _resp(ProveedoresVerificacionView, "estado=0&orden=za")
+        assert [x["proveedor_nombre"] for x in r3.data["results"]] == ["Zeta", "Alfa"]
+
+
 def test_empleados_sin_proveedor_es_400(dos_tenants):
     from apps.documentos.verificacion_api import EmpleadosVerificacionView
 

@@ -9,7 +9,7 @@ existente ``documentos-empleado/?empleado=&estado=``. Dimensiones comunes: ``est
 
 from __future__ import annotations
 
-from django.db.models import Count, F
+from django.db.models import Count, F, Max
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -35,6 +35,22 @@ def _int(v):
 
 def _verdadero(v) -> bool:
     return str(v).lower() in ("1", "true", "si", "sí")
+
+
+def _aplicar_orden(rows, orden: str | None, campo_nombre: str):
+    """Ordena las filas agregadas: pendientes (default) / recientes / antiguos / A-Z / Z-A.
+
+    ``ultimo`` = fecha del documento más reciente del grupo (para ordenar por recencia).
+    """
+    if orden == "recientes":
+        return rows.order_by("-ultimo")
+    if orden == "antiguos":
+        return rows.order_by("ultimo")
+    if orden == "az":
+        return rows.order_by(campo_nombre)
+    if orden == "za":
+        return rows.order_by(f"-{campo_nombre}")
+    return rows.order_by("-docs", campo_nombre)  # "pendientes" (default): más por revisar primero
 
 
 def _base_qs(request):
@@ -63,14 +79,15 @@ class ProveedoresVerificacionView(APIView):
         search = request.query_params.get("search", "").strip()
         if search:
             qs = qs.filter(empleado__proveedor__proveedor__nombre__icontains=search)
-        rows = (
-            qs.values(
-                proveedor_id=F("empleado__proveedor__proveedor_id"),
-                proveedor_nombre=F("empleado__proveedor__proveedor__nombre"),
-            )
-            .annotate(docs=Count("id", distinct=True), empleados=Count("empleado", distinct=True))
-            .order_by("-docs", "proveedor_nombre")
+        rows = qs.values(
+            proveedor_id=F("empleado__proveedor__proveedor_id"),
+            proveedor_nombre=F("empleado__proveedor__proveedor__nombre"),
+        ).annotate(
+            docs=Count("id", distinct=True),
+            empleados=Count("empleado", distinct=True),
+            ultimo=Max("creado"),
         )
+        rows = _aplicar_orden(rows, request.query_params.get("orden"), "proveedor_nombre")
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(rows, request)
         return paginator.get_paginated_response(list(page))
@@ -89,11 +106,10 @@ class EmpleadosVerificacionView(APIView):
         search = request.query_params.get("search", "").strip()
         if search:
             qs = qs.filter(empleado__nombre__icontains=search)
-        rows = (
-            qs.values(emp_id=F("empleado_id"), emp_nombre=F("empleado__nombre"))
-            .annotate(docs=Count("id", distinct=True))
-            .order_by("-docs", "emp_nombre")
+        rows = qs.values(emp_id=F("empleado_id"), emp_nombre=F("empleado__nombre")).annotate(
+            docs=Count("id", distinct=True), ultimo=Max("creado")
         )
+        rows = _aplicar_orden(rows, request.query_params.get("orden"), "emp_nombre")
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(rows, request)
         return paginator.get_paginated_response(list(page))

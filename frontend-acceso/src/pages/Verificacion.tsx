@@ -54,17 +54,24 @@ export default function Verificacion() {
   const [evento, setEvento] = useState<string>("");
   const [misEventos, setMisEventos] = useState(false);
   const [eventos, setEventos] = useState<EventoLite[]>([]);
+  const [orden, setOrden] = useState("pendientes");
 
-  // Columnas
+  // Columnas (con paginación "cargar más": el backend pagina a 25/página)
   const [provs, setProvs] = useState<Prov[]>([]);
   const [provQ, setProvQ] = useState("");
   const [provSel, setProvSel] = useState<Prov | null>(null);
   const [loadingProv, setLoadingProv] = useState(false);
+  const [provPage, setProvPage] = useState(1);
+  const [provMore, setProvMore] = useState(false);
+  const [moreProv, setMoreProv] = useState(false);
 
   const [emps, setEmps] = useState<Emp[]>([]);
   const [empQ, setEmpQ] = useState("");
   const [empSel, setEmpSel] = useState<Emp | null>(null);
   const [loadingEmp, setLoadingEmp] = useState(false);
+  const [empPage, setEmpPage] = useState(1);
+  const [empMore, setEmpMore] = useState(false);
+  const [moreEmp, setMoreEmp] = useState(false);
 
   const [docs, setDocs] = useState<Documento[]>([]);
   const [docSel, setDocSel] = useState<Documento | null>(null);
@@ -79,30 +86,40 @@ export default function Verificacion() {
   const motivoRef = useRef<HTMLTextAreaElement>(null);
 
   // ── Cargadores ────────────────────────────────────────────────
-  const loadProvs = useCallback(() => {
-    const p = new URLSearchParams({ estado: String(estado) });
+  const loadProvs = useCallback((page = 1) => {
+    const p = new URLSearchParams({ estado: String(estado), orden, page: String(page) });
     if (evento) p.set("evento", evento);
     if (misEventos) p.set("mis_eventos", "1");
     if (provQ.trim()) p.set("search", provQ.trim());
-    setLoadingProv(true);
+    page === 1 ? setLoadingProv(true) : setMoreProv(true);
     api.get(`/api/verificacion/proveedores/?${p}`)
-      .then(r => setProvs(r.data.results ?? []))
-      .catch(() => setProvs([]))
-      .finally(() => setLoadingProv(false));
-  }, [estado, evento, misEventos, provQ]);
+      .then(r => {
+        const res: Prov[] = r.data.results ?? [];
+        setProvs(prev => (page === 1 ? res : [...prev, ...res]));
+        setProvMore(!!r.data.next);
+        setProvPage(page);
+      })
+      .catch(() => { if (page === 1) setProvs([]); })
+      .finally(() => { setLoadingProv(false); setMoreProv(false); });
+  }, [estado, evento, misEventos, provQ, orden]);
 
-  const loadEmps = useCallback(() => {
+  const loadEmps = useCallback((page = 1) => {
     if (!provSel) { setEmps([]); return; }
-    const p = new URLSearchParams({ estado: String(estado), proveedor: String(provSel.proveedor_id) });
+    const p = new URLSearchParams({ estado: String(estado), proveedor: String(provSel.proveedor_id), orden, page: String(page) });
     if (evento) p.set("evento", evento);
     if (misEventos) p.set("mis_eventos", "1");
     if (empQ.trim()) p.set("search", empQ.trim());
-    setLoadingEmp(true);
+    page === 1 ? setLoadingEmp(true) : setMoreEmp(true);
     api.get(`/api/verificacion/empleados/?${p}`)
-      .then(r => setEmps(r.data.results ?? []))
-      .catch(() => setEmps([]))
-      .finally(() => setLoadingEmp(false));
-  }, [provSel, estado, evento, misEventos, empQ]);
+      .then(r => {
+        const res: Emp[] = r.data.results ?? [];
+        setEmps(prev => (page === 1 ? res : [...prev, ...res]));
+        setEmpMore(!!r.data.next);
+        setEmpPage(page);
+      })
+      .catch(() => { if (page === 1) setEmps([]); })
+      .finally(() => { setLoadingEmp(false); setMoreEmp(false); });
+  }, [provSel, estado, evento, misEventos, empQ, orden]);
 
   const loadDocs = useCallback(() => {
     if (!empSel) { setDocs([]); return; }
@@ -124,9 +141,9 @@ export default function Verificacion() {
   useEffect(() => { setProvSel(null); setEmps([]); setEmpSel(null); setDocs([]); setDocSel(null); }, [estado, evento, misEventos]);
 
   // Proveedores: recarga inmediata en filtros; debounce en búsqueda.
-  useEffect(() => { const t = setTimeout(loadProvs, provQ ? 300 : 0); return () => clearTimeout(t); }, [loadProvs, provQ]);
+  useEffect(() => { const t = setTimeout(() => loadProvs(1), provQ ? 300 : 0); return () => clearTimeout(t); }, [loadProvs, provQ]);
   // Empleados: al elegir proveedor / cambiar filtros; debounce en búsqueda.
-  useEffect(() => { const t = setTimeout(loadEmps, empQ ? 300 : 0); return () => clearTimeout(t); }, [loadEmps, empQ]);
+  useEffect(() => { const t = setTimeout(() => loadEmps(1), empQ ? 300 : 0); return () => clearTimeout(t); }, [loadEmps, empQ]);
   // Documentos del empleado seleccionado.
   useEffect(() => { loadDocs(); }, [loadDocs]);
 
@@ -212,6 +229,15 @@ export default function Verificacion() {
             <input type="checkbox" checked={misEventos} onChange={e => { setMisEventos(e.target.checked); setEvento(""); }} className="accent-blue-600" />
             Solo mis eventos
           </label>
+          {/* Orden */}
+          <select value={orden} onChange={e => setOrden(e.target.value)} title="Ordenar proveedores y empleados"
+            className="ml-auto h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-600 outline-none focus:border-blue-400">
+            <option value="pendientes">Ordenar: más pendientes</option>
+            <option value="recientes">Más recientes</option>
+            <option value="antiguos">Más antiguos</option>
+            <option value="az">A – Z</option>
+            <option value="za">Z – A</option>
+          </select>
         </div>
       </div>
 
@@ -241,6 +267,7 @@ export default function Verificacion() {
                 </button>
               );
             })}
+            <CargarMas show={provMore} loading={moreProv} onClick={() => loadProvs(provPage + 1)} />
           </div>
         </div>
 
@@ -264,6 +291,7 @@ export default function Verificacion() {
                 </button>
               );
             })}
+            <CargarMas show={empMore} loading={moreEmp} onClick={() => loadEmps(empPage + 1)} />
           </div>
         </div>
 
@@ -359,6 +387,15 @@ export default function Verificacion() {
 
 function Skeleton() {
   return <div className="space-y-2 p-3">{[1, 2, 3].map(i => <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />)}</div>;
+}
+function CargarMas({ show, loading, onClick }: { show: boolean; loading: boolean; onClick: () => void }) {
+  if (!show) return null;
+  return (
+    <button onClick={onClick} disabled={loading}
+      className="w-full border-t border-slate-100 py-2.5 text-center text-xs font-semibold text-blue-600 hover:bg-blue-50 disabled:opacity-50">
+      {loading ? "Cargando…" : "Cargar más"}
+    </button>
+  );
 }
 function Vacio({ texto }: { texto: string }) {
   return <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><p className="text-xs font-medium text-slate-400">{texto}</p></div>;

@@ -47,6 +47,15 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 16 (2026-07-14):** **verificación — paginación "cargar más" + orden.** El backend ya
+> paginaba (25/pág) pero la UI solo mostraba la 1ª página por columna (mismo límite del diseño viejo).
+> Se agregó **"Cargar más"** en las columnas Proveedores/Empleados (acumula páginas vía `?page=`; los
+> filtros/búsqueda/orden reinician a la pág. 1) y un **selector de orden** global: más pendientes
+> (default), más recientes, más antiguos, A–Z, Z–A. Backend: `verificacion_api` acepta `?orden=` y
+> anota `ultimo=Max("creado")` para ordenar por recencia (`_aplicar_orden`). Test de orden en
+> `test_verificacion_workspace.py` (ahora 4). Nivel de documentos (nivel 3) sigue newest-first (pocos
+> por empleado).
+>
 > **Continuación 15 (2026-07-14):** **empleado: correo y teléfono obligatorios + dedup de correo.**
 > `EmpleadoSerializer` ahora exige `email` (EmailField) y `telefono` (TelefonoField) al alta, y
 > `validate_email` rechaza duplicados **por empresa** (`proveedor__proveedor_id`, ignorando bajas y a
