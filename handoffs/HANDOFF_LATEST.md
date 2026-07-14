@@ -54,6 +54,11 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > su panel de subida inline (reusa `EmpleadoFila`), así se cumple "solicitar los documentos requeridos
 > ahí mismo". Se oculta si el cupo está lleno; mensaje de éxito en verde. Solo frontend (endpoints ya
 > existían). El vacío "No tienes empleados" ahora apunta al atajo.
+> **Ampliación:** el mini-form ahora **sube los documentos requeridos en el mismo paso** — al abrir la
+> gestión se cargan los tipos requeridos vía `GET /api/evento-proveedores/{id}/requisitos/` y el form
+> muestra un selector de archivo por tipo; al "Crear y agregar" hace empleado → asignar →
+> `POST /api/documentos-empleado/` por cada archivo adjunto (best-effort, con conteo de subidos/fallidos
+> en el mensaje). Subir es opcional (los no subidos quedan pendientes).
 >
 > **Continuación 12 (2026-07-14):** **fix — dar de baja / reactivar asistente de una cita.** El
 > frontend llamaba a `/api/asistentes/{id}/` (DELETE y PATCH) pero el ViewSet está registrado en

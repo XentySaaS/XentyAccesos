@@ -101,6 +101,8 @@ export default function MisEventos() {
   const [creando, setCreando] = useState(false);
   const [crearError, setCrearError] = useState("");
   const [crearOk, setCrearOk] = useState("");
+  const [reqTipos, setReqTipos] = useState<{ id: number; nombre: string }[]>([]); // docs requeridos del evento
+  const [docFiles, setDocFiles] = useState<Record<number, File>>({}); // archivo elegido por tipo
 
   /* cajones de estacionamiento */
   const [cajones, setCajones] = useState<{ id: number; numero: number }[]>([]);
@@ -118,11 +120,21 @@ export default function MisEventos() {
   async function abrirGestion(inv: Invitacion) {
     setGestion(inv); setCand(null); setAviso(""); setCajones([]);
     setShowCrear(false); setCrearError(""); setCrearOk(""); setNuevoEmp({ nombre: "", email: "", telefono: "" });
+    setReqTipos([]); setDocFiles({});
     setLoadingCand(true);
     if (inv.requiere_parking) setLoadingCajones(true);
     try {
       const [candRes] = await Promise.all([
         api.get(`/api/evento-proveedores/${inv.id}/candidatos/`),
+        // Tipos de documento requeridos por el evento (para subirlos al crear el empleado).
+        api.get(`/api/evento-proveedores/${inv.id}/requisitos/`)
+          .then(r => {
+            const tipos: { id: number; nombre: string }[] = [];
+            (r.data.requisitos ?? []).forEach((g: { tipos?: { id: number; nombre: string }[] }) =>
+              (g.tipos ?? []).forEach(t => tipos.push(t)));
+            setReqTipos(Array.from(new Map(tipos.map(t => [t.id, t])).values()));
+          })
+          .catch(() => setReqTipos([])),
         inv.requiere_parking
           ? api.get(`/api/evento-proveedores/${inv.id}/cajones/`)
               .then(r => setCajones(r.data.cajones ?? []))
@@ -198,9 +210,32 @@ export default function MisEventos() {
       });
       await api.post(`/api/evento-proveedores/${gestion.id}/asignar-empleados/`, { empleados: [data.id] });
       const nombre = nuevoEmp.nombre.trim();
+
+      // Sube los documentos requeridos que se hayan adjuntado (best-effort: uno que falle no bloquea).
+      const adjuntos = Object.entries(docFiles);
+      let subidos = 0;
+      let fallidos = 0;
+      for (const [tipoId, file] of adjuntos) {
+        const fd = new FormData();
+        fd.append("empleado", String(data.id));
+        fd.append("tipo_documento", tipoId);
+        fd.append("archivo", file);
+        try {
+          await api.post("/api/documentos-empleado/", fd);
+          subidos += 1;
+        } catch {
+          fallidos += 1;
+        }
+      }
+
       setNuevoEmp({ nombre: "", email: "", telefono: "" });
+      setDocFiles({});
       setShowCrear(false);
-      setCrearOk(`«${nombre}» se creó y agregó al evento. Sube sus documentos requeridos en su fila (abajo).`);
+      const partes = [`«${nombre}» se creó y agregó al evento.`];
+      if (subidos) partes.push(`${subidos} documento(s) enviado(s) a verificación.`);
+      if (fallidos) partes.push(`${fallidos} no se pudo subir; inténtalo en su fila (abajo).`);
+      else if (!subidos && reqTipos.length) partes.push("Sube sus documentos requeridos en su fila (abajo).");
+      setCrearOk(partes.join(" "));
       await recargarCand();
       await cargar();
     } catch (err: any) {
@@ -402,8 +437,24 @@ export default function MisEventos() {
                               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                           </div>
                           {crearError && <p className="text-[11px] text-red-500">{crearError}</p>}
-                          {cand.requiere_documentos && (
-                            <p className="text-[11px] text-slate-500">Al crearlo se agrega al evento; luego sube sus documentos requeridos en su fila.</p>
+                          {reqTipos.length > 0 && (
+                            <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-2.5">
+                              <p className="text-[11px] font-semibold text-slate-600">
+                                Documentos requeridos
+                                <span className="ml-1 font-normal text-slate-400">— súbelos ahora (opcional)</span>
+                              </p>
+                              {reqTipos.map(t => (
+                                <div key={t.id} className="flex items-center justify-between gap-2">
+                                  <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{t.nombre}</span>
+                                  <label className={`shrink-0 cursor-pointer rounded-lg border px-2.5 py-1 text-[11px] font-medium hover:bg-slate-50 ${docFiles[t.id] ? "border-green-300 bg-green-50 text-green-700" : "border-slate-200 text-slate-600"}`}>
+                                    {docFiles[t.id] ? "✓ Archivo listo" : "Elegir archivo"}
+                                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
+                                      onChange={e => { const f = e.target.files?.[0]; if (f) setDocFiles(prev => ({ ...prev, [t.id]: f })); }} />
+                                  </label>
+                                </div>
+                              ))}
+                              <p className="text-[10px] text-slate-400">PDF, JPG o PNG. Se envían a verificación del recinto. Los que no subas quedan pendientes.</p>
+                            </div>
                           )}
                           <div className="flex gap-2">
                             <button onClick={crearYAsignar} disabled={creando || !nuevoEmp.nombre.trim()}
@@ -411,7 +462,7 @@ export default function MisEventos() {
                               style={{ backgroundColor: "#2563EB" }}>
                               {creando ? "Creando…" : "Crear y agregar"}
                             </button>
-                            <button onClick={() => { setShowCrear(false); setCrearError(""); }}
+                            <button onClick={() => { setShowCrear(false); setCrearError(""); setDocFiles({}); }}
                               className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
                               Cancelar
                             </button>
