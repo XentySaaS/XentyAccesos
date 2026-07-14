@@ -10,6 +10,7 @@ Router decida reintento/failover.
 
 from __future__ import annotations
 
+import base64
 import uuid
 from dataclasses import dataclass
 from typing import Protocol
@@ -25,10 +26,38 @@ class ResultadoEnvio:
     error: str | None = None
 
 
+@dataclass
+class AdjuntoWhatsApp:
+    """Adjunto de WhatsApp cargado como bytes (gafete generado, protocolo almacenado…).
+
+    Se envía como **base64** al proveedor (el Connector lo acepta nativamente; UltraMsg vía su API
+    de imagen/documento). Así no hace falta exponer en una URL pública un archivo con QR firmado.
+    """
+
+    nombre_archivo: str
+    contenido: bytes
+    mimetype: str
+    caption: str = ""
+
+    @property
+    def es_imagen(self) -> bool:
+        return self.mimetype.startswith("image/")
+
+    def b64(self) -> str:
+        return base64.b64encode(self.contenido).decode("ascii")
+
+
 class ProveedorMensajeria(Protocol):
     nombre: str
 
-    def enviar(self, telefono: str, cuerpo: str, archivo: str | None = None) -> ResultadoEnvio: ...
+    def enviar(
+        self,
+        telefono: str,
+        cuerpo: str,
+        archivo: str | None = None,
+        *,
+        adjunto: AdjuntoWhatsApp | None = None,
+    ) -> ResultadoEnvio: ...
 
 
 class SandboxProvider:
@@ -36,23 +65,53 @@ class SandboxProvider:
 
     nombre = "sandbox"
 
-    def enviar(self, telefono: str, cuerpo: str, archivo: str | None = None) -> ResultadoEnvio:
+    def enviar(
+        self,
+        telefono: str,
+        cuerpo: str,
+        archivo: str | None = None,
+        *,
+        adjunto: AdjuntoWhatsApp | None = None,
+    ) -> ResultadoEnvio:
         return ResultadoEnvio(
             ok=True, proveedor=self.nombre, external_id=f"sandbox-{uuid.uuid4().hex[:12]}"
         )
 
 
 class UltraMsgProvider:
-    """Proveedor principal (nube). Envía texto; con URL pública de archivo manda documento."""
+    """Proveedor principal (nube). Envía texto; un adjunto (bytes) va como imagen/documento base64,
+    o un ``archivo`` (URL pública) como documento."""
 
     nombre = "ultramsg"
 
-    def enviar(self, telefono: str, cuerpo: str, archivo: str | None = None) -> ResultadoEnvio:
+    def enviar(
+        self,
+        telefono: str,
+        cuerpo: str,
+        archivo: str | None = None,
+        *,
+        adjunto: AdjuntoWhatsApp | None = None,
+    ) -> ResultadoEnvio:
         import requests
 
         base = f"https://api.ultramsg.com/{settings.ULTRAMSG_INSTANCE_ID}"
         try:
-            if archivo:
+            if adjunto is not None:
+                # UltraMsg acepta base64 en los campos image/document.
+                if adjunto.es_imagen:
+                    endpoint, campo = "image", "image"
+                else:
+                    endpoint, campo = "document", "document"
+                data = {
+                    "token": settings.ULTRAMSG_TOKEN,
+                    "to": telefono,
+                    campo: adjunto.b64(),
+                    "caption": cuerpo,
+                }
+                if not adjunto.es_imagen:
+                    data["filename"] = adjunto.nombre_archivo
+                resp = requests.post(f"{base}/messages/{endpoint}", data=data, timeout=25)
+            elif archivo:
                 resp = requests.post(
                     f"{base}/messages/document",
                     data={

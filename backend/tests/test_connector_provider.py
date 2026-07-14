@@ -80,6 +80,39 @@ def test_connector_firma_y_postea(dos_tenants, monkeypatch):
     assert h["X-XCC-Signature"] == esperada
 
 
+def test_connector_media_b64(dos_tenants, monkeypatch):
+    """Un adjunto (bytes) se manda como base64 con type=image/document (sin URL pública)."""
+    import json
+
+    from apps.mensajeria.proveedores import AdjuntoWhatsApp
+
+    t1, _ = dos_tenants
+    _config_connector()
+    capt = {}
+
+    def fake_post(url, data=None, headers=None, timeout=None):
+        capt["data"] = data
+        return _FakeResp(202, {"message_id": "m1"})
+
+    monkeypatch.setattr("requests.post", fake_post)
+    adj = AdjuntoWhatsApp(
+        nombre_archivo="gafete.png",
+        contenido=b"\x89PNG\r\n",
+        mimetype="image/png",
+        caption="ignorado",
+    )
+    with schema_context(t1.schema_name):
+        res = ConnectorProvider().enviar("5218112223344", "cuerpo del mensaje", adjunto=adj)
+
+    assert res.ok is True
+    body = json.loads(capt["data"])
+    assert body["type"] == "image"
+    assert body["media_b64"] and body["filename"] == "gafete.png"
+    assert body["mimetype"] == "image/png"
+    assert body["caption"] == "cuerpo del mensaje"  # el caption lo pone el cuerpo, no el adjunto
+    assert "text" not in body and "media_url" not in body
+
+
 def test_connector_http_no_202_es_fallo(dos_tenants, monkeypatch):
     t1, _ = dos_tenants
     _config_connector()

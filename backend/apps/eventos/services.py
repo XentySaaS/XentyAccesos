@@ -110,39 +110,54 @@ def _enviar_correo_simple(
 def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None) -> None:
     """Avisa al proveedor (correo HTML + WhatsApp) que fue invitado a un evento.
 
-    Si tiene cajones de estacionamiento, adjunta los QR de cada cajón al correo.
+    Adjunta —por correo y por WhatsApp— el protocolo de acceso (si hay) y los pases QR de
+    estacionamiento (si tiene cajones asignados).
     """
     from django.db import connection as _conn
+
+    from apps.mensajeria.proveedores import AdjuntoWhatsApp
+    from apps.mensajeria.services import adjunto_protocolo, notificar_whatsapp
 
     proveedor = ep.proveedor
     evento = ep.evento
     responsable = (proveedor.nombre_responsable or proveedor.nombre or "").strip().title()
     panel = (panel_url or "").rstrip("/")
     cta_url = f"{panel}/proveedores/eventos" if panel else None
+    resumen = _resumen_evento(ep)
 
     asunto = f"Invitación al evento {evento.nombre} — {nombre_tenant}"
     destino = proveedor.email_responsable or proveedor.email
 
     parrafos = [
-        f"{nombre_tenant} te ha invitado al evento <strong>«{evento.nombre}»</strong>.",
-        "Define el personal que asistirá desde la sección de <strong>Mis eventos</strong> en tu panel.",
+        f"<strong>{nombre_tenant}</strong> le ha invitado al evento {resumen}.",
+        "Defina al personal que asistirá desde la sección <strong>Mis eventos</strong> de su panel; "
+        "cada empleado recibirá su gafete de acceso con código QR una vez que cumpla los requisitos.",
     ]
     if ep.requiere_parking and ep.cajones_parking:
         parrafos.append(
-            f"Se te asignaron <strong>{ep.cajones_parking} cajón(es) de estacionamiento</strong>"
+            f"Se le asignaron <strong>{ep.cajones_parking} cajón(es) de estacionamiento</strong>"
             f"{(' (' + ep.parking + ')') if ep.parking else ''}. "
-            "Los pases QR de estacionamiento van adjuntos a este correo."
+            "Los pases QR van adjuntos a este mensaje."
+        )
+
+    protocolo = _protocolo_de(ep)
+    if protocolo:
+        parrafos.append(
+            f"Adjuntamos el <strong>protocolo de acceso</strong> («{protocolo.nombre}»); "
+            "compártalo con el personal que asistirá."
         )
 
     texto_plano = (
-        f"Hola {responsable},\n\n"
+        f"Hola {responsable}:\n\n"
         + "\n\n".join(p.replace("<strong>", "").replace("</strong>", "") for p in parrafos)
-        + (f"\n\nIngresa aquí: {cta_url}" if cta_url else "")
+        + (f"\n\nIngrese aquí: {cta_url}" if cta_url else "")
         + f"\n\n— {nombre_tenant} · Xenty Acceso"
     )
 
-    # Adjuntar QR de estacionamiento si hay cajones
+    # Adjuntos (correo = tuplas; WhatsApp = AdjuntoWhatsApp).
     adjuntos: list[tuple[str, bytes, str]] = []
+    wa_adjuntos: list[AdjuntoWhatsApp] = []
+
     if ep.requiere_parking:
         try:
             from apps.gafetes.services import (
@@ -173,8 +188,28 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
                     empresa=nombre_tenant,
                 )
                 adjuntos.append((f"pase-estacionamiento-{i}.png", png, "image/png"))
+                wa_adjuntos.append(
+                    AdjuntoWhatsApp(
+                        nombre_archivo=f"pase-estacionamiento-{i}.png",
+                        contenido=png,
+                        mimetype="image/png",
+                        caption=f"🅿️ Pase de estacionamiento C-{i} — «{evento.nombre}».",
+                    )
+                )
         except Exception as exc:
             logger.warning("QR parking no generado para invitación %s: %s", ep.id, exc)
+
+    prot_adj = (
+        adjunto_protocolo(
+            protocolo,
+            caption=f"📋 Protocolo de acceso: {protocolo.nombre}. Compártelo con tu personal.",
+        )
+        if protocolo
+        else None
+    )
+    if prot_adj:
+        adjuntos.append((prot_adj.nombre_archivo, prot_adj.contenido, prot_adj.mimetype))
+        wa_adjuntos.append(prot_adj)
 
     html = construir_correo(
         nombre_tenant=nombre_tenant,
@@ -191,7 +226,7 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
         destino=destino,
         adjuntos=adjuntos or None,
     )
-    _enviar_whatsapp(proveedor.telefono, texto_plano)
+    notificar_whatsapp(proveedor.telefono, texto_plano, adjuntos=wa_adjuntos)
 
 
 def notificar_invitacion_cancelada(ep, *, nombre_tenant: str) -> None:
@@ -233,33 +268,60 @@ def _resumen_evento(ep) -> str:
     return ", ".join(partes)
 
 
+def _protocolo_de(ep):
+    """Protocolo aplicable a una invitación: el del proveedor (ep) o, si no, el del evento."""
+    if getattr(ep, "protocolo_id", None):
+        return ep.protocolo
+    ev = ep.evento
+    return ev.protocolo if getattr(ev, "protocolo_id", None) else None
+
+
 def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
     """Avisa al empleado (correo HTML + WhatsApp) que fue asignado a un evento.
 
-    Adjunta el gafete QR como PNG al correo para que el empleado lo presente en el acceso.
+    Adjunta —por correo y por WhatsApp— el gafete QR y el protocolo de acceso (si hay).
     """
     from django.db import connection as _conn
+
+    from apps.mensajeria.proveedores import AdjuntoWhatsApp
+    from apps.mensajeria.services import adjunto_protocolo, notificar_whatsapp
 
     empleado = asignacion.empleado
     ep = asignacion.evento_proveedor
     ev = ep.evento
     asunto = f"Tu gafete de acceso — {ev.nombre}"
     resumen = _resumen_evento(ep)
+    protocolo = _protocolo_de(ep)
 
     parrafos = [
-        f"{nombre_tenant} te ha asignado al evento {resumen}.",
-        "Tu <strong>gafete de acceso QR</strong> va adjunto a este correo. "
-        "Preséntalo en el punto de acceso indicado al llegar al recinto.",
+        f"<strong>{nombre_tenant}</strong> le ha asignado al evento {resumen}.",
+        "Su <strong>gafete de acceso QR</strong> va adjunto a este mensaje. Preséntelo en el punto "
+        "de acceso indicado al llegar al recinto.",
     ]
+    if protocolo:
+        parrafos.append(
+            f"Adjuntamos el <strong>protocolo de acceso</strong> («{protocolo.nombre}»); "
+            "le pedimos revisarlo antes del evento."
+        )
+    parrafos.append("Su gafete es personal e intransferible.")
+
     texto_plano = (
-        f"Hola {empleado.nombre},\n\n"
-        f"{nombre_tenant} te asignó al evento {resumen}.\n\n"
-        "Tu gafete de acceso QR va adjunto a este correo. "
-        "Preséntalo en el punto de acceso indicado."
+        f"Hola {empleado.nombre}:\n\n"
+        f"{nombre_tenant} le asignó al evento {resumen}.\n\n"
+        "Le enviamos su gafete de acceso (QR); preséntelo en el punto de acceso indicado.\n"
+        + (
+            f"Adjuntamos también el protocolo de acceso «{protocolo.nombre}»; revíselo antes del "
+            "evento.\n"
+            if protocolo
+            else ""
+        )
+        + "\nSu gafete es personal e intransferible."
+        f"\n\n— {nombre_tenant} · Xenty Acceso"
     )
 
-    # Genera el gafete (best-effort)
-    adjunto: list[tuple[str, bytes, str]] | None = None
+    # Gafete del empleado (best-effort).
+    adjuntos_correo: list[tuple[str, bytes, str]] = []
+    wa_adjuntos: list[AdjuntoWhatsApp] = []
     try:
         from apps.gafetes.services import TIPO_EVENTO, componer_gafete, emitir_qr
 
@@ -283,9 +345,29 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
             **_kwargs_gafete(ep),
         )
         nombre_f = f"gafete-{empleado.nombre.replace(' ', '-').lower()}.png"
-        adjunto = [(nombre_f, png, "image/png")]
+        adjuntos_correo.append((nombre_f, png, "image/png"))
+        wa_adjuntos.append(
+            AdjuntoWhatsApp(
+                nombre_archivo=nombre_f,
+                contenido=png,
+                mimetype="image/png",
+                caption=f"🎫 Tu gafete de acceso para «{ev.nombre}». Preséntalo en el punto de acceso.",
+            )
+        )
     except Exception as exc:
         logger.warning("Gafete no generado/adjuntado para asignación %s: %s", asignacion.id, exc)
+
+    prot_adj = (
+        adjunto_protocolo(
+            protocolo,
+            caption=f"📋 Protocolo de acceso: {protocolo.nombre}. Revísalo antes del evento.",
+        )
+        if protocolo
+        else None
+    )
+    if prot_adj:
+        adjuntos_correo.append((prot_adj.nombre_archivo, prot_adj.contenido, prot_adj.mimetype))
+        wa_adjuntos.append(prot_adj)
 
     html = construir_correo(
         nombre_tenant=nombre_tenant,
@@ -298,9 +380,9 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
         texto_plano=texto_plano,
         html=html,
         destino=empleado.email,
-        adjuntos=adjunto,
+        adjuntos=adjuntos_correo or None,
     )
-    _enviar_whatsapp(empleado.telefono, texto_plano)
+    notificar_whatsapp(empleado.telefono, texto_plano, adjuntos=wa_adjuntos)
 
 
 def notificar_desasignacion_empleado(empleado, evento, *, nombre_tenant: str) -> None:

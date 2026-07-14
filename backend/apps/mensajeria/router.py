@@ -123,6 +123,7 @@ def enviar(
     cuerpo: str,
     archivo: str | None = None,
     *,
+    adjunto=None,
     reintentos: int | None = None,
     registrar: bool = True,
 ) -> ResultadoEnvio:
@@ -130,6 +131,7 @@ def enviar(
 
     ``reintentos`` y el failover se toman de ``PreferenciaMensajeria`` del tenant; pasar ``reintentos``
     explícito lo sobreescribe. Con ``failover_habilitado=False`` solo se intenta el primer proveedor.
+    ``adjunto`` (``AdjuntoWhatsApp``) manda un archivo (imagen/documento) en vez de solo texto.
     """
     cfg = _config_connector()
     pref = _preferencia()
@@ -146,7 +148,12 @@ def enviar(
             ultimo = ResultadoEnvio(ok=False, proveedor=prov.nombre, error="circuit-open")
             continue
         for _ in range(max(1, reintentos + 1)):
-            res = prov.enviar(telefono, cuerpo, archivo)
+            # Solo pasa ``adjunto`` cuando existe: preserva la firma de proveedores/dobles antiguos.
+            res = (
+                prov.enviar(telefono, cuerpo, archivo)
+                if adjunto is None
+                else prov.enviar(telefono, cuerpo, archivo, adjunto=adjunto)
+            )
             if res.ok:
                 cb.registrar_exito()
                 if registrar:

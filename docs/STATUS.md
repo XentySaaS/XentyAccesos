@@ -12,12 +12,12 @@
 | empleados | ✔ | CRUD, import Excel, foto (ImageField), docs |
 | recintos | ✔ | Recinto, Zona, Acceso, Ubicacion, Entrada, AreaAutorizada, Protocolo |
 | documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados |
-| eventos | ✔ | Evento, EventoProveedor, asignación empleados, gafete QR |
-| citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita, notificación email |
+| eventos | ✔ | Evento, EventoProveedor, asignación empleados, gafete QR. Invitación/asignación adjuntan **protocolo** y mandan gafete/pases por **WhatsApp** además del correo; cancelaciones con aviso dedicado |
+| citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita. Invitación con **gafete + protocolo** adjuntos por correo **y WhatsApp** (redacción profesional); **cancelar** manda aviso de cancelación (no reenvía invitación) |
 | acceso | ✔ | RegistroAcceso, scanner QR, bitácora |
 | gafetes | ✔ | componer_gafete (Premium Dark), estacionamiento, Fernet QR |
 | sanciones | ✔ | Sancion CRUD |
-| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`, punto único). Ver §Connector |
+| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`). **Adjuntos por WhatsApp** (gafete/protocolo) como media base64 (`AdjuntoWhatsApp`, texto primero + media best-effort). Ver §Connector |
 | cumplimiento | ✔ | Backend (`importar_efos_task` con retry) + padrón EFOS global (`apps.efos`) + pantalla `Cumplimiento.tsx` en frontend-acceso |
 | ocr | ✔ | Textract + sandbox para INE |
 | config | ✔ | Opcion, HistorialCambio, AuditViewSetMixin, DashboardView, CalendarioView, ExportarAccesosView (F8) |

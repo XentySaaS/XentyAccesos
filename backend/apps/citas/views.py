@@ -83,11 +83,19 @@ class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         enviar_notificacion_cita(cita)
 
     def perform_update(self, serializer):
+        # Estado previo (DB) antes de aplicar el update, para detectar la transición a cancelada.
+        estado_previo = serializer.instance.estado
         super().perform_update(serializer)
         cita = serializer.instance
-        from .services import enviar_notificacion_cita
+        from .services import enviar_cancelacion_cita, enviar_notificacion_cita
 
-        enviar_notificacion_cita(cita)
+        if cita.estado == Cita.Estado.CANCELADA:
+            # Cancelar es un update (PATCH estado=cancelada): manda el aviso de cancelación, no la
+            # invitación. Solo en la transición (editar una cita ya cancelada no reenvía nada).
+            if estado_previo != Cita.Estado.CANCELADA:
+                enviar_cancelacion_cita(cita)
+        else:
+            enviar_notificacion_cita(cita)
 
     def perform_destroy(self, instance):
         if (

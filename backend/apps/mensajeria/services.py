@@ -7,27 +7,79 @@ corre por Celery con reintentos.
 
 from __future__ import annotations
 
+import logging
+import re
+
 from django.conf import settings
 
 from common.phone import formato_whatsapp_mx
 
 from . import router
 from .models import DestinatarioMensaje, Mensaje
+from .proveedores import AdjuntoWhatsApp
+
+logger = logging.getLogger(__name__)
 
 
-def notificar_whatsapp(telefono: str | None, cuerpo: str, archivo=None) -> bool:
+def notificar_whatsapp(
+    telefono: str | None,
+    cuerpo: str,
+    archivo=None,
+    adjuntos: list[AdjuntoWhatsApp] | None = None,
+) -> bool:
     """Notificación por WhatsApp si el destinatario tiene teléfono (best-effort, punto único).
 
     Regla del producto: toda notificación (usuario/proveedor/empleado/asistente) se manda también
     por WhatsApp cuando la persona tiene número. El teléfono se guarda a 10 dígitos (sin lada); aquí
     se antepone la lada mexicana para el destino (punto único, ``common.phone``). Un número inválido
-    (no 10 dígitos) se omite en vez de mandarse. Delega en el Router (nunca lanza); devuelve True si
-    el envío fue aceptado por algún proveedor.
+    (no 10 dígitos) se omite en vez de mandarse.
+
+    El **texto se manda primero** (así la información llega aunque la media falle); luego cada
+    ``adjunto`` (gafete/imagen, protocolo/PDF) va como mensaje de media aparte, best-effort. Delega
+    en el Router (nunca lanza); devuelve True si el mensaje de texto fue aceptado por algún proveedor.
     """
     tel = formato_whatsapp_mx(telefono)
     if not tel:
         return False
-    return router.enviar(tel, cuerpo, archivo, reintentos=1, registrar=True).ok
+    principal = router.enviar(tel, cuerpo, archivo, reintentos=1, registrar=True)
+    for adj in adjuntos or []:
+        try:
+            # El caption del adjunto lo pone el llamador; el texto completo ya se envió arriba.
+            router.enviar(tel, adj.caption or cuerpo, adjunto=adj, reintentos=0, registrar=False)
+        except Exception:  # noqa: BLE001 — media best-effort; el texto ya se entregó
+            logger.warning("Adjunto de WhatsApp no enviado: %s", adj.nombre_archivo)
+    return principal.ok
+
+
+def adjunto_protocolo(protocolo, *, caption: str = "") -> AdjuntoWhatsApp | None:
+    """Lee el PDF de un ``recintos.Protocolo`` y lo envuelve como ``AdjuntoWhatsApp``.
+
+    Devuelve ``None`` si el protocolo no tiene archivo o no se puede leer (best-effort: nunca lanza).
+    Reutilizable para adjuntar el protocolo por correo (``.contenido``) y por WhatsApp.
+    """
+    archivo = getattr(protocolo, "archivo", None) if protocolo else None
+    if not archivo or not getattr(archivo, "name", ""):
+        return None
+    try:
+        archivo.open("rb")
+        try:
+            datos = archivo.read()
+        finally:
+            archivo.close()
+    except Exception:  # noqa: BLE001
+        logger.warning("Protocolo no adjuntado (no se pudo leer el archivo).")
+        return None
+    if not datos:
+        return None
+    base = (
+        re.sub(r"[^A-Za-z0-9._-]+", "-", (protocolo.nombre or "acceso")).strip("-") or "protocolo"
+    )
+    return AdjuntoWhatsApp(
+        nombre_archivo=f"protocolo-{base}.pdf",
+        contenido=datos,
+        mimetype="application/pdf",
+        caption=caption,
+    )
 
 
 def resolver_destinatarios(segmento: str, segmento_id=None):

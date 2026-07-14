@@ -32,6 +32,10 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > **Continuación 2 (misma fecha):** **estandarización de teléfonos** — el formato canónico pasa a **10
 > dígitos sin lada** (Xenty solo opera en México); la lada mexicana se antepone solo al enviar por
 > WhatsApp (`common/phone.py`, punto único). Ver la sección "Estandarización de teléfonos" abajo.
+>
+> **Continuación 3 (misma fecha):** **notificaciones** — gafete + **protocolo** ahora se adjuntan por
+> correo **y WhatsApp** (media base64, sin exponer el QR), redacción profesional, y **fix**: cancelar una
+> cita ya no reenvía la invitación (manda aviso de cancelación). Ver la sección "Notificaciones" abajo.
 
 ---
 
@@ -235,6 +239,48 @@ re-guardarse, y el envío los normaliza igual (defensa en profundidad). **Sin mi
 **Verificación:** `test_phone.py` (14: normalizar/formato/`TelefonoField`/`notificar_whatsapp` antepone
 lada y omite inválidos). Suite sin aislamiento **83 verdes**; `ruff` limpio. Las SPAs `acceso` y
 `proveedores` compilan (`tsc + vite build`).
+
+---
+
+## Notificaciones: adjuntos (gafete+protocolo) por correo y WhatsApp + fix de cancelación — continuación 2026-07-13
+
+**Pedido:** (1) adjuntar gafete y **protocolo** a las invitaciones (el protocolo no se adjuntaba en
+ningún lado) por correo **y WhatsApp**; (2) redacción profesional con toda la información; (3) al
+**cancelar una cita** la notificación no correspondía a una cancelación (verificar eventos). Decisión del
+usuario: adjuntos por **correo + WhatsApp** y aplicar a **citas y eventos**.
+
+**Media por WhatsApp sin URL pública (base64).** El `archivo` del contrato de proveedores era una URL; el
+gafete se genera como bytes y exponerlo en una URL pública chocaría con la regla de "auth+policy en toda
+descarga" (lleva QR firmado). Solución: nueva `AdjuntoWhatsApp(nombre_archivo, contenido, mimetype,
+caption)` (`apps/mensajeria/proveedores.py`) que se manda como **base64**:
+- **ConnectorProvider** → `media_b64` + `type=image|document` (el XCC lo acepta nativo; `maxMediaBytes`
+  16MB). Sin hosting ni exponer el QR firmado.
+- **UltraMsg** → base64 en `messages/image` | `messages/document`.
+- **Sandbox** → lo ignora (dev).
+- El **Router** pasa `adjunto` solo cuando existe (no rompe firmas/dobles antiguos).
+
+**`notificar_whatsapp(telefono, cuerpo, archivo=None, adjuntos=None)`** manda **el texto primero** (así la
+info llega aunque la media falle) y luego cada adjunto como mensaje de media **best-effort**. Helper
+`adjunto_protocolo(protocolo)` lee el PDF y lo envuelve (reutilizado por correo y WhatsApp).
+
+**Citas (`apps/citas/services.py`, reescrito):** invitación a asistentes y a proveedor con **redacción
+profesional** (bloque de detalles: fecha, hora, recinto, área, punto de acceso, protocolo; instrucción de
+gafete; INE si aplica; vigencia). Gafete (imagen) + protocolo (PDF) adjuntos por **correo y WhatsApp**.
+Nueva `enviar_cancelacion_cita()` con aviso de cancelación (sin gafete: "queda sin validez").
+
+**Fix de cancelación (`apps/citas/views.py`):** `perform_update` detecta la **transición** de estado a
+`CANCELADA` (cancelar = `PATCH estado=cancelada`) y envía el aviso de cancelación en vez de reenviar la
+invitación; editar una cita ya cancelada no reenvía nada. **Eventos ya estaba bien** (acción `cancelar`
+dedicada → `notificar_evento_cancelado`; borrar invitación → `notificar_invitacion_cancelada`).
+
+**Eventos (`apps/eventos/services.py`):** invitación a proveedor y asignación a empleado ahora adjuntan el
+**protocolo** (`ep.protocolo` o `evento.protocolo`, helper `_protocolo_de`) y mandan el gafete/pases de
+estacionamiento por **WhatsApp** además del correo, con redacción profesional.
+
+**Verificación:** `test_notificaciones_adjuntos.py` (11) + `test_connector_provider.py::test_connector_media_b64`.
+Suite sin aislamiento **92 verdes**; `ruff` limpio; `manage.py check` sin issues. Generación del gafete
+probada en vivo (24KB PNG). **Sin migraciones.** La media es best-effort: si un adjunto excede el límite o
+el proveedor la rechaza, el **texto profesional ya se entregó**.
 
 ---
 

@@ -25,7 +25,7 @@ import uuid
 from django.db import connection
 from django_tenants.utils import get_public_schema_name, schema_context
 
-from .proveedores import ResultadoEnvio
+from .proveedores import AdjuntoWhatsApp, ResultadoEnvio
 
 _MESSAGES_PATH = "/v1/messages"
 
@@ -60,7 +60,14 @@ class ConnectorProvider:
                 "timeout_s": max(1.0, cfg.timeout_ms / 1000),
             }
 
-    def enviar(self, telefono: str, cuerpo: str, archivo: str | None = None) -> ResultadoEnvio:
+    def enviar(
+        self,
+        telefono: str,
+        cuerpo: str,
+        archivo: str | None = None,
+        *,
+        adjunto: AdjuntoWhatsApp | None = None,
+    ) -> ResultadoEnvio:
         cfg = self._config()
         if cfg is None:
             return ResultadoEnvio(ok=False, proveedor=self.nombre, error="xcc-no-configurado")
@@ -70,7 +77,16 @@ class ConnectorProvider:
             "connection_id": self.connection_id,
             "to": telefono,
         }
-        if archivo:
+        if adjunto is not None:
+            # Media cargada como bytes → base64 (el XCC no necesita URL pública; evita exponer el QR).
+            payload.update(
+                type="image" if adjunto.es_imagen else "document",
+                media_b64=adjunto.b64(),
+                filename=adjunto.nombre_archivo,
+                mimetype=adjunto.mimetype,
+                caption=cuerpo,
+            )
+        elif archivo:
             # El XCC descarga la media por URL; sin URL pública se manda solo texto.
             payload.update(
                 type="document",
