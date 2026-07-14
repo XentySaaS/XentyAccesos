@@ -6,9 +6,12 @@ Uso puntual: llamar directamente a ``registrar()``.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-from .models import HistorialCambio
+from .models import BitacoraAcceso, HistorialCambio
+
+logger = logging.getLogger(__name__)
 
 
 def registrar(
@@ -37,6 +40,95 @@ def registrar(
         antes=antes,
         despues=despues,
     )
+
+
+# ── Bitácora de accesos al sistema (autenticación) ────────────────────────────
+
+
+def _ip_de(request) -> str | None:
+    """IP del cliente respetando el proxy (Nginx reenvía X-Forwarded-For)."""
+    if request is None:
+        return None
+    fwd = request.META.get("HTTP_X_FORWARDED_FOR")
+    ip = fwd.split(",")[0].strip() if fwd else request.META.get("REMOTE_ADDR", "")
+    return ip or None
+
+
+def _resumen_dispositivo(ua: str) -> str:
+    """Etiqueta legible «Navegador · SO» a partir del User-Agent (heurística, sin dependencias)."""
+    if not ua:
+        return ""
+    u = ua.lower()
+    if "android" in u:
+        so = "Android"
+    elif "iphone" in u or "ipad" in u or "ios " in u:
+        so = "iOS"
+    elif "windows" in u:
+        so = "Windows"
+    elif "mac os" in u or "macintosh" in u:
+        so = "macOS"
+    elif "linux" in u:
+        so = "Linux"
+    else:
+        so = ""
+    if "edg/" in u:
+        nav = "Edge"
+    elif "opr/" in u or "opera" in u:
+        nav = "Opera"
+    elif "chrome" in u and "chromium" not in u:
+        nav = "Chrome"
+    elif "firefox" in u:
+        nav = "Firefox"
+    elif "safari" in u:
+        nav = "Safari"
+    else:
+        nav = ""
+    return " · ".join(p for p in (nav, so) if p)
+
+
+def registrar_acceso(
+    evento: str,
+    *,
+    contexto: str,
+    request=None,
+    actor=None,
+    email: str = "",
+    nombre: str = "",
+    exito: bool = True,
+    detalle: str = "",
+) -> BitacoraAcceso | None:
+    """Registra un evento de autenticación en la bitácora del tenant (best-effort; nunca lanza).
+
+    Se salta en el schema ``public`` (la tabla es TENANT_APP; el super-admin del control plane no se
+    audita aquí). El ``actor`` puede ser ``Usuario`` (→ FK) o ``CuentaProveedor`` (→ solo email/nombre).
+    """
+    from django.db import connection
+    from django_tenants.utils import get_public_schema_name
+
+    if connection.schema_name == get_public_schema_name():
+        return None
+    try:
+        from apps.accounts.models import Usuario
+
+        usuario = actor if isinstance(actor, Usuario) else None
+        email = (email or getattr(actor, "email", "") or "").lower()
+        nombre = nombre or getattr(actor, "nombre", "") or ""
+        ua = (request.META.get("HTTP_USER_AGENT", "") if request else "")[:500]
+        return BitacoraAcceso.objects.create(
+            evento=evento,
+            contexto=contexto,
+            usuario=usuario,
+            actor_email=email[:254],
+            actor_nombre=nombre[:180],
+            ip=_ip_de(request),
+            dispositivo=_resumen_dispositivo(ua)[:180],
+            user_agent=ua,
+            exito=exito,
+            detalle=detalle[:200],
+        )
+    except Exception:  # noqa: BLE001 — la bitácora nunca debe tumbar el login/logout
+        logger.warning("No se pudo registrar el acceso al sistema (evento=%s)", evento)
+        return None
 
 
 def _safe(val: Any) -> Any:

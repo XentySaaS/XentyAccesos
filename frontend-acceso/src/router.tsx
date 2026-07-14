@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Layout from "./components/Layout";
 import Accesos from "./pages/Accesos";
+import AccesosSistema from "./pages/AccesosSistema";
 import Bitacora from "./pages/Bitacora";
 import Calendario from "./pages/Calendario";
 import Catalogos from "./pages/Catalogos";
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },
       { path: "/historial",   element: <Historial /> },
+      { path: "/accesos-sistema", element: <AccesosSistema /> },
       { path: "/privacidad",  element: <Privacidad /> },
       { path: "/seguridad",   element: <Seguridad /> },
       { path: "/soporte",     element: <Soporte /> },

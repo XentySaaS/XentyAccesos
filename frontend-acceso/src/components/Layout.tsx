@@ -24,6 +24,7 @@ const NAV_ITEMS: { to: string; label: string; roles?: string[]; badge?: string }
   { to: "/usuarios",    label: "Usuarios",     roles: ["administrador"] },
   { to: "/catalogos",   label: "Catálogos",    roles: ["administrador"] },
   { to: "/historial",   label: "Historial",    roles: ["administrador"] },
+  { to: "/accesos-sistema", label: "Accesos al sistema", roles: ["administrador"] },
   { to: "/privacidad",  label: "Privacidad",   roles: ["administrador"] },
   { to: "/seguridad",   label: "Seguridad" },
   // Oculto temporalmente: la Mesa de Ayuda es cliente-only y el servicio externo aún no existe
@@ -246,6 +247,7 @@ function NavIcon({ label, active }: { label: string; active: boolean }) {
     "Usuarios":     <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
     "Catálogos":    <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>,
     "Historial":    <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
+    "Accesos al sistema": <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>,
     "Privacidad":   <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>,
     "Seguridad":    <svg className={cls} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
   };

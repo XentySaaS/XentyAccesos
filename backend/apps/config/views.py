@@ -11,8 +11,12 @@ from rest_framework.views import APIView
 
 from common.permissions import PERMISOS_BASE, ContextoAcceso, RequiereRol
 
-from .models import HistorialCambio, Opcion
-from .serializers import HistorialCambioSerializer, OpcionSerializer
+from .models import BitacoraAcceso, HistorialCambio, Opcion
+from .serializers import (
+    BitacoraAccesoSerializer,
+    HistorialCambioSerializer,
+    OpcionSerializer,
+)
 
 _ADMIN = [*PERMISOS_BASE(), ContextoAcceso, RequiereRol("administrador")]
 
@@ -31,6 +35,28 @@ class HistorialCambioViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = HistorialCambioSerializer
     permission_classes = _ADMIN
     filterset_fields = ["modelo", "usuario", "accion"]
+
+
+class BitacoraAccesoViewSet(viewsets.ReadOnlyModelViewSet):
+    """Bitácora de accesos AL SISTEMA (autenticación): login/logout/intentos fallidos. Solo-admin.
+
+    Distinta del Historial de cambios (datos) y de la Bitácora de accesos físicos (escáner).
+    Paginada e indexada; filtrable por evento/contexto/éxito y por rango de fecha.
+    """
+
+    queryset = BitacoraAcceso.objects.all()
+    serializer_class = BitacoraAccesoSerializer
+    permission_classes = _ADMIN
+    filterset_fields = ["evento", "contexto", "exito", "usuario"]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        p = self.request.query_params
+        if p.get("fecha_desde"):
+            qs = qs.filter(creado__date__gte=p["fecha_desde"])
+        if p.get("fecha_hasta"):
+            qs = qs.filter(creado__date__lte=p["fecha_hasta"])
+        return qs
 
 
 class DashboardView(APIView):

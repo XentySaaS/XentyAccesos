@@ -35,18 +35,47 @@ class BaseLoginView(APIView):
     ctx: str = ""
 
     def post(self, request):
+        from apps.config.models import BitacoraAcceso
+        from apps.config.services import registrar_acceso
+
         s = _CredencialesSerializer(data=request.data)
         s.is_valid(raise_exception=True)
+        email = s.validated_data["email"].lower()
         invalidas = Response(
             {"detail": "Credenciales inválidas."}, status=status.HTTP_401_UNAUTHORIZED
         )
         try:
-            actor = self.model.objects.get(email=s.validated_data["email"].lower())
+            actor = self.model.objects.get(email=email)
         except self.model.DoesNotExist:
+            registrar_acceso(
+                BitacoraAcceso.Evento.LOGIN_FALLIDO,
+                contexto=self.ctx,
+                request=request,
+                email=email,
+                exito=False,
+                detalle="Correo no registrado",
+            )
             return invalidas
         if not actor.check_password(s.validated_data["password"]) or not actor.is_active:
+            registrar_acceso(
+                BitacoraAcceso.Evento.LOGIN_FALLIDO,
+                contexto=self.ctx,
+                request=request,
+                actor=actor,
+                email=email,
+                exito=False,
+                detalle="Cuenta inactiva" if not actor.is_active else "Contraseña incorrecta",
+            )
             return invalidas
         mfa_pendiente = bool(getattr(actor, "mfa_habilitado", False))
+        registrar_acceso(
+            BitacoraAcceso.Evento.LOGIN,
+            contexto=self.ctx,
+            request=request,
+            actor=actor,
+            exito=True,
+            detalle="2º factor pendiente" if mfa_pendiente else "",
+        )
         return Response(build_tokens(actor, self.ctx, mfa_pendiente=mfa_pendiente))
 
 
@@ -82,4 +111,15 @@ class LogoutView(APIView):
             RefreshToken(token).blacklist()
         except TokenError:
             return Response({"detail": "Token inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        ctx = (request.auth or {}).get("ctx", "")
+        if ctx in ("acceso", "proveedores") and getattr(request.user, "is_authenticated", False):
+            from apps.config.models import BitacoraAcceso
+            from apps.config.services import registrar_acceso
+
+            registrar_acceso(
+                BitacoraAcceso.Evento.LOGOUT,
+                contexto=ctx,
+                request=request,
+                actor=request.user,
+            )
         return Response(status=status.HTTP_205_RESET_CONTENT)

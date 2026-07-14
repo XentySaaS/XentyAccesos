@@ -4,6 +4,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    BitacoraAccesoViewSet,
     CalendarioView,
     DashboardView,
     ExportarAccesosView,
@@ -14,6 +15,7 @@ from .views import (
 router = DefaultRouter()
 router.register("opciones", OpcionViewSet)
 router.register("historial", HistorialCambioViewSet)
+router.register("accesos-sistema", BitacoraAccesoViewSet)
 
 urlpatterns = [
     path("reportes/dashboard/", DashboardView.as_view(), name="dashboard"),

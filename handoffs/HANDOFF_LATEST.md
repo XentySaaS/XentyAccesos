@@ -46,6 +46,18 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > al usuario (el dunning se aplica por middleware con 423), así que no había brecha ahí. Test nuevo
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
+>
+> **Continuación 5 (2026-07-14):** **Bitácora de accesos AL SISTEMA** (feature nueva) — los admins del
+> tenant ahora tienen un historial de **autenticación**: modelo `config.BitacoraAcceso` (login /
+> logout / intentos fallidos, con **IP + dispositivo**, para los dos contextos: *acceso* y
+> *proveedores*). Servicio `registrar_acceso` (best-effort, se salta el schema public) enganchado en
+> `common/auth_api.py` (`BaseLoginView` OK/fallido + `LogoutView`). `SuperAdminLoginView` sobrescribe
+> `post` → el control plane no entra aquí. API solo-admin `/api/accesos-sistema/` (filtros
+> evento/contexto/éxito/fecha) + página **Accesos al sistema** en frontend-acceso (nav admin). Migración
+> `config.0003_bitacoraacceso` (--tenant). Tests `tests/test_bitacora_acceso.py` (6: login OK/fallido/
+> correo-inexistente/cuenta-inactiva, skip en public, aislamiento). **Ojo — tres bitácoras distintas:**
+> `HistorialCambio`=cambios de datos · `acceso.RegistroAcceso`=accesos físicos (escáner) ·
+> `config.BitacoraAcceso`=accesos al sistema (autenticación).
 
 ---
 
