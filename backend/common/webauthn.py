@@ -66,6 +66,18 @@ def _origins() -> list[str]:
     return list(orig) if isinstance(orig, list | tuple) else [orig]
 
 
+def rp_desde_host(host: str, scheme: str) -> tuple[str, list[str]]:
+    """Deriva ``(rp_id, [origin])`` del Host de la petición (mismo dominio que ve el navegador).
+
+    El RP ID debe ser igual —o sufijo registrable— del dominio del origen. Derivarlo del Host hace que
+    WebAuthn funcione en los subdominios de dev (``admin.localhost``, ``<slug>.localhost``) y de prod
+    (``admin.xenty.mx``, ``<slug>.xenty.mx``) sin config estática por dominio. El Host ya viene validado
+    por ``ALLOWED_HOSTS`` y django-tenants (que resuelve el tenant por Host), así que es de confianza.
+    """
+    rp_id = host.split(":")[0]  # 'admin.localhost:8080' → 'admin.localhost'
+    return rp_id, [f"{scheme}://{host}"]  # ('admin.localhost', ['http://admin.localhost:8080'])
+
+
 def cred_model(ctx: str):
     """Modelo de credencial WebAuthn del contexto (super-admin en public, Usuario en tenant)."""
     from apps.accounts.models import CredencialWebAuthn
@@ -88,12 +100,12 @@ def _creds(user):
 
 
 # ── Registro (enrolamiento de una credencial) ────────────────────────────────
-def opciones_registro(user, ctx: str, schema: str) -> dict:
+def opciones_registro(user, ctx: str, schema: str, *, rp_id: str | None = None) -> dict:
     excluir = [
         PublicKeyCredentialDescriptor(id=base64url_to_bytes(c.credential_id)) for c in _creds(user)
     ]
     opciones = generate_registration_options(
-        rp_id=_rp_id(),
+        rp_id=rp_id or _rp_id(),
         rp_name=_rp_name(),
         user_name=getattr(user, "email", str(user.pk)),
         user_id=str(user.pk).encode(),
@@ -111,7 +123,14 @@ def opciones_registro(user, ctx: str, schema: str) -> dict:
 
 
 def registrar(
-    user, ctx: str, schema: str, credential: dict, nombre: str | None
+    user,
+    ctx: str,
+    schema: str,
+    credential: dict,
+    nombre: str | None,
+    *,
+    rp_id: str | None = None,
+    origins: list[str] | None = None,
 ) -> tuple[bool, str]:
     reto_b64 = cache.get(_clave("reg", ctx, schema, user.pk))
     if not reto_b64:
@@ -120,8 +139,8 @@ def registrar(
         verificado = verify_registration_response(
             credential=credential,
             expected_challenge=base64url_to_bytes(reto_b64),
-            expected_rp_id=_rp_id(),
-            expected_origin=_origins(),
+            expected_rp_id=rp_id or _rp_id(),
+            expected_origin=origins or _origins(),
         )
     except Exception as exc:  # noqa: BLE001 — cualquier fallo de attestation → registro inválido
         return False, f"No se pudo validar la credencial: {exc}"
@@ -144,11 +163,13 @@ def registrar(
 
 
 # ── Login (2º factor) ─────────────────────────────────────────────────────────
-def opciones_login(user, ctx: str, schema: str) -> dict:
+def opciones_login(user, ctx: str, schema: str, *, rp_id: str | None = None) -> dict:
     permitidas = [
         PublicKeyCredentialDescriptor(id=base64url_to_bytes(c.credential_id)) for c in _creds(user)
     ]
-    opciones = generate_authentication_options(rp_id=_rp_id(), allow_credentials=permitidas)
+    opciones = generate_authentication_options(
+        rp_id=rp_id or _rp_id(), allow_credentials=permitidas
+    )
     cache.set(
         _clave("login", ctx, schema, user.pk),
         bytes_to_base64url(opciones.challenge),
@@ -159,7 +180,15 @@ def opciones_login(user, ctx: str, schema: str) -> dict:
     return json.loads(options_to_json(opciones))
 
 
-def verificar_login(user, ctx: str, schema: str, credential: dict) -> tuple[bool, str]:
+def verificar_login(
+    user,
+    ctx: str,
+    schema: str,
+    credential: dict,
+    *,
+    rp_id: str | None = None,
+    origins: list[str] | None = None,
+) -> tuple[bool, str]:
     reto_b64 = cache.get(_clave("login", ctx, schema, user.pk))
     if not reto_b64:
         return False, "El reto de autenticación expiró. Inténtalo de nuevo."
@@ -171,8 +200,8 @@ def verificar_login(user, ctx: str, schema: str, credential: dict) -> tuple[bool
         verificado = verify_authentication_response(
             credential=credential,
             expected_challenge=base64url_to_bytes(reto_b64),
-            expected_rp_id=_rp_id(),
-            expected_origin=_origins(),
+            expected_rp_id=rp_id or _rp_id(),
+            expected_origin=origins or _origins(),
             credential_public_key=base64url_to_bytes(cred.public_key),
             credential_current_sign_count=cred.sign_count,
         )

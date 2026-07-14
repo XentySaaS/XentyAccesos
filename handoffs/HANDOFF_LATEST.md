@@ -314,6 +314,31 @@ Suite sin aislamiento **98 verdes**; `ruff` limpio; `manage.py check` OK; `front
 
 ---
 
+## Fix WebAuthn: RP ID / origin derivados del Host — continuación 2026-07-13
+
+**Síntoma:** registrar una llave (passkey/FIDO2) fallaba en super-admin **y** tenant con "No se pudo
+registrar la llave (cancelada o no compatible)" (0 registradas).
+
+**Causa:** la config era estática — `WEBAUTHN_RP_ID="localhost"` y
+`WEBAUTHN_ORIGINS="http://localhost:8080,…"`. Pero la app se sirve en **subdominios**
+(`admin.localhost:8080`, `<slug>.localhost:8080`). Un `rp.id="localhost"` no es válido para un origen
+`admin.localhost` → `navigator.credentials.create()` lanza `SecurityError` en el navegador → el
+frontend cae al catch "(cancelada o no compatible)". Además `expected_origin` no incluía los subdominios.
+
+**Fix:** el RP ID y el origen se **derivan del Host de la petición** (`common/webauthn.rp_desde_host`),
+que ya viene validado por `ALLOWED_HOSTS` + django-tenants. `admin.localhost:8080` → rp_id
+`admin.localhost`, origin `http://admin.localhost:8080` (nginx reenvía `Host: $http_host`, con puerto →
+coincide exacto con el origen del navegador). Las 4 vistas (`common/webauthn_api.py`) pasan
+`rp_id`/`origins` a las funciones (que mantienen el default de settings para tests/callers sin request).
+Funciona igual en prod (`admin.xenty.mx`, `<slug>.xenty.mx`; `SECURE_PROXY_SSL_HEADER` ya da `https`).
+Cada actor registra su credencial contra **su** subdominio (correcto: ahí inicia sesión).
+
+**Verificación:** `test_webauthn.py` +2 (`rp_desde_host`, `opciones_registro` con rp_id del Host) → 8
+verdes; `ruff` limpio. Probar en vivo: reintentar "Registrar llave" en `admin.localhost:8080` y en el
+tenant. `WEBAUTHN_RP_ID`/`WEBAUTHN_ORIGINS` quedan solo como fallback; ya no hay que tocarlos por dominio.
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):

@@ -26,6 +26,26 @@ def test_cred_model_registry():
     assert webauthn.cred_model("proveedores") is None  # no soportado en este slice
 
 
+def test_rp_desde_host_deriva_rp_id_y_origen():
+    """El RP ID y el origen salen del Host (subdominios de dev y prod), no de config estática."""
+    rp_id, origins = webauthn.rp_desde_host("admin.localhost:8080", "http")
+    assert rp_id == "admin.localhost"
+    assert origins == ["http://admin.localhost:8080"]
+
+    rp_id, origins = webauthn.rp_desde_host("museos.xenty.mx", "https")
+    assert rp_id == "museos.xenty.mx"
+    assert origins == ["https://museos.xenty.mx"]
+
+
+def test_opciones_registro_usa_rp_id_del_host(dos_tenants):
+    """Con rp_id explícito (derivado del Host), las opciones lo reflejan (no 'localhost')."""
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        u = _usuario(email="rp@e.mx")
+        data = webauthn.opciones_registro(u, "acceso", t1.schema_name, rp_id="museos.localhost")
+        assert data["rp"]["id"] == "museos.localhost"
+
+
 def test_opciones_registro_genera_reto_y_cachea(dos_tenants):
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):

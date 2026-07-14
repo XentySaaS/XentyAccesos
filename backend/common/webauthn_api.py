@@ -25,6 +25,11 @@ def _soportado(ctx: str) -> bool:
     return webauthn.cred_model(ctx) is not None
 
 
+def _rp(request):
+    """RP ID + origen del dominio de la petición (funciona con los subdominios de dev/prod)."""
+    return webauthn.rp_desde_host(request.get_host(), request.scheme)
+
+
 class RegistroOpcionesView(APIView):
     """POST …/webauthn/registro/opciones/ — opciones de creación de credencial (sesión completa)."""
 
@@ -34,7 +39,10 @@ class RegistroOpcionesView(APIView):
         ctx = _ctx(request)
         if not _soportado(ctx):
             return Response({"detail": "WebAuthn no disponible para este actor."}, status=400)
-        return Response(webauthn.opciones_registro(request.user, ctx, connection.schema_name))
+        rp_id, _origins = _rp(request)
+        return Response(
+            webauthn.opciones_registro(request.user, ctx, connection.schema_name, rp_id=rp_id)
+        )
 
 
 class RegistroVerificarView(APIView):
@@ -49,12 +57,15 @@ class RegistroVerificarView(APIView):
         credential = (request.data or {}).get("credential")
         if not credential:
             return Response({"detail": "Falta la credencial."}, status=400)
+        rp_id, origins = _rp(request)
         ok, error = webauthn.registrar(
             request.user,
             ctx,
             connection.schema_name,
             credential,
             (request.data or {}).get("nombre"),
+            rp_id=rp_id,
+            origins=origins,
         )
         if not ok:
             return Response({"detail": error}, status=400)
@@ -70,7 +81,10 @@ class LoginOpcionesView(APIView):
         ctx = _ctx(request)
         if not _soportado(ctx):
             return Response({"detail": "WebAuthn no disponible para este actor."}, status=400)
-        return Response(webauthn.opciones_login(request.user, ctx, connection.schema_name))
+        rp_id, _origins = _rp(request)
+        return Response(
+            webauthn.opciones_login(request.user, ctx, connection.schema_name, rp_id=rp_id)
+        )
 
 
 class LoginVerificarView(APIView):
@@ -87,7 +101,10 @@ class LoginVerificarView(APIView):
         credential = (request.data or {}).get("credential")
         if not credential:
             return Response({"detail": "Falta la credencial."}, status=400)
-        ok, error = webauthn.verificar_login(request.user, ctx, connection.schema_name, credential)
+        rp_id, origins = _rp(request)
+        ok, error = webauthn.verificar_login(
+            request.user, ctx, connection.schema_name, credential, rp_id=rp_id, origins=origins
+        )
         if not ok:
             return Response({"detail": error}, status=400)
         return Response(build_tokens(request.user, ctx, mfa_pendiente=False))
