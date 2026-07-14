@@ -383,7 +383,17 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
     `XCC_WEBHOOK_URL`); principal `ade929e` recibe en `POST /api/mensajeria/connector/webhook/`
     (control plane, verifica HMAC+ventana+nonce, actualiza `DestinatarioMensaje` por `external_id`,
     solo avanza el estado). `DestinatarioMensaje` gana estados `entregado`/`leido` (migración 0005).
-  - **Pendiente:** routing sticky por `connection_id`, `connection_id` configurable por tenant, y deploy.
+  - **Routing sticky / propiedad de sesión:** ✔ hecho (2026-07-13). Connector `f720b20`: lock en Redis
+    (`SET NX` + heartbeat, clave `xcc:owner:{tenant}:{connection_id}`) → un único dueño por sesión;
+    `sendMessage` a un no-dueño lanza `409 { owner }`. El `ConnectorProvider` del principal envía
+    `X-XCC-Connection` para que el ingress haga hash consistente. Sin Redis = una sola instancia.
+  - **`connection_id` configurable por tenant:** ✔ hecho (2026-07-13). Principal `e67e382`:
+    `PreferenciaMensajeria.connection_id` (migración 0006), el Router instancia `xcc` con él, API +
+    pantalla "Mensajería · Proveedores" lo exponen.
+  - **Deploy:** ✔ artefactos listos (connector `cbf89dc`): `DEPLOY.md` (runbook), `docker-compose.prod.yml`
+    y `nginx.xcc.conf.example` (TLS + `/metrics` restringido + upstream con hash por `connection_id`).
+    Falta solo **provisionar en un host** (no hay destino decidido; mismo bloqueo que el CD del principal).
+  - **F-E cerrada** salvo el provisioning en un host real.
 
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)
 - **Arquitectura APROBADA.** Se implementa empezando por **F-A** (seam en el principal, solo UltraMsg).

@@ -100,6 +100,9 @@ class ConnectorProvider:
                     "X-XCC-Timestamp": ts,
                     "X-XCC-Nonce": nonce,
                     "X-XCC-Signature": firma,
+                    # Pista de ruteo para el balanceador (hash consistente por conexión) cuando el XCC
+                    # corre con varias réplicas; no va en la firma (es solo routing, ver ARQUITECTURA).
+                    "X-XCC-Connection": self.connection_id,
                 },
                 timeout=cfg["timeout_s"],
             )

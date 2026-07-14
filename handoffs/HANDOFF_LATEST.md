@@ -24,9 +24,10 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 
 **Suite completa: 68/68 verdes** (última corrida, ~104 s). `ruff` limpio. Las 4 SPAs compilan.
 
-> **Continuación (misma fecha):** se retomó el **Connector (XCC)** y se avanzó **F-E**: nonce en Redis,
-> repo remoto, **métricas Prometheus** y **webhook de estados de entrega** (connector + principal). Ver
-> la sección "Connector (XCC) — F-E" abajo.
+> **Continuación (misma fecha):** se retomó el **Connector (XCC)** y se **completó F-E (código)**: nonce
+> en Redis, repo remoto, métricas Prometheus, webhook de estados, routing sticky / propiedad de sesión,
+> `connection_id` por tenant y artefactos de deploy. Solo falta provisionar el XCC en un host. Ver la
+> sección "Connector (XCC) — F-E" abajo.
 
 ---
 
@@ -118,12 +119,28 @@ opcional exige `Authorization: Bearer`.
   `entregado`/`leido` (**migración `mensajeria.0005`** — ya aplicada al DB dev). **Solo avanza** el
   estado (delivered tardío no pisa read). Endpoint idempotente.
 
+**Routing sticky / propiedad de sesión** (connector `f720b20`): con varias réplicas, cada sesión
+`(tenant, connection_id)` tiene **un único dueño** (lock Redis `SET NX` + heartbeat, clave
+`xcc:owner:{tenant}:{connection_id}`); `sendMessage` a un no-dueño → `409 { owner }`. El
+`ConnectorProvider` del principal envía `X-XCC-Connection` para el hash consistente del ingress. Sin
+Redis = una sola instancia (sin cambios). Config: `XCC_INSTANCE_ID`, `XCC_OWNER_TTL_SEC`.
+
+**`connection_id` configurable por tenant** (principal `e67e382`): `PreferenciaMensajeria.connection_id`
+(**migración 0006**), el Router instancia el `xcc` con él; API + pantalla "Mensajería · Proveedores"
+lo exponen (campo con Ayuda, validado).
+
+**Deploy** (connector `cbf89dc`): **artefactos listos** — `DEPLOY.md` (runbook), `docker-compose.prod.yml`
+(puerto en loopback tras reverse proxy, redis, restart always) y `nginx.xcc.conf.example` (TLS +
+`/metrics` restringido + upstream con hash por `connection_id`). **Falta solo provisionar en un host**
+(mismo bloqueo que el CD del principal: no hay destino decidido).
+
 **Verificación:**
 - **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
-  `npm test` → **26 tests** (nonce/metrics/webhook/server); integración Redis verificada contra
-  `redis:7-alpine` real; `docker compose config` valida.
-- **Principal** (`docker compose exec backend pytest`): `tests/test_connector_webhook.py` **5/5** +
-  suite completa sin aislamiento **64 verdes**; `ruff` limpio (pre-commit hook OK).
+  `npm test` → **29 tests** (nonce/metrics/webhook/ownership/server); integración Redis (nonce +
+  propiedad de sesión) verificada contra `redis:7-alpine` real.
+- **Principal** (`docker compose exec backend pytest`): `test_connector_webhook.py` **5/5** +
+  `test_connector_provider.py` **7/7** (incl. connection_id por tenant); suite sin aislamiento **64
+  verdes**; migraciones `mensajeria.0005`/`0006` aplicadas; `ruff` limpio (pre-commit OK).
 
 **Cómo correr el connector** (recordatorio; Node solo vía Docker en esta máquina):
 ```bash
@@ -182,10 +199,10 @@ cp .env.example .env   # define XCC_HMAC_SECRET; docker compose up levanta conne
 ## Próximos pasos sugeridos
 
 1. **Cerrar QA #3 (onboarding)** en el navegador — ya con la red de seguridad de verificación manual.
-2. **Cerrar F-E del Connector** (nonce Redis ✔, repo remoto ✔, métricas Prometheus ✔, webhook de
-   estados ✔): falta **routing sticky** por `connection_id`, `connection_id` **configurable por
-   tenant**, y **deploy** del XCC. Y **resolver el proveedor de WhatsApp** (UltraMsg vs XCC-primario
-   vs Cloud API).
+2. **Connector F-E: código completo** (nonce Redis, repo remoto, métricas, webhook de estados, routing
+   sticky, `connection_id` por tenant, artefactos de deploy). Falta **provisionar el XCC en un host**
+   (ver `xenty-connector/DEPLOY.md`; bloqueado con el CD del principal) y **resolver el proveedor de
+   WhatsApp** (UltraMsg vs XCC-primario vs Cloud API).
 3. **Definir host de producción → armar CD** (workflow deploy + nginx prod + serving `/media` con policy + secrets).
 4. **Backfill de documentos legales** en staging/prod cuando existan (`python manage.py sembrar_documentos_legales`).
 5. No bloqueantes: MFA obligatorio para `Usuario`/`CuentaProveedor` del tenant; hardening de logs PII
