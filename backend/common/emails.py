@@ -88,8 +88,13 @@ def enviar_verificacion_email(
     nombre: str,
     nombre_tenant: str,
     url: str,
+    telefono: str | None = None,
 ) -> None:
-    """Envía el correo de verificación (doble opt-in) al admin de un tenant recién dado de alta."""
+    """Envía el correo de verificación (doble opt-in) al admin de un tenant recién dado de alta.
+
+    También se manda por WhatsApp si el admin tiene teléfono (regla del producto: toda notificación
+    va por ambos canales). El enlace confirma el correo igual desde cualquier canal.
+    """
     asunto = f"Confirma tu correo — {nombre_tenant} · Xenty Acceso"
     saludo = f"Hola {nombre},"
     parrafos = [
@@ -112,6 +117,7 @@ def enviar_verificacion_email(
         footer_legal="Si no realizaste este registro, ignora este mensaje. Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
+    _notificar_wa(telefono, texto_plano)
 
 
 def enviar_reset_password(

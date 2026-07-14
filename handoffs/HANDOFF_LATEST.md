@@ -36,6 +36,16 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > **Continuación 3 (misma fecha):** **notificaciones** — gafete + **protocolo** ahora se adjuntan por
 > correo **y WhatsApp** (media base64, sin exponer el QR), redacción profesional, y **fix**: cancelar una
 > cita ya no reenvía la invitación (manda aviso de cancelación). Ver la sección "Notificaciones" abajo.
+>
+> **Continuación 4 (2026-07-14):** **auditoría de doble canal en notificaciones** — se revisó el
+> inventario completo de notificaciones (citas ×5, eventos ×5, documentos, y los 4 wrappers de
+> `common/emails.py`). Todas mandaban correo **+ WhatsApp** salvo una: la **verificación de correo**
+> (`enviar_verificacion_email`) solo iba por email. Se le agregó `telefono` opcional + WhatsApp
+> best-effort, y se cablearon sus dos llamadores (alta pública y **reenviar-verificación** del
+> super-admin) para pasar el teléfono del admin. Billing/webhooks de Stripe no emiten notificaciones
+> al usuario (el dunning se aplica por middleware con 423), así que no había brecha ahí. Test nuevo
+> `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
+> **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 
 ---
 

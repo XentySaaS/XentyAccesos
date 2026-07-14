@@ -17,7 +17,7 @@
 | acceso | ✔ | RegistroAcceso, scanner QR, bitácora |
 | gafetes | ✔ | componer_gafete (Premium Dark), estacionamiento, Fernet QR |
 | sanciones | ✔ | Sancion CRUD |
-| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`). **Adjuntos por WhatsApp** (gafete/protocolo) como media base64 (`AdjuntoWhatsApp`, texto primero + media best-effort). Ver §Connector |
+| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`). **Adjuntos por WhatsApp** (gafete/protocolo) como media base64 (`AdjuntoWhatsApp`, texto primero + media best-effort). **Regla auditada: toda notificación transaccional va por correo + WhatsApp si el destinatario tiene ambos** (citas, eventos, documentos y los 4 wrappers de `common/emails.py`, incl. verificación de correo); `tests/test_emails_dual_canal.py`. Ver §Connector |
 | cumplimiento | ✔ | Backend (`importar_efos_task` con retry) + padrón EFOS global (`apps.efos`) + pantalla `Cumplimiento.tsx` en frontend-acceso |
 | ocr | ✔ | Textract + sandbox para INE |
 | config | ✔ | Opcion, HistorialCambio, AuditViewSetMixin, DashboardView, CalendarioView, ExportarAccesosView (F8) |

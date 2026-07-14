@@ -109,11 +109,13 @@ class SignupView(APIView):
         with schema_context(slug):
             admin = Usuario.objects.get(email=d["admin_email"].lower())
             token = generar_token(admin, "acceso")
+            admin_telefono = admin.telefono
         enviar_verificacion_email(
             email_destino=d["admin_email"],
             nombre=d["admin_nombre"],
             nombre_tenant=d["nombre"],
             url=build_verify_url(request, slug, token),
+            telefono=admin_telefono,
         )
         return Response(
             {
@@ -282,19 +284,20 @@ class TenantAdminViewSet(viewsets.ReadOnlyModelViewSet):
         tenant = self.get_object()
         with schema_context(tenant.schema_name):
             pendientes = [
-                (u.email, u.nombre, generar_token(u, "acceso"))
+                (u.email, u.nombre, generar_token(u, "acceso"), u.telefono)
                 for u in self._admins(tenant, solo_pendientes=True)
             ]
-        for email, nombre, token in pendientes:
+        for email, nombre, token, telefono in pendientes:
             enviar_verificacion_email(
                 email_destino=email,
                 nombre=nombre,
                 nombre_tenant=tenant.nombre,
                 url=build_verify_url(request, tenant.schema_name, token),
+                telefono=telefono,
             )
         return Response(
             {
-                "reenviados": [e for e, _, _ in pendientes],
+                "reenviados": [e for e, *_ in pendientes],
                 "detail": (
                     f"Correo de verificación reenviado a {len(pendientes)} administrador(es)."
                     if pendientes
