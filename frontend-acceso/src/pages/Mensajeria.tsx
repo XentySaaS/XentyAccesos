@@ -119,13 +119,13 @@ export default function Mensajeria() {
         </div>
         <div className="flex-1">
           <h1 className="text-[20px] font-extrabold tracking-tight" style={{ color: INK }}>Mensajería</h1>
-          <p className="text-xs text-slate-500">Campañas por WhatsApp (UltraMsg)</p>
+          <p className="text-xs text-slate-500">Mensajes masivos por WhatsApp (UltraMsg)</p>
         </div>
         <button onClick={() => { setError(""); setShowForm(true); }}
           className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
           style={{ backgroundColor: WA_GREEN }}>
           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-          Nueva campaña
+          Nuevo mensaje masivo
         </button>
       </div>
 
@@ -141,7 +141,7 @@ export default function Mensajeria() {
               <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
             </svg>
           </div>
-          <p className="text-sm font-medium text-slate-400">No hay campañas enviadas aún.</p>
+          <p className="text-sm font-medium text-slate-400">No hay mensajes masivos enviados aún.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -187,11 +187,11 @@ export default function Mensajeria() {
         </div>
       )}
 
-      {/* Modal nueva campaña */}
+      {/* Modal nuevo mensaje masivo */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <form onSubmit={enviar} className="w-full max-w-md rounded-modal bg-white p-6 shadow-panel">
-            <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>Nueva campaña WhatsApp</h2>
+            <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>Nuevo mensaje masivo por WhatsApp</h2>
             <p className="mb-4 text-xs text-slate-400">El mensaje se enviará por UltraMsg a los destinatarios del segmento.</p>
 
             {error && (
@@ -202,7 +202,7 @@ export default function Mensajeria() {
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label htmlFor="msg-segmento" className="text-xs font-semibold text-slate-600">Segmento de envío *</label>
-                  <Ayuda>Define quiénes reciben la campaña: un recinto, una zona, un evento concreto, o grupos amplios (todos los recintos/eventos). Solo empleados activos con teléfono registrado.</Ayuda>
+                  <Ayuda>Define quiénes reciben el mensaje masivo: un recinto, una zona, un evento concreto, o grupos amplios (todos los recintos/eventos). Solo empleados activos con teléfono registrado.</Ayuda>
                 </div>
                 <select id="msg-segmento" value={form.segmento}
                   onChange={e => setForm({ ...form, segmento: e.target.value, segmento_id: "" })}
@@ -219,7 +219,7 @@ export default function Mensajeria() {
                     <label htmlFor="msg-segid" className="text-xs font-semibold text-slate-600">
                       {SEGMENTO_LABEL[form.segmento]} específico *
                     </label>
-                    <Ayuda>Elemento concreto del segmento elegido al que se dirige la campaña.</Ayuda>
+                    <Ayuda>Elemento concreto del segmento elegido al que se dirige el mensaje masivo.</Ayuda>
                   </div>
                   <select id="msg-segid" required value={form.segmento_id}
                     onChange={e => setForm({ ...form, segmento_id: e.target.value })}
@@ -249,7 +249,7 @@ export default function Mensajeria() {
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label htmlFor="msg-archivo" className="text-xs font-semibold text-slate-600">Archivo adjunto (opcional)</label>
-                  <Ayuda>Documento o imagen que se envía junto al mensaje (PDF, Word, Excel, imagen). Se adjunta a la campaña de WhatsApp.</Ayuda>
+                  <Ayuda>Documento o imagen que se envía junto al mensaje (PDF, Word, Excel, imagen). Se adjunta al mensaje masivo de WhatsApp.</Ayuda>
                 </div>
                 <input id="msg-archivo" type="file"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,image/*"
@@ -276,7 +276,7 @@ export default function Mensajeria() {
               <button type="submit" disabled={saving}
                 className="rounded-lg px-5 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
                 style={{ backgroundColor: WA_GREEN }}>
-                {saving ? "Enviando…" : "Enviar campaña"}
+                {saving ? "Enviando…" : "Enviar mensaje masivo"}
               </button>
             </div>
           </form>
