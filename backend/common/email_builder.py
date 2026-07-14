@@ -32,11 +32,30 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
+from functools import lru_cache
+from pathlib import Path
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
+
+# Logo Xenty (blanco, para el header oscuro). Se incrusta como imagen inline vía Content-ID (CID):
+# se muestra por defecto en Gmail/Apple Mail/Mailpit sin necesitar hosting ni URL pública, y no
+# interfiere con los adjuntos reales (gafete/protocolo). 178×50 px.
+_LOGO_PATH = Path(__file__).resolve().parent.parent / "static" / "xenty-white.png"
+_LOGO_CID = "xenty-logo"
+
+
+@lru_cache(maxsize=1)
+def _logo_bytes() -> bytes | None:
+    """Bytes del logo (cacheados). ``None`` si el archivo no está disponible."""
+    try:
+        return _LOGO_PATH.read_bytes()
+    except OSError:
+        logger.warning("Logo de correo no encontrado en %s — se usa el logo de texto.", _LOGO_PATH)
+        return None
+
 
 # ─── Paleta (tokens del diseño Xenty Accesos) ────────────────────────────────
 _BG = "#0D0D14"  # fondo del correo
@@ -194,26 +213,33 @@ def _fecha_larga() -> str:
 
 
 # ─── Bloques (HTML por tablas) ───────────────────────────────────────────────
-def _header(nombre_tenant: str) -> str:
-    logo = (
+def _marca() -> str:
+    """Logo Xenty: imagen inline (CID) si el archivo existe; si no, ícono SVG + texto (fallback)."""
+    if _logo_bytes() is not None:
+        return (
+            f'<img src="cid:{_LOGO_CID}" width="107" height="30" alt="Xenty Accesos" '
+            'style="display:block;border:0;outline:none;text-decoration:none;height:30px;width:107px;" />'
+        )
+    return (
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
+        '<td style="vertical-align:middle;padding-right:10px;">'
         '<svg width="32" height="32" viewBox="0 0 32 32" fill="none">'
         '<rect width="32" height="32" rx="7" fill="#FFD700"/>'
         '<circle cx="16" cy="16" r="9" fill="none" stroke="#000" stroke-width="1.5"/>'
         '<path d="M10.5 16l4 4.5 7-9" stroke="#000" stroke-width="2.2" '
-        'stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        'stroke-linecap="round" stroke-linejoin="round"/></svg></td>'
+        '<td style="vertical-align:middle;">'
+        f'<div style="font-size:15px;font-weight:900;color:{_WHITE};letter-spacing:0.04em;">XENTY</div>'
+        '<div style="font-size:7.5px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:0.18em;text-transform:uppercase;margin-top:1px;">Accesos</div>'
+        "</td></tr></table>"
     )
+
+
+def _header(nombre_tenant: str) -> str:
     return f"""
     <tr><td style="background:{_BG_HEAD};padding:22px 36px;border-bottom:1px solid {_BD_HEAD};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td align="left" style="vertical-align:middle;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-            <td style="vertical-align:middle;padding-right:10px;">{logo}</td>
-            <td style="vertical-align:middle;">
-              <div style="font-size:15px;font-weight:900;color:{_WHITE};letter-spacing:0.04em;">XENTY</div>
-              <div style="font-size:7.5px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:0.18em;text-transform:uppercase;margin-top:1px;">Accesos</div>
-            </td>
-          </tr></table>
-        </td>
+        <td align="left" style="vertical-align:middle;">{_marca()}</td>
         <td align="right" style="vertical-align:middle;font-size:10px;color:rgba(255,255,255,0.25);">{_fecha_larga()}</td>
       </tr></table>
     </td></tr>"""
@@ -457,6 +483,15 @@ def enviar_correo_html(
             to=[destino],
         )
         msg.attach_alternative(html, "text/html")
+        # Logo Xenty como imagen inline (CID) si el HTML lo referencia y el archivo está disponible.
+        logo = _logo_bytes()
+        if logo and f"cid:{_LOGO_CID}" in html:
+            from email.mime.image import MIMEImage
+
+            img = MIMEImage(logo, _subtype="png")
+            img.add_header("Content-ID", f"<{_LOGO_CID}>")
+            img.add_header("Content-Disposition", "inline", filename="xenty.png")
+            msg.attach(img)
         if adjuntos:
             for nombre_f, datos, ct in adjuntos:
                 msg.attach(nombre_f, datos, ct)

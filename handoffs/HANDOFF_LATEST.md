@@ -399,6 +399,15 @@ color?,mono?,grande?,full?}`), `card_titulo`, `mensaje`, `pre_header`, `footer_l
 **Footer:** solo el link «Política de privacidad» (nunca "Cancelar suscripción"/"Soporte"). El
 `texto_plano` (fallback y cuerpo de WhatsApp) **no cambió** en ningún correo.
 
+**Logo Xenty en la cabecera** (en vez del texto "XENTY/Accesos"): se incrusta `backend/static/
+xenty-white.png` (wordmark blanco, 178×50) como **imagen inline vía Content-ID** — el header emite
+`<img src="cid:xenty-logo">` y `enviar_correo_html` adjunta el PNG con `Content-ID: <xenty-logo>` +
+`Content-Disposition: inline` **solo si el HTML lo referencia**. Elegido CID (no URL pública ni
+data-URI): se muestra por defecto en Gmail/Apple Mail/Mailpit, sin hosting, y **no interfiere con los
+adjuntos reales** (gafete/protocolo, que siguen como adjuntos normales). Si el archivo del logo no está,
+`_marca()` cae al ícono SVG + texto (fallback). Verificado: el MIME lleva el `Content-ID` inline; tests
+de correo verdes. En el Artifact de preview el `cid:` se reemplaza por data-URI solo para poder verlo.
+
 **Verificación:** suite sin aislamiento **105 verdes**; `ruff` limpio; render de los 6 tipos revisado
 (preview publicado como Artifact). **Sin migraciones.** Los correos reales se ven en **Mailpit**
 (`http://localhost:8025`) al disparar una notificación. Gotcha de la sesión: si Docker Desktop se
