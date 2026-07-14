@@ -310,9 +310,11 @@ exponerlo.
 
 **Dedup de invitados (regla de dominio):** `_guardar_asistentes` **no duplica** por **email o teléfono**
 —contra los asistentes activos de la cita y dentro del mismo lote— (un CANCELADO no bloquea el realta);
-`agregar-asistentes` responde `{agregados, omitidos}` y la UI lo informa. **Eventos ya dedup por FK**
-(`get_or_create` + `unique_together`). Es una validación "obvia" que va de oficio (ver memoria del
-usuario: implementar validaciones evidentes sin preguntar).
+`agregar-asistentes` responde `{agregados, omitidos}` y la UI lo informa. En el **autocompletado** de
+personas, quien ya está en la cita (o ya en el lote) sale marcado *"· ya agregado"* y **no es
+seleccionable** (`yaAgregado`/`mismaPersona` en `Citas.tsx`, compara por email/teléfono). **Eventos ya
+dedup por FK** (`get_or_create` + `unique_together`). Es una validación "obvia" que va de oficio (ver
+memoria del usuario: implementar validaciones evidentes sin preguntar).
 
 **Verificación:** `test_citas_asistentes.py` (4, DB) + 2 de servicio en `test_notificaciones_adjuntos.py`.
 Suite sin aislamiento **98 verdes**; `ruff` limpio; `manage.py check` OK; `frontend-acceso` compila.

@@ -459,6 +459,26 @@ export default function Citas() {
     }
   };
 
+  /* ── ¿La persona ya está en la cita / en el lote? (por email o teléfono) ── */
+  const soloDig = (s?: string) => (s || "").replace(/\D/g, "");
+  const mismaPersona = (
+    a: { email?: string; telefono?: string },
+    b: { email?: string; telefono?: string },
+  ) => {
+    const ae = (a.email || "").trim().toLowerCase();
+    const be = (b.email || "").trim().toLowerCase();
+    if (ae && be && ae === be) return true;
+    const at = soloDig(a.telefono);
+    const bt = soloDig(b.telefono);
+    return !!(at && bt && at === bt);
+  };
+  const yaAgregado = (p: { email?: string; telefono?: string }): boolean => {
+    if (!p.email && !p.telefono) return false; // sin identificador no se puede saber
+    const enCita = detalle?.asistentes?.some(a => a.estado !== 2 && mismaPersona(a, p)) ?? false;
+    const enLote = invitados.some(i => (i.email || i.telefono) && mismaPersona(i, p));
+    return enCita || enLote;
+  };
+
   /* ── Filas de invitados con autocomplete (reusadas en crear y detalle) ── */
   const invitadoRows = () => (
     <>
@@ -488,16 +508,21 @@ export default function Citas() {
                 placeholder="Buscar empleado o contacto…" />
               {sugs.length > 0 && sugIdx === idx && (
                 <ul className="absolute z-20 left-0 right-0 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg max-h-40 overflow-y-auto">
-                  {sugs.map((s, si) => (
-                    <li key={si}>
-                      <button type="button" onMouseDown={() => seleccionarPersona(s)}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
-                        <span className="font-medium text-slate-800">{s.nombre}</span>
-                        {s.empresa && <span className="ml-1 text-xs text-slate-400">({s.empresa})</span>}
-                        <span className="ml-1 text-xs text-slate-400">{s.email}</span>
-                      </button>
-                    </li>
-                  ))}
+                  {sugs.map((s, si) => {
+                    const dup = yaAgregado(s);
+                    return (
+                      <li key={si}>
+                        <button type="button" disabled={dup}
+                          onMouseDown={() => { if (!dup) seleccionarPersona(s); }}
+                          className={`w-full px-3 py-2 text-left text-sm ${dup ? "cursor-not-allowed bg-slate-50" : "hover:bg-blue-50"}`}>
+                          <span className={`font-medium ${dup ? "text-slate-400" : "text-slate-800"}`}>{s.nombre}</span>
+                          {s.empresa && <span className="ml-1 text-xs text-slate-400">({s.empresa})</span>}
+                          <span className="ml-1 text-xs text-slate-400">{s.email}</span>
+                          {dup && <span className="ml-1 text-[10px] font-semibold text-amber-600">· ya agregado</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
