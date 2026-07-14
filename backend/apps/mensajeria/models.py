@@ -35,6 +35,16 @@ class Mensaje(models.Model):  # messages
     creado = models.DateTimeField(auto_now_add=True)
     actualizado = models.DateTimeField(auto_now=True)
 
+    def __str__(self) -> str:
+        # __str__ legible para la bitácora de cambios (evita el «Mensaje object (N)» de Django).
+        cuerpo = (self.cuerpo or "").strip()
+        extracto = f"{cuerpo[:40]}…" if len(cuerpo) > 40 else cuerpo
+        return (
+            f"{self.get_segmento_display()}: {extracto}"
+            if extracto
+            else self.get_segmento_display()
+        )
+
 
 class DestinatarioMensaje(models.Model):  # message_recipients
     class Estado(models.TextChoices):

@@ -47,6 +47,17 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 11 (2026-07-14):** **Historial de cambios más amigable.** (a) Al desplegar una
+> entrada, el detalle **antes/después** ya no se muestra como JSON crudo (`<pre>{JSON.stringify}`)
+> sino como lista **«Campo: valor»** con etiquetas en español (`Historial.tsx` → helpers
+> `CAMPO_LABEL`/`etiquetaCampo`/`valorCampo` + componente `Campos`); booleanos → Sí/No, vacíos → «—».
+> (b) **Nulos de descripción**: en campos de descripción (`descripcion`/`detalles`/`observaciones`/
+> `motivo`…) un valor vacío se muestra como **«No se agregó una descripción»** en vez de `null`; la
+> celda de descripción de la fila también cae a ese texto si viene vacía. (c) Backend: `Mensaje.__str__`
+> (antes faltaba → «Mensaje object (3)») ahora devuelve «{Segmento}: {extracto del cuerpo}», así las
+> **nuevas** entradas de auditoría leen «Creó Mensaje «Recinto: Esta es una prueba»» (las viejas ya
+> quedaron guardadas con el texto anterior).
+>
 > **Continuación 10 (2026-07-14):** dos ajustes de UI en frontend-acceso. (a) **Calendario**: las
 > citas/eventos **cancelados** ahora se pintan en **rojo** (#DC2626) en las marcas del día (con
 > tachado), con ítem "Canceladas" en la leyenda y el chip del modal de detalle también en rojo (antes

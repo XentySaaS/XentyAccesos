@@ -39,6 +39,61 @@ function fmt(iso: string) {
     + " " + d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
 }
 
+const SIN_DESCRIPCION = "No se agregó una descripción";
+
+// Etiquetas amigables para los campos que aparecen en el detalle (antes/después).
+const CAMPO_LABEL: Record<string, string> = {
+  cuerpo: "Cuerpo", segmento: "Segmento", segmento_id: "Segmento", creado_por: "Creado por",
+  nombre: "Nombre", descripcion: "Descripción", detalles: "Detalles",
+  observaciones: "Observaciones", motivo: "Motivo", motivo_rechazo: "Motivo de rechazo",
+  estado: "Estado", email: "Correo", email_responsable: "Correo del responsable",
+  telefono: "Teléfono", rfc: "RFC", razon_social: "Razón social", fecha: "Fecha",
+  fecha_baja: "Fecha de baja", hora_inicio: "Hora de inicio", hora_fin: "Hora de fin",
+  activo: "Activo", tipo: "Tipo", tipo_cita: "Tipo de cita", limite: "Límite de personas",
+  recinto: "Recinto", ubicacion: "Ubicación", punto_acceso: "Punto de acceso",
+  protocolo: "Protocolo", zona: "Zona", vigencia_inicio: "Vigencia desde",
+  vigencia_fin: "Vigencia hasta", nombre_responsable: "Nombre del responsable",
+  puesto: "Puesto", requiere_ine: "Requiere INE", requiere_parking: "Requiere estacionamiento",
+  cajones_parking: "Cajones de estacionamiento", parking: "Estacionamiento",
+};
+
+// Campos donde un valor vacío debe leerse como «No se agregó una descripción».
+const CAMPOS_DESCRIPCION = new Set([
+  "descripcion", "descripción", "detalles", "observaciones", "motivo",
+  "motivo_rechazo", "nota", "notas", "comentario", "comentarios",
+]);
+
+function etiquetaCampo(k: string): string {
+  if (CAMPO_LABEL[k]) return CAMPO_LABEL[k];
+  const base = k.replace(/_id$/, "").replace(/_/g, " ");
+  return base.charAt(0).toUpperCase() + base.slice(1);
+}
+
+function valorCampo(k: string, v: unknown): string {
+  if (v === null || v === undefined || v === "") {
+    return CAMPOS_DESCRIPCION.has(k.toLowerCase()) ? SIN_DESCRIPCION : "—";
+  }
+  if (typeof v === "boolean") return v ? "Sí" : "No";
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
+
+/** Detalle amigable: lista «Campo: valor» en vez de JSON crudo. */
+function Campos({ datos }: { datos: Record<string, unknown> }) {
+  const keys = Object.keys(datos ?? {});
+  if (keys.length === 0) return <p className="px-3 py-2 text-xs text-slate-400">Sin datos.</p>;
+  return (
+    <dl className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200">
+      {keys.map(k => (
+        <div key={k} className="flex gap-3 px-3 py-2 text-xs">
+          <dt className="w-36 shrink-0 font-medium text-slate-500">{etiquetaCampo(k)}</dt>
+          <dd className="flex-1 break-words text-slate-700">{valorCampo(k, datos[k])}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export default function Historial() {
   const [entradas, setEntradas] = useState<Entrada[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -153,7 +208,7 @@ export default function Historial() {
                         </span>
                       </td>
                       <td className="px-5 py-3 text-slate-500">{e.modelo ?? "—"}</td>
-                      <td className="px-5 py-3 text-slate-700 max-w-sm">{e.descripcion}</td>
+                      <td className="px-5 py-3 text-slate-700 max-w-sm">{e.descripcion || SIN_DESCRIPCION}</td>
                       <td className="px-3 py-3 text-center">
                         {hasDiff && (
                           <svg
@@ -170,17 +225,13 @@ export default function Historial() {
                             {e.antes && (
                               <div>
                                 <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Antes</p>
-                                <pre className="rounded-xl bg-white p-3 text-xs text-slate-600 ring-1 ring-slate-200 overflow-auto">
-                                  {JSON.stringify(e.antes, null, 2)}
-                                </pre>
+                                <Campos datos={e.antes} />
                               </div>
                             )}
                             {e.despues && (
                               <div>
                                 <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Después</p>
-                                <pre className="rounded-xl bg-white p-3 text-xs text-slate-600 ring-1 ring-slate-200 overflow-auto">
-                                  {JSON.stringify(e.despues, null, 2)}
-                                </pre>
+                                <Campos datos={e.despues} />
                               </div>
                             )}
                           </div>
