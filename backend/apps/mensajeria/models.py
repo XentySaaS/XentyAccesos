@@ -68,6 +68,9 @@ class PreferenciaMensajeria(models.Model):
     failover_habilitado = models.BooleanField(default=True)
     reintentos = models.PositiveSmallIntegerField(default=1)
     timeout_ms = models.PositiveIntegerField(default=15000)
+    # Conexión (número de WhatsApp) del Connector para este tenant. El XCC aísla sesiones por
+    # (tenant, connection_id); un tenant con varios números elige aquí cuál usa el Router.
+    connection_id = models.CharField(max_length=64, default="principal")
     actualizado = models.DateTimeField(auto_now=True)
 
     class Meta:

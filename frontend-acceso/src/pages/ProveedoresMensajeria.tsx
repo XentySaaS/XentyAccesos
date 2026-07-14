@@ -8,6 +8,7 @@ interface Preferencia {
   failover_habilitado: boolean;
   reintentos: number;
   timeout_ms: number;
+  connection_id: string;
   proveedores_disponibles: Disponible[];
   actualizado?: string;
 }
@@ -22,6 +23,7 @@ export default function ProveedoresMensajeria() {
   const [failover, setFailover] = useState(true);
   const [reintentos, setReintentos] = useState(1);
   const [timeout, setTimeoutMs] = useState(15000);
+  const [connectionId, setConnectionId] = useState("principal");
   const [actualizado, setActualizado] = useState<string | undefined>();
   const [msg, setMsg] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [cargando, setCargando] = useState<string | null>("init");
@@ -34,6 +36,7 @@ export default function ProveedoresMensajeria() {
     setFailover(data.failover_habilitado);
     setReintentos(data.reintentos);
     setTimeoutMs(data.timeout_ms);
+    setConnectionId(data.connection_id ?? "principal");
     setActualizado(data.actualizado);
   }
 
@@ -51,6 +54,7 @@ export default function ProveedoresMensajeria() {
   const etiqueta = (clave: string) =>
     disponibles.find((d) => d.clave === clave)?.etiqueta ?? clave;
   const sinUsar = disponibles.filter((d) => !orden.includes(d.clave));
+  const xccDisponible = disponibles.some((d) => d.clave === "xcc");
 
   function añadir(clave: string) { setOrden((o) => [...o, clave]); }
   function quitar(clave: string) { setOrden((o) => o.filter((c) => c !== clave)); }
@@ -74,11 +78,13 @@ export default function ProveedoresMensajeria() {
         failover_habilitado: failover,
         reintentos,
         timeout_ms: timeout,
+        connection_id: connectionId,
       });
       aplicar(data);
       setMsg({ tipo: "ok", texto: "Preferencia guardada." });
     } catch (err: any) {
-      const detalle = err?.response?.data?.proveedores_orden?.[0];
+      const d = err?.response?.data;
+      const detalle = d?.proveedores_orden?.[0] || d?.connection_id?.[0];
       setMsg({ tipo: "error", texto: detalle || "No se pudo guardar la preferencia." });
     } finally {
       setCargando(null);
@@ -200,6 +206,30 @@ export default function ProveedoresMensajeria() {
             </label>
           </div>
         </div>
+
+        {/* Conexión del Connector (solo relevante si el XCC está disponible) */}
+        {xccDisponible && (
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+            <h2 className="mb-3 text-sm font-semibold text-slate-700">Xenty Connector (respaldo)</h2>
+            <label className="block text-sm sm:max-w-xs">
+              <span className="mb-1 flex items-center gap-1.5 font-medium text-slate-700">
+                Conexión (número)
+                <Ayuda>
+                  Identificador de la conexión de WhatsApp del Connector que usa tu organización. Si
+                  tienes varios números vinculados, escribe aquí cuál usar (p. ej. "principal" o
+                  "ventas"). Debe coincidir con la sesión vinculada en el Connector.
+                </Ayuda>
+              </span>
+              <input
+                type="text"
+                value={connectionId}
+                onChange={(e) => setConnectionId(e.target.value)}
+                placeholder="principal"
+                className={inputCls}
+              />
+            </label>
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           <button type="submit" disabled={cargando !== null}

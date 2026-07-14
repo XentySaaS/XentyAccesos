@@ -89,6 +89,32 @@ def test_connector_http_no_202_es_fallo(dos_tenants, monkeypatch):
     assert res.ok is False and res.error == "xcc-http-500"
 
 
+def test_router_usa_connection_id_del_tenant(dos_tenants):
+    """El Router instancia el xcc con el connection_id (número) que eligió el tenant."""
+    from apps.mensajeria.models import PreferenciaMensajeria
+
+    t1, _ = dos_tenants
+    _config_connector()
+    cache.clear()  # snapshot de config fresco (xcc ON)
+    with schema_context(t1.schema_name):
+        pref = PreferenciaMensajeria.cargar()
+        pref.proveedores_orden = ["xcc"]
+        pref.connection_id = "ventas"
+        pref.save()
+        provs = router.proveedores_para(t1.schema_name, pref=pref)
+    xcc = [p for p in provs if p.nombre == "xcc"]
+    assert xcc, "el xcc debe estar en los proveedores (master switch ON)"
+    assert xcc[0].connection_id == "ventas"
+
+
+def test_preferencia_serializer_rechaza_connection_id_invalido():
+    from apps.mensajeria.preferencia_api import PreferenciaMensajeriaSerializer
+
+    s = PreferenciaMensajeriaSerializer(data={"connection_id": "mal/valor"}, partial=True)
+    assert not s.is_valid()
+    assert "connection_id" in s.errors
+
+
 def test_failover_xcc_a_sandbox_cuando_el_connector_cae(dos_tenants, monkeypatch):
     """E2E del Router: xcc primero; si el Connector no responde, failover a sandbox (nunca se pierde)."""
     from apps.mensajeria.breaker import CircuitBreaker

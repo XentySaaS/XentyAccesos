@@ -7,6 +7,8 @@ tenant; solo el administrador la edita. Expone además qué proveedores están *
 
 from __future__ import annotations
 
+import re
+
 from rest_framework import serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -53,9 +55,21 @@ class PreferenciaMensajeriaSerializer(serializers.ModelSerializer):
             "failover_habilitado",
             "reintentos",
             "timeout_ms",
+            "connection_id",
             "actualizado",
         ]
         read_only_fields = ["actualizado"]
+
+    def validate_connection_id(self, value):
+        v = (value or "").strip()
+        if not v:
+            return "principal"
+        # El XCC sanea el id al construir la ruta de la sesión; aquí lo restringimos a un token seguro.
+        if not re.fullmatch(r"[a-zA-Z0-9_.-]{1,64}", v):
+            raise serializers.ValidationError(
+                "Solo letras, dígitos, '.', '_' o '-' (máx. 64 caracteres)."
+            )
+        return v
 
     def validate_proveedores_orden(self, value):
         if not isinstance(value, list) or not all(isinstance(v, str) for v in value):

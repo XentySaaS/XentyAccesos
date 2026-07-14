@@ -87,13 +87,16 @@ def proveedores_para(
     registro = registro_proveedores()
     orden = list(pref.proveedores_orden) if (pref and pref.proveedores_orden) else _orden_default()
 
+    conn_id = pref.connection_id if (pref and pref.connection_id) else "principal"
     provs: list[ProveedorMensajeria] = []
     for clave in orden:
         if clave == "xcc" and not cfg["xcc_habilitado"]:
             continue  # master switch global apagado → el Connector nunca se usa
         cls = registro.get(clave)
-        if cls is not None:
-            provs.append(cls())
+        if cls is None:
+            continue
+        # El XCC usa la conexión (número) que eligió el tenant; el resto no lleva parámetros.
+        provs.append(cls(connection_id=conn_id) if clave == "xcc" else cls())
     if not provs:  # preferencia inválida o proveedores no disponibles → fallback seguro
         clave = _orden_default()[0]
         provs = [registro[clave]()]
