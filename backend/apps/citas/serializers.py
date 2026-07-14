@@ -227,7 +227,22 @@ class CitaSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def _guardar_asistentes(cita: Cita, data: list) -> list[AsistenteCita]:
-        """Upserts contactos y crea registros AsistenteCita. Devuelve los asistentes creados."""
+        """Upserts contactos y crea AsistenteCita, sin duplicar por email o teléfono.
+
+        Un invitado cuyo email o teléfono ya está entre los asistentes **activos** de la cita se omite
+        (no se vuelve a agregar); también se deduplica dentro del mismo lote. Un asistente en baja
+        lógica (CANCELADO) no bloquea el realta. Devuelve solo los asistentes creados.
+        """
+        # Identificadores (email/teléfono) ya presentes entre los asistentes activos de la cita.
+        vistos: set[tuple[str, str]] = set()
+        for act in cita.asistentes.exclude(estado=AsistenteCita.Estado.CANCELADO).values(
+            "email", "telefono"
+        ):
+            if act["email"]:
+                vistos.add(("email", act["email"].lower()))
+            if act["telefono"]:
+                vistos.add(("tel", act["telefono"]))
+
         creados: list[AsistenteCita] = []
         for a in data:
             persona_id = a.get("persona_id")
@@ -235,6 +250,15 @@ class CitaSerializer(serializers.ModelSerializer):
             nombre = a["nombre"]
             email = a.get("email") or None
             telefono = a.get("telefono") or None
+
+            # Dedup por email/teléfono (mismo lote y contra los ya presentes en la cita).
+            claves: list[tuple[str, str]] = []
+            if email:
+                claves.append(("email", email.lower()))
+            if telefono:
+                claves.append(("tel", telefono))
+            if any(k in vistos for k in claves):
+                continue
 
             if not persona_id:
                 qs = Contacto.objects.filter(nombre=nombre)
@@ -260,4 +284,5 @@ class CitaSerializer(serializers.ModelSerializer):
                     object_id=persona_id,
                 )
             )
+            vistos.update(claves)  # evita duplicar el mismo email/teléfono más adelante en el lote
         return creados

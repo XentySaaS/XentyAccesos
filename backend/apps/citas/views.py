@@ -132,11 +132,16 @@ class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
             return Response(
                 {"detail": "No se enviaron invitados."}, status=status.HTTP_400_BAD_REQUEST
             )
+        solicitados = len(entrada.validated_data)
+        # _guardar_asistentes deduplica por email/teléfono: solo se crean (e invitan) los nuevos.
         nuevos = CitaSerializer._guardar_asistentes(cita, entrada.validated_data)
         from .services import enviar_invitacion_asistentes
 
         enviar_invitacion_asistentes(cita, nuevos)
-        return Response({"agregados": len(nuevos)}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"agregados": len(nuevos), "omitidos": solicitados - len(nuevos)},
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=False, methods=["get"], url_path="buscar-personas")
     def buscar_personas(self, request):

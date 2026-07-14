@@ -88,6 +88,57 @@ def test_cita_borrable_si_todos_los_asistentes_dados_de_baja(dos_tenants):
         assert not Cita.objects.filter(pk=cita.pk).exists()
 
 
+def test_no_duplica_asistente_por_email(dos_tenants):
+    from apps.citas.serializers import CitaSerializer
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        cita, _u = _cita_directa()
+        c1 = CitaSerializer._guardar_asistentes(cita, [{"nombre": "Ana", "email": "ana@x.com"}])
+        assert len(c1) == 1
+        # Mismo email (aunque cambie el nombre) → no se agrega de nuevo.
+        c2 = CitaSerializer._guardar_asistentes(cita, [{"nombre": "Ana B", "email": "ANA@x.com"}])
+        assert len(c2) == 0
+        assert cita.asistentes.count() == 1
+
+
+def test_no_duplica_por_telefono_en_el_mismo_lote(dos_tenants):
+    from apps.citas.serializers import CitaSerializer
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        cita, _u = _cita_directa()
+        creados = CitaSerializer._guardar_asistentes(
+            cita,
+            [
+                {"nombre": "A", "telefono": "8112223344"},
+                {"nombre": "B", "telefono": "8112223344"},  # mismo teléfono → omitido
+            ],
+        )
+        assert len(creados) == 1
+        assert cita.asistentes.count() == 1
+
+
+def test_asistente_dado_de_baja_no_bloquea_realta(dos_tenants):
+    """Un asistente CANCELADO no cuenta como 'ya agregado': se puede volver a invitar."""
+    from apps.citas.models import AsistenteCita
+    from apps.citas.serializers import CitaSerializer
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        cita, _u = _cita_directa()
+        AsistenteCita.objects.create(
+            cita=cita,
+            nombre="Ana",
+            email="ana@x.com",
+            estado=AsistenteCita.Estado.CANCELADO,
+        )
+        creados = CitaSerializer._guardar_asistentes(
+            cita, [{"nombre": "Ana", "email": "ana@x.com"}]
+        )
+        assert len(creados) == 1  # el cancelado no bloquea
+
+
 def test_cita_no_borrable_con_asistente_activo(dos_tenants):
     from rest_framework.exceptions import PermissionDenied
 

@@ -412,11 +412,17 @@ export default function Citas() {
     setAgregando(true); setAgregarMsg("");
     try {
       const res = await api.post(`/api/citas/${detalle.id}/agregar-asistentes/`, { asistentes });
-      const n = (res.data as { agregados?: number }).agregados ?? asistentes.length;
+      const data = res.data as { agregados?: number; omitidos?: number };
+      const n = data.agregados ?? asistentes.length;
+      const om = data.omitidos ?? 0;
       setInvitados([{ ...INVITADO_VACIO }]);
       await refrescarDetalle(detalle.id);
-      setAgregarMsg(`${n} invitado(s) agregado(s). Se les envió la invitación.`);
-      setTimeout(() => setAgregarMsg(""), 4000);
+      setAgregarMsg(
+        n > 0
+          ? `${n} invitado(s) agregado(s). Se les envió la invitación.${om ? ` ${om} ya estaba(n) registrado(s).` : ""}`
+          : "Ese invitado ya estaba registrado (mismo email o teléfono).",
+      );
+      setTimeout(() => setAgregarMsg(""), 5000);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setAgregarMsg(e.response?.data?.detail ?? "No se pudieron agregar los invitados.");

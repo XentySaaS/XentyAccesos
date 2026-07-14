@@ -13,7 +13,7 @@
 | recintos | ✔ | Recinto, Zona, Acceso, Ubicacion, Entrada, AreaAutorizada, Protocolo |
 | documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados |
 | eventos | ✔ | Evento, EventoProveedor, asignación empleados, gafete QR. Invitación/asignación adjuntan **protocolo** y mandan gafete/pases por **WhatsApp** además del correo; cancelaciones con aviso dedicado |
-| citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita. Invitación con **gafete + protocolo** adjuntos por correo **y WhatsApp** (redacción profesional); **cancelar** manda aviso de cancelación (no reenvía invitación). **Alta/baja de asistentes** en cita existente: agregar (invita solo a los nuevos), dar de baja = **baja lógica** (estado CANCELADO; el escáner ya lo bloquea) + reactivar |
+| citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita. Invitación con **gafete + protocolo** adjuntos por correo **y WhatsApp** (redacción profesional); **cancelar** manda aviso de cancelación (no reenvía invitación). **Alta/baja de asistentes** en cita existente: agregar (invita solo a los nuevos, **dedup por email/teléfono**), dar de baja = **baja lógica** (estado CANCELADO; el escáner ya lo bloquea) + reactivar |
 | acceso | ✔ | RegistroAcceso, scanner QR, bitácora |
 | gafetes | ✔ | componer_gafete (Premium Dark), estacionamiento, Fernet QR |
 | sanciones | ✔ | Sancion CRUD |
