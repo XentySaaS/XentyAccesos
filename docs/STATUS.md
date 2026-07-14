@@ -58,7 +58,12 @@
 (`ConfiguracionConnector` global: `habilitado`, `url_base`, `hmac_secret` cifrado, umbrales del breaker).
 El `hmac_secret` debe ser idéntico al `XCC_HMAC_SECRET` del servicio.
 
-**Vinculación por UI (sin CLII):** el admin del tenant vincula su WhatsApp en *Mensajería · Proveedores*
+**Local (dev):** el XCC está en el `docker-compose.yml` del principal como servicio **opcional**
+(perfil `connector`, DEC-008): `docker compose --profile connector up -d --build connector`. Queda en
+la misma red → URL base en *Comunicaciones* = `http://connector:8090` (sin `host.docker.internal`).
+Requiere `XCC_HMAC_SECRET` en el `.env` (igual al de *Comunicaciones*).
+
+**Vinculación por UI (sin CLI):** el admin del tenant vincula su WhatsApp en *Mensajería · Proveedores*
 (tarjeta "WhatsApp del Connector": estado + QR con polling + desvincular) y el super-admin gestiona
 sesiones por tenant en *Comunicaciones*. El navegador **nunca** ve el secreto HMAC: el backend firma
 por él (`apps/mensajeria/connector_client.py` → `/api/mensajeria/whatsapp/*` y

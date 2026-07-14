@@ -398,6 +398,11 @@ Cada fase es un checkpoint independiente y **entregable** (el principal nunca qu
   - **Deploy:** ✔ artefactos listos (connector `cbf89dc`): `DEPLOY.md` (runbook), `docker-compose.prod.yml`
     y `nginx.xcc.conf.example` (TLS + `/metrics` restringido + upstream con hash por `connection_id`).
     Falta solo **provisionar en un host** (no hay destino decidido; mismo bloqueo que el CD del principal).
+  - **Perfil `connector` en el compose del principal:** ✔ (2026-07-13, DEC-008). El XCC está en
+    `docker-compose.yml` del principal como servicio **opt-in** (`profiles: ["connector"]`, build de
+    `../xenty-connector`, mismo network → `http://connector:8090`, comparte el redis del stack). Se
+    levanta con `docker compose --profile connector up -d --build connector`; `docker compose up`
+    normal lo ignora (no afecta al principal).
   - **F-E cerrada** salvo el provisioning en un host real.
 
 ## 16bis. Decisiones tomadas (aprobado 2026-07-03)

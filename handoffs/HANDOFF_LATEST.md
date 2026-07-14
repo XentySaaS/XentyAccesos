@@ -154,6 +154,18 @@ para vincular el número. El navegador nunca ve el secreto HMAC — el backend f
 - Tests: 5 (`test_connector_sesiones.py`). Verificado en vivo: el proxy firmado alcanzó el XCC local y
   devolvió la sesión de `museos` (200). Ambas SPAs compilan.
 
+**XCC como servicio del compose del principal** (perfil `connector`, DEC-008): el XCC está en
+`docker-compose.yml` del principal (build `../xenty-connector`, mismo network, comparte el redis del
+stack). Se levanta con `docker compose --profile connector up -d --build connector`; `docker compose up`
+normal lo ignora. En local la URL base en *Comunicaciones* es **`http://connector:8090`** (ya no
+`host.docker.internal`). Requiere `XCC_HMAC_SECRET` en el `.env` del principal (= hmac_secret de
+*Comunicaciones*). Verificado: proxy POST → 201 por la red interna.
+
+**Dos gotchas de dev resueltos hoy:** (1) la URL base NO puede ser `127.0.0.1`/`localhost` (dentro del
+contenedor apunta al backend, no al XCC) — con el perfil es `http://connector:8090`. (2) el `backend`/
+`superadmin-backend` corren con `runserver --noreload`: **tras agregar rutas/vistas hay que
+`docker compose restart backend superadmin-backend`** o la UI da 404 aunque el código esté bien.
+
 **Verificación:**
 - **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
   `npm test` → **29 tests** (nonce/metrics/webhook/ownership/server); integración Redis (nonce +

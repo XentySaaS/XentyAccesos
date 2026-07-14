@@ -103,6 +103,25 @@ services:
     ports: ["5176:5176"]
     depends_on: [superadmin-backend]
 
+  # Connector (XCC) — servicio OPCIONAL (perfil "connector", decisión DEC-008). Su imagen se
+  # construye del repo hermano `../xenty-connector`. Levantar aparte, solo cuando se necesite:
+  #   docker compose --profile connector up -d --build connector
+  # `docker compose up` normal lo IGNORA: su ausencia no afecta al principal (master switch + failover
+  # del Router). Reachable como http://connector:8090 (mismo network) → esa es la URL base a poner en
+  # Comunicaciones en local (sin host.docker.internal). Comparte el redis del stack (claves xcc:*).
+  connector:
+    build: ../xenty-connector
+    profiles: ["connector"]
+    environment:
+      XCC_HMAC_SECRET: ${XCC_HMAC_SECRET:-}   # debe coincidir con el hmac_secret de Comunicaciones
+      XCC_REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+    volumes: ["xcc_data:/app/data"]
+    ports: ["127.0.0.1:8090:8090"]            # opcional: para el helper scripts/xcc.mjs
+    depends_on:
+      redis: { condition: service_started }
+    restart: unless-stopped
+
   # Reverse proxy: implementa la topología por dominios (LP / tenant / super-admin).
   # Dev en :8080 (XAMPP suele ocupar :80). Preserva Host -> el tenant se resuelve por subdominio.
   nginx:
@@ -119,3 +138,4 @@ services:
 
 volumes:
   pgdata:
+  xcc_data:   # credenciales de sesión del Connector (perfil "connector")
