@@ -134,7 +134,14 @@ lo exponen (campo con Ayuda, validado).
 `nginx.xcc.conf.example` (TLS + `/metrics` restringido + upstream con hash por `connection_id`).
 **Decisión DEC-008:** el XCC va en el **mismo CD** que el principal pero como **servicio opcional
 (opt-in)**; en prod puede no levantarse y su ausencia no afecta al principal (master switch + failover).
-**Falta solo provisionar en un host** (mismo bloqueo que el CD del principal: no hay destino decidido).
+**Verificado end-to-end en host local (staging, 2026-07-13):** `docker compose -f docker-compose.prod.yml
+up` → connector + redis healthy; arranque con nonce+ownership en Redis; contrato HMAC vivo
+(unsigned→401, firmado→200, replay→401, `/metrics` con token). **Interop bidireccional**: main→XCC
+(`ConnectorProvider` firma OK → XCC responde 409 por sesión no escaneada) y XCC→webhook del principal
+(endpoint vivo, exige HMAC → 401). El `ConfiguracionConnector` del dev quedó apuntando al XCC local
+(`host.docker.internal:8090`, master switch ON) — no afecta a los tenants salvo que agreguen `xcc` a su
+orden de proveedores. **Falta solo provisionar en un host de producción** (mismo bloqueo que el CD del
+principal). Para stop: `docker compose -f docker-compose.prod.yml down` en `xenty-connector`.
 
 **Verificación:**
 - **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
