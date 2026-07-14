@@ -33,6 +33,34 @@ class EmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         serializer.validated_data["proveedor"] = self.request.user
         super().perform_create(serializer)
 
+    @action(detail=False, methods=["get"])
+    def plantilla(self, request):
+        """Descarga la plantilla .xlsx para importar (mismos encabezados que lee ``importar``)."""
+        from io import BytesIO
+
+        from django.http import HttpResponse
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Empleados"
+        # Fila 1 = encabezados: DEBE coincidir con el orden que consume ``importar`` (nombre, email, telefono).
+        ws.append(["nombre", "email", "telefono"])
+        # Fila de ejemplo para que el usuario entienda el formato esperado (email obligatorio; 10 dígitos).
+        ws.append(["Juan Pérez López", "juan.perez@ejemplo.com", "5512345678"])
+        ws.column_dimensions["A"].width = 28
+        ws.column_dimensions["B"].width = 32
+        ws.column_dimensions["C"].width = 16
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        resp = HttpResponse(
+            buffer.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        resp["Content-Disposition"] = 'attachment; filename="plantilla-empleados.xlsx"'
+        return resp
+
     @action(detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser])
     def importar(self, request):
         """Importa empleados desde un .xlsx (columnas: nombre, email, telefono). Idempotente por email."""

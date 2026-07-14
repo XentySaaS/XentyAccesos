@@ -69,6 +69,7 @@ export default function Empleados() {
 
   // ── Importar ───────────────────────────────────────────────
   const [importando,   setImportando]   = useState(false);
+  const [descargandoPlantilla, setDescargandoPlantilla] = useState(false);
   const [importResult, setImportResult] = useState<{ creados: number; actualizados: number; omitidos?: number } | null>(null);
   const [globalError,  setGlobalError]  = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -188,6 +189,21 @@ export default function Empleados() {
     } finally { setSubiendo(false); }
   }
 
+  // ── Descargar plantilla ────────────────────────────────────
+  const descargarPlantilla = async () => {
+    setDescargandoPlantilla(true);
+    try {
+      const r = await api.get("/api/empleados/plantilla/", { responseType: "blob" });
+      const url = URL.createObjectURL(r.data);
+      const a = document.createElement("a");
+      a.href = url; a.download = "plantilla-empleados.xlsx";
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    } catch {
+      setGlobalError("No se pudo descargar la plantilla.");
+    } finally { setDescargandoPlantilla(false); }
+  };
+
   // ── Importar Excel ─────────────────────────────────────────
   const importarXlsx = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -217,6 +233,13 @@ export default function Empleados() {
           <p className="mt-0.5 text-sm text-slate-500">Plantilla de tu empresa para asignar a eventos.</p>
         </div>
         <div className="flex gap-2">
+          <button onClick={descargarPlantilla} disabled={descargandoPlantilla}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+            </svg>
+            {descargandoPlantilla ? "Descargando…" : "Descargar plantilla"}
+          </button>
           <label className={`cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 ${importando ? "opacity-50" : ""}`}>
             {importando ? "Importando…" : "Importar Excel"}
             <input ref={fileRef} type="file" accept=".xlsx" className="hidden" onChange={importarXlsx} />
@@ -227,6 +250,22 @@ export default function Empleados() {
             Nuevo empleado
           </button>
         </div>
+      </div>
+
+      {/* Nota de formato del importador: qué columnas espera el .xlsx y reglas de deduplicación. */}
+      <div className="mb-4 flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+        <svg className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p>
+          El Excel debe tener en la <strong>primera fila</strong> los encabezados{" "}
+          <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">nombre</code>,{" "}
+          <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">email</code> y{" "}
+          <code className="rounded bg-white px-1 py-0.5 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">telefono</code>{" "}
+          (en ese orden), y los empleados desde la segunda fila. El <strong>email es obligatorio</strong> y se usa como llave: las
+          filas sin correo se omiten y, si el correo ya existe en tu empresa, se actualizan el nombre y el teléfono en vez de
+          duplicar. Descarga la plantilla para partir del formato correcto.
+        </p>
       </div>
 
       {globalError && (
