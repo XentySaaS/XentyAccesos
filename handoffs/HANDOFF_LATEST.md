@@ -161,10 +161,19 @@ normal lo ignora. En local la URL base en *Comunicaciones* es **`http://connecto
 `host.docker.internal`). Requiere `XCC_HMAC_SECRET` en el `.env` del principal (= hmac_secret de
 *Comunicaciones*). Verificado: proxy POST → 201 por la red interna.
 
-**Dos gotchas de dev resueltos hoy:** (1) la URL base NO puede ser `127.0.0.1`/`localhost` (dentro del
+**Fix de envío — validación de número** (connector `a2fecbf`): antes se enviaba a ciegas y un número
+sin lada/inexistente devolvía 202 "sent" pero no llegaba (falso éxito en el ledger). Ahora
+`resolverDestino()` consulta `onWhatsApp` antes de enviar: no registrado → **422** (ledger ok=False,
+fallo visible); registrado → usa el JID canónico (normaliza formato MX). **Los teléfonos deben ir con
+lada de país** (52 + 10 dígitos). Diagnóstico del caso: una cita con un asistente de 10 dígitos sin
+lada → el connector la aceptó pero WhatsApp no la entregó.
+
+**Tres gotchas de dev resueltos hoy:** (1) la URL base NO puede ser `127.0.0.1`/`localhost` (dentro del
 contenedor apunta al backend, no al XCC) — con el perfil es `http://connector:8090`. (2) el `backend`/
-`superadmin-backend` corren con `runserver --noreload`: **tras agregar rutas/vistas hay que
-`docker compose restart backend superadmin-backend`** o la UI da 404 aunque el código esté bien.
+`superadmin-backend` corren con `runserver --noreload`: **tras agregar rutas/vistas hay que reiniciar**
+esos servicios **y también nginx** (cachea la IP del upstream al arrancar; si reinicias los backends y
+no nginx, la UI da 404/502 — p. ej. "no me deja entrar al tenant"). Comando:
+`docker compose restart backend superadmin-backend nginx`.
 
 **Verificación:**
 - **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
