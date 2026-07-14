@@ -13,11 +13,14 @@ from django.contrib.contenttypes.models import ContentType
 from rest_framework import serializers
 
 from apps.empleados.models import Empleado
+from common.phone import TelefonoField
 
 from .models import AsistenteCita, Cita, Contacto
 
 
 class ContactoSerializer(serializers.ModelSerializer):
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Contacto
         fields = ["id", "nombre", "email", "telefono"]
@@ -31,15 +34,14 @@ class AsistenteCitaInputSerializer(serializers.Serializer):
 
     nombre = serializers.CharField(max_length=200)
     email = serializers.EmailField(required=False, allow_null=True, allow_blank=True)
-    telefono = serializers.CharField(
-        max_length=30, required=False, allow_null=True, allow_blank=True
-    )
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
     persona_id = serializers.IntegerField(required=False, allow_null=True)
     tipo = serializers.IntegerField(default=AsistenteCita.Tipo.CONTACTO)
 
 
 class AsistenteCitaSerializer(serializers.ModelSerializer):
     persona_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = AsistenteCita

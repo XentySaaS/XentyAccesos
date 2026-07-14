@@ -4,24 +4,31 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from common.phone import TelefonoField
 from common.validators import validar_archivo
 
 from .models import Acceso, AreaAutorizada, Entrada, Protocolo, Recinto, Ubicacion, Zona
 
 
 class RecintoSerializer(serializers.ModelSerializer):
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Recinto
         fields = ["id", "nombre", "descripcion", "telefono", "codigo"]
 
 
 class ZonaSerializer(serializers.ModelSerializer):
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Zona
         fields = ["id", "recinto", "nombre", "descripcion", "telefono"]
 
 
 class AccesoSerializer(serializers.ModelSerializer):
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Acceso
         fields = ["id", "recinto", "nombre", "descripcion", "telefono"]

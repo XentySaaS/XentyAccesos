@@ -6,6 +6,8 @@ import secrets
 
 from rest_framework import serializers
 
+from common.phone import TelefonoField
+
 from .models import PermisoUsuario, Usuario
 
 
@@ -34,6 +36,7 @@ class UsuarioCreateSerializer(serializers.ModelSerializer):
     """Crea un usuario nuevo. La contraseña se auto-genera si no se provee."""
 
     password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Usuario
@@ -67,6 +70,8 @@ class PermisoUsuarioSerializer(serializers.ModelSerializer):
 
 
 class UsuarioUpdateSerializer(serializers.ModelSerializer):
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
+
     class Meta:
         model = Usuario
         fields = ["nombre", "rol", "recinto", "telefono", "activo"]

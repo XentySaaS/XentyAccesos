@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from django.conf import settings
 
+from common.phone import formato_whatsapp_mx
+
 from . import router
 from .models import DestinatarioMensaje, Mensaje
 
@@ -17,10 +19,12 @@ def notificar_whatsapp(telefono: str | None, cuerpo: str, archivo=None) -> bool:
     """Notificación por WhatsApp si el destinatario tiene teléfono (best-effort, punto único).
 
     Regla del producto: toda notificación (usuario/proveedor/empleado/asistente) se manda también
-    por WhatsApp cuando la persona tiene número. Delega en el Router (nunca lanza); devuelve True si
+    por WhatsApp cuando la persona tiene número. El teléfono se guarda a 10 dígitos (sin lada); aquí
+    se antepone la lada mexicana para el destino (punto único, ``common.phone``). Un número inválido
+    (no 10 dígitos) se omite en vez de mandarse. Delega en el Router (nunca lanza); devuelve True si
     el envío fue aceptado por algún proveedor.
     """
-    tel = (telefono or "").strip()
+    tel = formato_whatsapp_mx(telefono)
     if not tel:
         return False
     return router.enviar(tel, cuerpo, archivo, reintentos=1, registrar=True).ok
@@ -72,17 +76,17 @@ def procesar_envio(mensaje_id: int) -> dict:
     enviados = fallidos = 0
     for i, dest in enumerate(destinatarios, start=1):
         # El ledger de campaña es DestinatarioMensaje; no duplicar en RegistroEnvio (registrar=False).
-        res = router.enviar(
-            dest.empleado.telefono or "", mensaje.cuerpo, archivo_url, registrar=False
-        )
-        if res.ok:
+        # El teléfono va con lada mexicana; sin 10 dígitos válidos se marca fallido sin llamar al Router.
+        tel = formato_whatsapp_mx(dest.empleado.telefono)
+        res = router.enviar(tel, mensaje.cuerpo, archivo_url, registrar=False) if tel else None
+        if res and res.ok:
             dest.estado = DestinatarioMensaje.Estado.ENVIADO
             enviados += 1
         else:
             dest.estado = DestinatarioMensaje.Estado.FALLIDO
             fallidos += 1
-        dest.external_id = res.external_id
-        dest.proveedor = res.proveedor
+        dest.external_id = res.external_id if res else ""
+        dest.proveedor = res.proveedor if res else ""
         dest.save(update_fields=["estado", "external_id", "proveedor"])
         mensaje.progreso = round(i / total * 100, 2)
         mensaje.save(update_fields=["progreso"])

@@ -28,6 +28,10 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > en Redis, repo remoto, métricas Prometheus, webhook de estados, routing sticky / propiedad de sesión,
 > `connection_id` por tenant y artefactos de deploy. Solo falta provisionar el XCC en un host. Ver la
 > sección "Connector (XCC) — F-E" abajo.
+>
+> **Continuación 2 (misma fecha):** **estandarización de teléfonos** — el formato canónico pasa a **10
+> dígitos sin lada** (Xenty solo opera en México); la lada mexicana se antepone solo al enviar por
+> WhatsApp (`common/phone.py`, punto único). Ver la sección "Estandarización de teléfonos" abajo.
 
 ---
 
@@ -190,6 +194,49 @@ docker run --rm -v "$PWD:/app" -w /app node:20-slim sh -c "npm install && npm te
 # integración Redis: red docker + redis:7-alpine + -e XCC_TEST_REDIS_URL=redis://<host>:6379
 cp .env.example .env   # define XCC_HMAC_SECRET; docker compose up levanta connector + redis
 ```
+
+## Estandarización de teléfonos — 10 dígitos (lada solo al enviar) — continuación 2026-07-13
+
+**Motivo (pedido del usuario):** Xenty solo opera en México → no tiene sentido pedir `52 + 10 dígitos`
+en la captura. **Formato canónico almacenado = 10 dígitos, sin lada.** La lada mexicana se antepone
+**únicamente al enviar por WhatsApp**. Esto **supera** la guía del fix anterior ("los teléfonos deben
+ir con lada"): ahora el usuario captura 10 dígitos y el sistema pone la lada solo.
+
+**Punto único — `backend/common/phone.py` (nuevo):**
+- `normalizar_telefono(v)` → 10 dígitos canónicos; quita lada (`52`/`52 1`), espacios, `+`, símbolos;
+  `""` si no quedan exactamente 10 dígitos (inválido/incompleto).
+- `formato_whatsapp_mx(v)` → `521` + 10 dígitos (JID canónico de WhatsApp MX; UltraMsg y el Connector
+  lo aceptan, el XCC lo resuelve con `onWhatsApp`). Idempotente. `""` si el número es inválido.
+  **Para cambiar el formato de envío (p. ej. quitar el `1` de móvil), este es el único sitio.**
+- `TelefonoField(serializers.CharField)` → normaliza en `to_internal_value`; rechaza con error claro
+  ("Ingresa un teléfono de 10 dígitos (sin lada)"); deja pasar vacío/nulo. No fija `max_length` (para
+  no rechazar la entrada cruda con lada/espacios antes de normalizar).
+
+**Entrada (normaliza + valida) — `TelefonoField` aplicado en los serializers:** `citas` (Contacto,
+AsistenteCitaInput, AsistenteCita), `proveedores` (Proveedor.telefono, Onboarding.telefono_empresa +
+whatsapp), `accounts` (UsuarioCreate + UsuarioUpdate), `recintos` (Recinto/Zona/Acceso), `empleados`
+(Empleado). Todo lo que capture teléfono se guarda a 10 dígitos.
+
+**Salida (antepone lada) — punto de envío:** `apps/mensajeria/services.py::notificar_whatsapp` (único
+helper de notificación) y `procesar_envio` (campañas) llaman `formato_whatsapp_mx`. Un número inválido
+se **omite** (no se manda un destino imposible → no más falsos "enviado"). También se arregló
+`documentos/services.py`: llamaba a un `obtener_whatsapp()` **inexistente** (silenciado por try/except,
+nunca enviaba) → ahora usa `notificar_whatsapp`.
+
+**Frontend (4 SPA, campos de teléfono):** placeholder `5512345678`, ayuda "10 dígitos, sin lada. Ej.
+5512345678", `onChange` que limpia con `replace(/\D/g,"").slice(0,10)`, `maxLength={10}`,
+`inputMode="numeric"`. En `Onboarding.tsx` (proveedores) se añadió validación de 10 dígitos a
+`telefono_empresa` y `whatsapp`. NO se tocaron los `replace(/\D/g,"")` de OTP/TOTP/NSS.
+
+**NO se cambió el ancho de columna** (`telefono` sigue `CharField(max_length=30)`): 10 dígitos caben de
+sobra y evita migraciones en 6 apps × schemas de tenant. Los datos legados con lada se normalizan al
+re-guardarse, y el envío los normaliza igual (defensa en profundidad). **Sin migraciones.**
+
+**Verificación:** `test_phone.py` (14: normalizar/formato/`TelefonoField`/`notificar_whatsapp` antepone
+lada y omite inválidos). Suite sin aislamiento **83 verdes**; `ruff` limpio. Las SPAs `acceso` y
+`proveedores` compilan (`tsc + vite build`).
+
+---
 
 ## Contexto NO obvio (IMPORTANTE)
 

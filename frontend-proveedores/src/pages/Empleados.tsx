@@ -327,8 +327,8 @@ export default function Empleados() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono</label>
-                <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })}
-                  className={inputCls} placeholder="55 1234 5678" />
+                <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                  className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">
@@ -379,8 +379,8 @@ export default function Empleados() {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono</label>
-                <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value })}
-                  className={inputCls} placeholder="55 1234 5678" />
+                <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                  className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
               </div>
             </div>
             <div className="mt-5 flex justify-end gap-2">

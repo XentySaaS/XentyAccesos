@@ -102,9 +102,9 @@ def _avisar_documento(documento, *, verificado: bool) -> None:
     telefono = getattr(documento.empleado, "telefono", None) or getattr(cuenta, "telefono", None)
     if telefono:
         try:
-            from apps.mensajeria.services import obtener_whatsapp
+            from apps.mensajeria.services import notificar_whatsapp
 
-            obtener_whatsapp().enviar(telefono, texto_plano)
+            notificar_whatsapp(telefono, texto_plano)
         except Exception as exc:  # noqa: BLE001
             logger.warning("WhatsApp de verificación no enviado: %s", exc)
 

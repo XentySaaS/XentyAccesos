@@ -6,6 +6,7 @@ import re
 
 from rest_framework import serializers
 
+from common.phone import TelefonoField
 from common.validators import rfc_valido, validar_archivo
 
 from .models import CuentaProveedor, Proveedor
@@ -25,6 +26,7 @@ class ProveedorSerializer(serializers.ModelSerializer):
     rfc = serializers.CharField(max_length=13)
     # El correo del responsable se usa para crear su cuenta de acceso: debe ser único.
     email_responsable = serializers.EmailField()
+    telefono = TelefonoField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Proveedor
@@ -101,7 +103,7 @@ class OnboardingProveedorSerializer(serializers.Serializer):
 
     # ── Paso 1: Empresa ─────────────────────────────────────────────────────
     email_empresa = serializers.EmailField(required=False, allow_blank=True)
-    telefono_empresa = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    telefono_empresa = TelefonoField(required=False, allow_blank=True)
     # REPSE y SUA son obligatorios: sin ellos no se puede validar al proveedor (cumplimiento laboral).
     repse = serializers.FileField(required=True, allow_null=False)
     sua = serializers.FileField(required=True, allow_null=False)
@@ -113,7 +115,7 @@ class OnboardingProveedorSerializer(serializers.Serializer):
     email = serializers.EmailField()  # login de CuentaProveedor
     curp = serializers.CharField(max_length=18, required=False, allow_blank=True)
     nss = serializers.CharField(max_length=11, required=False, allow_blank=True)
-    whatsapp = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    whatsapp = TelefonoField(required=False, allow_blank=True)
     file_ine = serializers.FileField(required=False, allow_null=True)
     foto = serializers.ImageField(required=False, allow_null=True)
 

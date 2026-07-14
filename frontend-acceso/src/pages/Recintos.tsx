@@ -174,9 +174,9 @@ export default function Recintos() {
                 <div>
                   <div className="mb-1 flex items-center gap-1.5">
                     <label htmlFor="rec-tel" className="text-xs font-semibold text-slate-600">Teléfono</label>
-                    <Ayuda>Teléfono de contacto del recinto (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                    <Ayuda>Teléfono de contacto del recinto (opcional). 10 dígitos, sin lada. Ej. 5512345678</Ayuda>
                   </div>
-                  <input id="rec-tel" value={telefono} onChange={e => setTelefono(e.target.value)} placeholder="+52 55…" className={inputCls} />
+                  <input id="rec-tel" value={telefono} onChange={e => setTelefono(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="5512345678" maxLength={10} inputMode="numeric" className={inputCls} />
                 </div>
               </div>
               <div>

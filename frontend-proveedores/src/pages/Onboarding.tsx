@@ -554,6 +554,7 @@ export default function Onboarding() {
       if (!form.nombre.trim())           e.nombre           = "Requerido";
       if (!form.razon_social.trim())     e.razon_social     = "Requerido";
       if (!form.telefono_empresa.trim()) e.telefono_empresa = "Requerido";
+      else if (!/^\d{10}$/.test(form.telefono_empresa)) e.telefono_empresa = "Debe tener 10 dígitos";
       if (form.rfc && !/^[A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3}$/i.test(form.rfc))
         e.rfc = "Formato inválido";
       if (!form.repse) e.repse = "Sube el documento REPSE";
@@ -568,6 +569,7 @@ export default function Onboarding() {
       if (form.curp && form.curp.length !== 18) e.curp = "Debe tener 18 caracteres";
       if (form.nss && !/^\d{11}$/.test(form.nss)) e.nss = "Debe ser 11 dígitos";
       if (!form.whatsapp.trim())    e.whatsapp    = "Requerido";
+      else if (!/^\d{10}$/.test(form.whatsapp)) e.whatsapp = "Debe tener 10 dígitos";
       if (!form.file_ine)           e.file_ine    = "Sube o toma foto del INE";
     }
     if (s === 3) {
@@ -767,9 +769,9 @@ export default function Onboarding() {
                   </label>
                   <label className="block">
                     <Lbl req>Teléfono</Lbl>
-                    <input value={form.telefono_empresa} placeholder="+52 55…"
+                    <input value={form.telefono_empresa} placeholder="5512345678" maxLength={10} inputMode="numeric"
                       className={inp(errs.telefono_empresa)}
-                      onChange={e => { set("telefono_empresa", e.target.value); clr("telefono_empresa"); }} />
+                      onChange={e => { set("telefono_empresa", e.target.value.replace(/\D/g, "").slice(0, 10)); clr("telefono_empresa"); }} />
                     <Err msg={errs.telefono_empresa} />
                   </label>
                 </div>
@@ -820,9 +822,9 @@ export default function Onboarding() {
                   </label>
                   <label className="block">
                     <Lbl req>WhatsApp</Lbl>
-                    <input value={form.whatsapp} placeholder="+52 55 1234 5678"
+                    <input value={form.whatsapp} placeholder="5512345678" maxLength={10} inputMode="numeric"
                       className={inp(errs.whatsapp)}
-                      onChange={e => { set("whatsapp", e.target.value); clr("whatsapp"); }} />
+                      onChange={e => { set("whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10)); clr("whatsapp"); }} />
                     <Err msg={errs.whatsapp} />
                   </label>
                 </div>

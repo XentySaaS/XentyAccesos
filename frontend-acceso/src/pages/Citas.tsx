@@ -725,12 +725,12 @@ export default function Citas() {
                       <div>
                         <div className="mb-1 flex items-center gap-1.5">
                           <label className="text-xs font-semibold text-slate-600">Teléfono</label>
-                          <Ayuda>Teléfono del invitado (opcional). Formato con lada, p. ej. +52 55 1234 5678.</Ayuda>
+                          <Ayuda>Teléfono del invitado (opcional). 10 dígitos, sin lada. Ej. 5512345678</Ayuda>
                         </div>
                         <input type="tel" value={inv.telefono}
-                          onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, telefono: e.target.value } : it))}
+                          onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) } : it))}
                           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                          placeholder="+52 55 …" />
+                          placeholder="5512345678" maxLength={10} inputMode="numeric" />
                       </div>
                     </div>
                   </div>
