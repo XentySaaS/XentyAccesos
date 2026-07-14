@@ -151,7 +151,7 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
         f"Hola {responsable}:\n\n"
         + "\n\n".join(p.replace("<strong>", "").replace("</strong>", "") for p in parrafos)
         + (f"\n\nIngrese aquí: {cta_url}" if cta_url else "")
-        + f"\n\n— {nombre_tenant} · Xenty Acceso"
+        + f"\n\n— {nombre_tenant}"
     )
 
     # Adjuntos (correo = tuplas; WhatsApp = AdjuntoWhatsApp).
@@ -244,7 +244,7 @@ def notificar_invitacion_cancelada(ep, *, nombre_tenant: str) -> None:
     ]
     texto_plano = (
         f"Tu invitación al evento «{ep.evento.nombre}» de {nombre_tenant} ha sido cancelada.\n\n"
-        f"— {nombre_tenant} · Xenty Acceso"
+        f"— {nombre_tenant}"
     )
     html = construir_correo(
         nombre_tenant=nombre_tenant,
@@ -322,7 +322,7 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
             else ""
         )
         + "\nSu gafete es personal e intransferible."
-        f"\n\n— {nombre_tenant} · Xenty Acceso"
+        f"\n\n— {nombre_tenant}"
     )
 
     # Gafete del empleado (best-effort).
@@ -427,16 +427,16 @@ def recalcular_status_asignaciones(empleado) -> int:
     Cuando una asignación transiciona de PENDIENTES → CUMPLE, notifica al empleado (correo + WA).
     Devuelve cuántas asignaciones cambiaron de estado.
     """
-    from django.db import connection
-
     from apps.documentos.services import cumple_requisitos
+    from common.tenant import nombre_tenant_actual
 
     from .models import EmpleadoEventoProveedor, EventoGrupoDocumentos
 
     asignaciones = EmpleadoEventoProveedor.objects.filter(empleado=empleado).select_related(
         "evento_proveedor"
     )
-    nombre_tenant = connection.schema_name
+    # Nombre display del tenant (quien invita), no el schema técnico «museos».
+    nombre_tenant = nombre_tenant_actual()
     cambiadas = 0
     for asignacion in asignaciones:
         reqs = list(
@@ -526,7 +526,7 @@ def notificar_evento_cancelado(evento, *, nombre_tenant: str) -> int:
     ]
     texto_plano = (
         f"El evento «{evento.nombre}» de {nombre_tenant} ha sido cancelado.\n\n"
-        f"— {nombre_tenant} · Xenty Acceso"
+        f"— {nombre_tenant}"
     )
     invitaciones = EventoProveedor.objects.filter(evento=evento).select_related("proveedor")
     n = 0

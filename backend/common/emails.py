@@ -20,7 +20,7 @@ def _plano(saludo: str, parrafos: list[str], *, url: str | None, nombre_tenant: 
     """Versión en texto plano (para el fallback del correo y el cuerpo de WhatsApp)."""
     cuerpo = "\n\n".join(_STRONG.sub("", p) for p in parrafos)
     enlace = f"\n\n{url}" if url else ""
-    return f"{saludo}\n\n{cuerpo}{enlace}\n\n— {nombre_tenant} · Xenty Acceso"
+    return f"{saludo}\n\n{cuerpo}{enlace}\n\n— {nombre_tenant}"
 
 
 def _proveedores_url(base_url: str | None = None) -> str:

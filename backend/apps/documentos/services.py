@@ -47,16 +47,16 @@ def _avisar_documento(documento, *, verificado: bool) -> None:
     """Best-effort: avisa al proveedor (correo HTML + WhatsApp) el resultado de la verificación."""
     import logging
 
-    from django.db import connection
-
     from common.email_builder import construir_correo, enviar_correo_html
+    from common.tenant import nombre_tenant_actual
 
     logger = logging.getLogger(__name__)
     cuenta = getattr(documento.empleado, "proveedor", None)
     if not cuenta:
         return
 
-    nombre_tenant = connection.schema_name
+    # Nombre display del tenant (quien notifica), no el schema técnico.
+    nombre_tenant = nombre_tenant_actual()
     estado_txt = "verificado" if verificado else "rechazado"
     asunto = f"Documento {estado_txt} — {documento.tipo_documento}"
 

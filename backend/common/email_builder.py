@@ -31,7 +31,6 @@ funcionando; ese contenido se renderiza como cuerpo de texto bajo el hero.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
@@ -72,10 +71,6 @@ _LABEL = "rgba(255,255,255,0.28)"
 _FOOT = "rgba(255,255,255,0.20)"
 _FOOT_LOGO = "rgba(255,255,255,0.40)"
 _FONT = "'Inter', Arial, Helvetica, sans-serif"
-_MESES = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-]  # fmt: skip
 
 
 # ─── Íconos SVG por tipo (28×28, sin dependencias externas) ──────────────────
@@ -207,11 +202,6 @@ _SOLID = {
 }
 
 
-def _fecha_larga() -> str:
-    ahora = datetime.now()
-    return f"{ahora.day} de {_MESES[ahora.month - 1]}, {ahora.year}"
-
-
 # ─── Bloques (HTML por tablas) ───────────────────────────────────────────────
 def _marca() -> str:
     """Logo Xenty: imagen inline (CID) si el archivo existe; si no, ícono SVG + texto (fallback)."""
@@ -236,11 +226,14 @@ def _marca() -> str:
 
 
 def _header(nombre_tenant: str) -> str:
+    """Encabezado: **el tenant es el remitente visible** (izquierda, prominente); el logo Xenty
+    queda como marca de plataforma discreta (derecha). La atribución completa a Xenty vive en el pie.
+    """
     return f"""
     <tr><td style="background:{_BG_HEAD};padding:22px 36px;border-bottom:1px solid {_BD_HEAD};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td align="left" style="vertical-align:middle;">{_marca()}</td>
-        <td align="right" style="vertical-align:middle;font-size:10px;color:rgba(255,255,255,0.25);">{_fecha_larga()}</td>
+        <td align="left" style="vertical-align:middle;font-size:16px;font-weight:900;color:{_WHITE};letter-spacing:0.01em;">{nombre_tenant}</td>
+        <td align="right" style="vertical-align:middle;">{_marca()}</td>
       </tr></table>
     </td></tr>"""
 

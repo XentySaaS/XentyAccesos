@@ -81,7 +81,7 @@ def enviar_baja_asistente(cita, asistente) -> bool:
             f"Fue dado de baja de la cita «{ctx['nombre']}».\n\n"
             f"{_detalle_texto(ctx)}\n\n"
             "El gafete o invitación que haya recibido queda sin validez.\n"
-            f"\n— {ctx['tenant']} · Xenty Acceso"
+            f"\n— {ctx['tenant']}"
         )
         html = construir_correo(
             nombre_tenant=ctx["tenant"],
@@ -125,13 +125,10 @@ def _fmt_hora(cita) -> str:
 
 
 def _nombre_tenant(cita) -> str:
-    try:
-        from django_tenants.utils import get_tenant
+    """Nombre display del tenant (quien invita); p. ej. «3 Museos», no el schema «museos»."""
+    from common.tenant import nombre_tenant_actual
 
-        t = get_tenant(None)
-        return getattr(t, "company", None) or getattr(t, "nombre", "Xenty Accesos")
-    except Exception:  # noqa: BLE001
-        return "Xenty Accesos"
+    return nombre_tenant_actual()
 
 
 def _contexto(cita) -> dict:
@@ -350,7 +347,7 @@ def _notificar_asistentes(cita, asistentes=None) -> int:
                 if vigencia_hasta
                 else "\nSu acceso es personal e intransferible."
             )
-            + f"\n\n— {ctx['tenant']} · Xenty Acceso"
+            + f"\n\n— {ctx['tenant']}"
         )
 
         con_correo = bool(asistente.email)
@@ -419,7 +416,7 @@ def _notificar_proveedor(cita) -> None:
         + (f"👥 Personas permitidas: {cita.limite}\n" if cita.limite else "")
         + "\nAsigne a su personal desde el panel de proveedores; cada persona recibirá su gafete "
         "de acceso.\n"
-        f"\n— {ctx['tenant']} · Xenty Acceso"
+        f"\n— {ctx['tenant']}"
     )
 
     html = construir_correo(
@@ -463,7 +460,7 @@ def _cancelar_asistentes(cita) -> int:
             f"{_detalle_texto(ctx)}\n\n"
             "El gafete o invitación que haya recibido queda sin validez. "
             "Si se reprograma, recibirá una nueva invitación.\n"
-            f"\n— {ctx['tenant']} · Xenty Acceso"
+            f"\n— {ctx['tenant']}"
         )
         html = construir_correo(
             nombre_tenant=ctx["tenant"],
@@ -510,7 +507,7 @@ def _cancelar_proveedor(cita) -> None:
         f"La cita «{ctx['nombre']}» programada para su empresa ha sido CANCELADA.\n\n"
         f"{_detalle_texto(ctx)}\n\n"
         "Los gafetes emitidos quedan sin validez. Si se reprograma, se le notificará.\n"
-        f"\n— {ctx['tenant']} · Xenty Acceso"
+        f"\n— {ctx['tenant']}"
     )
     html = construir_correo(
         nombre_tenant=ctx["tenant"],

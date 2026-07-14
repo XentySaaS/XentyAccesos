@@ -47,6 +47,18 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 8 (2026-07-14):** **el tenant es quien invita** en las notificaciones (no "Xenty
+> Accesos"). (a) `email_builder._header` ahora muestra el **nombre del tenant** como remitente
+> (izquierda, prominente) y el logo Xenty pasa a marca de plataforma discreta (derecha); la atribución
+> a Xenty queda solo en el pie. (b) Las **firmas** de citas/eventos/proveedores pasan de `— {tenant} ·
+> Xenty Acceso` a `— {tenant}`. (c) Helper canónico `common/tenant.py::nombre_tenant_actual()` (resuelve
+> el nombre display desde `connection.tenant`, o por `schema_name` bajo `schema_context`) → se corrigen
+> dos **bugs** donde se usaba el schema técnico («museos») en vez del display («3 Museos»):
+> `documentos._avisar_documento` y `eventos.recalcular_status_asignaciones`. `citas._nombre_tenant`
+> también usa el helper. Limpieza: se quitó `_fecha_larga`/`_MESES`/import `datetime` sin uso en
+> email_builder. Tests `tests/test_marca_tenant.py`. Los "Xenty Accesos" que quedan son **footer legal**
+> (atribución de plataforma, correcto).
+>
 > **Continuación 7 (2026-07-14):** **buscador del padrón 69-B en Cumplimiento** (estilo visor fiscal).
 > Se activó `SearchFilter` en `SatEfoViewSet` (`filter_backends` explícito + `search_fields=["rfc",
 > "nombre"]`; el default global solo trae DjangoFilterBackend, así que el `search_fields` previo no
