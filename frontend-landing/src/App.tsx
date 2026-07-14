@@ -44,7 +44,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
-        <span className="text-lg font-bold">Xenty <span className="text-emerald-400">Acceso</span></span>
+        <img src="/xenty-white.png" alt="Xenty Accesos" className="h-8 w-auto" />
         <a href="#crear" className="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium hover:bg-emerald-400">
           Crear cuenta
         </a>
@@ -122,7 +122,7 @@ export default function App() {
       </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-sm text-slate-400">
-        © Xenty SaaS — Xenty Acceso
+        © Xenty SaaS — Xenty Accesos
       </footer>
     </div>
   );

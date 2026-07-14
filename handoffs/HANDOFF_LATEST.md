@@ -47,6 +47,22 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 9 (2026-07-14):** **branding «Xenty Accesos»** en la instalación y los correos.
+> Los logos oficiales viven en el Drive (carpeta Xenty, varias verticales) pero **no son accesibles**
+> desde la cuenta conectada (link-shared por un tercero; `file/d/1YQQ...` da "not found"). Se recreó
+> el lockup **reusando el wordmark real de Xenty** (`xenty.png` 178×50) y **añadiendo «Accesos»** con
+> Pillow + fuente **Inter** (disponible en el contenedor backend, la usan los gafetes) → lockup 178×62,
+> versión negra (`xenty.png`) y blanca (`xenty-white.png`). Distribuidos a `public/` de las **4 SPAs**
+> + `backend/static/xenty-white.png` (mismos nombres → sin tocar los `<img src>` existentes). **Favicon**
+> nuevo: ícono blanco sobre cuadrado azul #005893 (estilo app icon) → `public/favicon.png` + `<link>`
+> en las 4 `index.html` (Vite reescribe el base: proveedores → `/proveedores/favicon.png`). **Títulos**
+> a "Xenty Accesos". **Landing**: header pasa de texto a logo blanco; footer "Acceso"→"Accesos"; se creó
+> `frontend-landing/public/`. **Email**: el logo nuevo (con «Accesos») fluye por el CID existente; se
+> ajustaron las dimensiones del `<img>` en `email_builder._marca` (107×30 → 92×32) por el nuevo aspecto.
+> ⚠️ **Pendiente**: cambiar por los **archivos vectoriales oficiales** cuando estén accesibles (los
+> actuales son recreación fiel a baja resolución, 178px). Paleta de marca (#005893 / #593398 / #1d2f5a /
+> #000) documentada; **re-tematizar colores de las SPAs queda como follow-up** (el pedido era el logo).
+>
 > **Continuación 8 (2026-07-14):** **el tenant es quien invita** en las notificaciones (no "Xenty
 > Accesos"). (a) `email_builder._header` ahora muestra el **nombre del tenant** como remitente
 > (izquierda, prominente) y el logo Xenty pasa a marca de plataforma discreta (derecha); la atribución

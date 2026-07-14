@@ -207,8 +207,8 @@ def _marca() -> str:
     """Logo Xenty: imagen inline (CID) si el archivo existe; si no, ícono SVG + texto (fallback)."""
     if _logo_bytes() is not None:
         return (
-            f'<img src="cid:{_LOGO_CID}" width="107" height="30" alt="Xenty Accesos" '
-            'style="display:block;border:0;outline:none;text-decoration:none;height:30px;width:107px;" />'
+            f'<img src="cid:{_LOGO_CID}" width="92" height="32" alt="Xenty Accesos" '
+            'style="display:block;border:0;outline:none;text-decoration:none;height:32px;width:92px;" />'
         )
     return (
         '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>'
