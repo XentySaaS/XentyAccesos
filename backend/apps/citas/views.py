@@ -23,6 +23,7 @@ from common.validators import validar_archivo
 
 from .models import AsistenteCita, Cita, Contacto, EmpleadoCita
 from .serializers import (
+    AsistenteCitaInputSerializer,
     AsistenteCitaSerializer,
     CitaDetailSerializer,
     CitaListSerializer,
@@ -103,9 +104,39 @@ class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
             and EmpleadoCita.objects.filter(cita=instance).exists()
         ):
             raise PermissionDenied("La cita de proveedor tiene empleados asignados.")
-        if instance.tipo == Cita.Tipo.DIRECTA and instance.asistentes.exists():
-            raise PermissionDenied("La cita directa tiene asistentes registrados.")
+        # Los asistentes dados de baja (estado=CANCELADO) no bloquean el borrado de una cita vacía.
+        if (
+            instance.tipo == Cita.Tipo.DIRECTA
+            and instance.asistentes.exclude(estado=AsistenteCita.Estado.CANCELADO).exists()
+        ):
+            raise PermissionDenied("La cita directa tiene asistentes activos.")
         super().perform_destroy(instance)
+
+    @action(detail=True, methods=["post"], url_path="agregar-asistentes")
+    def agregar_asistentes(self, request, pk=None):
+        """Agrega invitados a una cita existente y envía la invitación **solo a los nuevos**."""
+        cita = self.get_object()
+        if cita.tipo_cita == Cita.TipoCita.WALK_IN:
+            return Response(
+                {"detail": "Las citas walk-in no admiten invitados."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if cita.estado == Cita.Estado.CANCELADA:
+            return Response(
+                {"detail": "No se pueden agregar invitados a una cita cancelada."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        entrada = AsistenteCitaInputSerializer(data=request.data.get("asistentes", []), many=True)
+        entrada.is_valid(raise_exception=True)
+        if not entrada.validated_data:
+            return Response(
+                {"detail": "No se enviaron invitados."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        nuevos = CitaSerializer._guardar_asistentes(cita, entrada.validated_data)
+        from .services import enviar_invitacion_asistentes
+
+        enviar_invitacion_asistentes(cita, nuevos)
+        return Response({"agregados": len(nuevos)}, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=["get"], url_path="buscar-personas")
     def buscar_personas(self, request):
@@ -201,6 +232,29 @@ class AsistenteCitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     serializer_class = AsistenteCitaSerializer
     permission_classes = _PERMS
     filterset_fields = ["cita", "tipo", "estado"]
+
+    def perform_destroy(self, instance):
+        """Baja lógica: el asistente se marca CANCELADO (el escáner ya lo bloquea), no se borra.
+
+        Se audita la baja y se avisa al asistente. Reactivar = ``PATCH {estado: 0}``.
+        """
+        if instance.estado == AsistenteCita.Estado.CANCELADO:
+            return
+        from apps.config.models import HistorialCambio
+        from apps.config.services import registrar
+
+        instance.estado = AsistenteCita.Estado.CANCELADO
+        instance.save(update_fields=["estado"])
+        registrar(
+            f"Dio de baja al asistente «{instance.nombre}» de la cita id={instance.cita_id}",
+            usuario=self.request.user,
+            accion=HistorialCambio.Accion.ELIMINADO,
+            modelo="AsistenteCita",
+            modelo_id=instance.pk,
+        )
+        from .services import enviar_baja_asistente
+
+        enviar_baja_asistente(instance.cita, instance)
 
     @action(
         detail=True,

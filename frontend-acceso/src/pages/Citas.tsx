@@ -161,6 +161,11 @@ export default function Citas() {
   const [reenviando,    setReenviando]    = useState<number | null>(null);
   const [reenviandoMsg, setReenviandoMsg] = useState<{ id: number; tipo: "ok" | "err"; texto: string } | null>(null);
 
+  /* agregar / dar de baja invitados desde el detalle */
+  const [agregando,  setAgregando]  = useState(false);
+  const [agregarMsg, setAgregarMsg] = useState("");
+  const [asistBusy,  setAsistBusy]  = useState<number | null>(null);
+
   /* autocomplete invitados */
   const [, setQuery]    = useState("");
   const [sugs,     setSugs]     = useState<Persona[]>([]);
@@ -391,6 +396,138 @@ export default function Citas() {
       setReenviando(null);
     }
   };
+
+  /* ── Refrescar detalle abierto (tras alta/baja de asistentes) ─────── */
+  const refrescarDetalle = async (id: number) => {
+    const r = await api.get(`/api/citas/${id}/`);
+    setDetalle(r.data);
+    cargar(); // actualiza el total de asistentes en la lista
+  };
+
+  /* ── Agregar invitados a una cita existente ───────────────────────── */
+  const agregarInvitados = async () => {
+    if (!detalle) return;
+    const asistentes = invitados.filter(i => i.nombre.trim());
+    if (asistentes.length === 0) { setAgregarMsg("Escribe al menos un invitado."); return; }
+    setAgregando(true); setAgregarMsg("");
+    try {
+      const res = await api.post(`/api/citas/${detalle.id}/agregar-asistentes/`, { asistentes });
+      const n = (res.data as { agregados?: number }).agregados ?? asistentes.length;
+      setInvitados([{ ...INVITADO_VACIO }]);
+      await refrescarDetalle(detalle.id);
+      setAgregarMsg(`${n} invitado(s) agregado(s). Se les envió la invitación.`);
+      setTimeout(() => setAgregarMsg(""), 4000);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setAgregarMsg(e.response?.data?.detail ?? "No se pudieron agregar los invitados.");
+    } finally {
+      setAgregando(false);
+    }
+  };
+
+  /* ── Dar de baja / reactivar un asistente (baja lógica) ───────────── */
+  const darDeBajaAsistente = async (a: Asistente) => {
+    if (!detalle) return;
+    if (!window.confirm(`¿Dar de baja a ${a.nombre}? Su gafete quedará sin validez en el acceso.`)) return;
+    setAsistBusy(a.id);
+    try {
+      await api.delete(`/api/asistentes/${a.id}/`);
+      await refrescarDetalle(detalle.id);
+    } catch {
+      alert("No se pudo dar de baja al invitado.");
+    } finally {
+      setAsistBusy(null);
+    }
+  };
+
+  const reactivarAsistente = async (a: Asistente) => {
+    if (!detalle) return;
+    setAsistBusy(a.id);
+    try {
+      await api.patch(`/api/asistentes/${a.id}/`, { estado: 0 });
+      await refrescarDetalle(detalle.id);
+    } catch {
+      alert("No se pudo reactivar al invitado.");
+    } finally {
+      setAsistBusy(null);
+    }
+  };
+
+  /* ── Filas de invitados con autocomplete (reusadas en crear y detalle) ── */
+  const invitadoRows = () => (
+    <>
+      {invitados.map((inv, idx) => (
+        <div key={idx} className="col-span-2 rounded-xl border border-slate-200 p-3 relative">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500">Invitado {idx + 1}</span>
+            {invitados.length > 1 && (
+              <button type="button" onClick={() => setInvitados(is => is.filter((_, i) => i !== idx))}
+                className="text-xs text-red-400 hover:text-red-600">Quitar</button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative col-span-2">
+              <div className="mb-1 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Nombre *</label>
+                <Ayuda>Nombre del invitado. Al escribir se buscan empleados y contactos ya registrados; selecciónalo para vincularlo y reusar sus datos.</Ayuda>
+              </div>
+              <input required value={inv.nombre}
+                onChange={e => {
+                  const v = e.target.value;
+                  setInvitados(is => is.map((it, i) => i === idx ? { ...it, nombre: v, persona_id: null } : it));
+                  buscarPersonas(v, idx);
+                }}
+                onBlur={() => setTimeout(() => { if (sugIdx === idx) setSugs([]); }, 200)}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                placeholder="Buscar empleado o contacto…" />
+              {sugs.length > 0 && sugIdx === idx && (
+                <ul className="absolute z-20 left-0 right-0 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg max-h-40 overflow-y-auto">
+                  {sugs.map((s, si) => (
+                    <li key={si}>
+                      <button type="button" onMouseDown={() => seleccionarPersona(s)}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
+                        <span className="font-medium text-slate-800">{s.nombre}</span>
+                        {s.empresa && <span className="ml-1 text-xs text-slate-400">({s.empresa})</span>}
+                        <span className="ml-1 text-xs text-slate-400">{s.email}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Email</label>
+                <Ayuda>Correo del invitado. A esta dirección se le envía la invitación con su gafete QR.</Ayuda>
+              </div>
+              <input type="email" value={inv.email}
+                onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, email: e.target.value } : it))}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                placeholder="email@empresa.com" />
+            </div>
+            <div>
+              <div className="mb-1 flex items-center gap-1.5">
+                <label className="text-xs font-semibold text-slate-600">Teléfono</label>
+                <Ayuda>Teléfono del invitado (opcional). 10 dígitos, sin lada. Ej. 5512345678</Ayuda>
+              </div>
+              <input type="tel" value={inv.telefono}
+                onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) } : it))}
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                placeholder="5512345678" maxLength={10} inputMode="numeric" />
+            </div>
+          </div>
+        </div>
+      ))}
+      <div className="col-span-2">
+        <button type="button"
+          onClick={() => setInvitados(is => [...is, { ...INVITADO_VACIO }])}
+          className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Agregar invitado
+        </button>
+      </div>
+    </>
+  );
 
   /* ══════════════════════════════════════════════════════════════════
      Render
@@ -672,78 +809,8 @@ export default function Citas() {
 
             {/* ── Invitados ────────────────────────────────────────── */}
             <Section label="Invitados">
-                {invitados.map((inv, idx) => (
-                  <div key={idx} className="col-span-2 rounded-xl border border-slate-200 p-3 relative">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-500">Invitado {idx + 1}</span>
-                      {invitados.length > 1 && (
-                        <button type="button" onClick={() => setInvitados(is => is.filter((_, i) => i !== idx))}
-                          className="text-xs text-red-400 hover:text-red-600">Quitar</button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Nombre con autocomplete */}
-                      <div className="relative col-span-2">
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <label className="text-xs font-semibold text-slate-600">Nombre *</label>
-                          <Ayuda>Nombre del invitado. Al escribir se buscan empleados y contactos ya registrados; selecciónalo para vincularlo y reusar sus datos.</Ayuda>
-                        </div>
-                        <input required value={inv.nombre}
-                          onChange={e => {
-                            const v = e.target.value;
-                            setInvitados(is => is.map((it, i) => i === idx ? { ...it, nombre: v, persona_id: null } : it));
-                            buscarPersonas(v, idx);
-                          }}
-                          onBlur={() => setTimeout(() => { if (sugIdx === idx) setSugs([]); }, 200)}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                          placeholder="Buscar empleado o contacto…" />
-                        {sugs.length > 0 && sugIdx === idx && (
-                          <ul className="absolute z-20 left-0 right-0 mt-1 rounded-lg border border-slate-200 bg-white shadow-lg max-h-40 overflow-y-auto">
-                            {sugs.map((s, si) => (
-                              <li key={si}>
-                                <button type="button" onMouseDown={() => seleccionarPersona(s)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
-                                  <span className="font-medium text-slate-800">{s.nombre}</span>
-                                  {s.empresa && <span className="ml-1 text-xs text-slate-400">({s.empresa})</span>}
-                                  <span className="ml-1 text-xs text-slate-400">{s.email}</span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                      <div>
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <label className="text-xs font-semibold text-slate-600">Email</label>
-                          <Ayuda>Correo del invitado. A esta dirección se le envía la invitación con su gafete QR.</Ayuda>
-                        </div>
-                        <input type="email" value={inv.email}
-                          onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, email: e.target.value } : it))}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                          placeholder="email@empresa.com" />
-                      </div>
-                      <div>
-                        <div className="mb-1 flex items-center gap-1.5">
-                          <label className="text-xs font-semibold text-slate-600">Teléfono</label>
-                          <Ayuda>Teléfono del invitado (opcional). 10 dígitos, sin lada. Ej. 5512345678</Ayuda>
-                        </div>
-                        <input type="tel" value={inv.telefono}
-                          onChange={e => setInvitados(is => is.map((it, i) => i === idx ? { ...it, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) } : it))}
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
-                          placeholder="5512345678" maxLength={10} inputMode="numeric" />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="col-span-2">
-                  <button type="button"
-                    onClick={() => setInvitados(is => [...is, { ...INVITADO_VACIO }])}
-                    className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                    Agregar invitado
-                  </button>
-                </div>
-              </Section>
+              {invitadoRows()}
+            </Section>
 
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" onClick={cerrarModal}
@@ -836,6 +903,19 @@ export default function Citas() {
                                 INE ✓
                               </span>
                             )}
+                            {detalle.tipo_cita !== "walk_in" && (
+                              a.estado === 2 ? (
+                                <button onClick={() => reactivarAsistente(a)} disabled={asistBusy === a.id}
+                                  className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50">
+                                  {asistBusy === a.id ? "…" : "Reactivar"}
+                                </button>
+                              ) : (
+                                <button onClick={() => darDeBajaAsistente(a)} disabled={asistBusy === a.id}
+                                  className="text-[11px] font-semibold text-red-500 hover:text-red-600 disabled:opacity-50">
+                                  {asistBusy === a.id ? "…" : "Dar de baja"}
+                                </button>
+                              )
+                            )}
                           </div>
                         </div>
                       ))}
@@ -844,6 +924,25 @@ export default function Citas() {
                 )}
                 {detalle.asistentes.length === 0 && (
                   <p className="text-center text-xs text-slate-400 py-4">Sin invitados registrados.</p>
+                )}
+
+                {/* Agregar invitados (a una cita existente) */}
+                {detalle.tipo_cita !== "walk_in" && detalle.estado !== "cancelada" && (
+                  <div className="mt-4 rounded-xl border border-slate-100 p-4">
+                    <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Agregar invitados
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {invitadoRows()}
+                    </div>
+                    {agregarMsg && <p className="mt-2 text-xs text-slate-500">{agregarMsg}</p>}
+                    <div className="mt-3 flex justify-end">
+                      <button onClick={agregarInvitados} disabled={agregando}
+                        className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50">
+                        {agregando ? "Agregando…" : "Agregar y enviar invitación"}
+                      </button>
+                    </div>
+                  </div>
                 )}
 
                 {/* Reenviar invitación */}

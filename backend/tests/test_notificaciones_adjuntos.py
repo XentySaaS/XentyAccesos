@@ -183,3 +183,39 @@ def test_cancelacion_proveedor_dice_cancelada(monkeypatch):
     assert n == 1
     assert correos and "CANCELADA" in correos[0]["texto_plano"]
     assert wa and "CANCELADA" in wa[0]
+
+
+# ── Alta/baja de asistentes: routing y wording ─────────────────────────────────
+
+
+def test_enviar_invitacion_asistentes_solo_subconjunto(monkeypatch):
+    """Agregar invitados invita SOLO a los nuevos (no reenvía a todos)."""
+    from apps.citas import services as S
+
+    capt = {}
+    monkeypatch.setattr(
+        S,
+        "_notificar_asistentes",
+        lambda cita, asistentes=None: capt.update(asistentes=asistentes) or len(asistentes or []),
+    )
+    a1 = SimpleNamespace(nombre="Nuevo")
+    n = S.enviar_invitacion_asistentes(_fake_cita(tipo=1), [a1])
+    assert n == 1
+    assert capt["asistentes"] == [a1]  # subconjunto, no None (=todos)
+
+
+def test_baja_asistente_dice_dado_de_baja(monkeypatch):
+    from apps.citas import services as S
+
+    monkeypatch.setattr(S, "_nombre_tenant", lambda cita: "Museos")
+    correos, wa = [], []
+    monkeypatch.setattr(S, "enviar_correo_html", lambda **k: correos.append(k))
+    monkeypatch.setattr(
+        "apps.mensajeria.services.notificar_whatsapp",
+        lambda telefono, cuerpo, *a, **k: (wa.append(cuerpo) or True),
+    )
+    asis = SimpleNamespace(pk=1, nombre="Juan", email="j@x.com", telefono="8112223344")
+    ok = S.enviar_baja_asistente(_fake_cita(tipo=1), asis)
+    assert ok is True
+    assert correos and "dado de baja" in correos[0]["texto_plano"].lower()
+    assert wa and "dado de baja" in wa[0].lower()

@@ -226,8 +226,9 @@ class CitaSerializer(serializers.ModelSerializer):
         return cita
 
     @staticmethod
-    def _guardar_asistentes(cita: Cita, data: list) -> None:
-        """Upserts contactos y crea registros AsistenteCita."""
+    def _guardar_asistentes(cita: Cita, data: list) -> list[AsistenteCita]:
+        """Upserts contactos y crea registros AsistenteCita. Devuelve los asistentes creados."""
+        creados: list[AsistenteCita] = []
         for a in data:
             persona_id = a.get("persona_id")
             tipo = a.get("tipo", AsistenteCita.Tipo.CONTACTO)
@@ -248,12 +249,15 @@ class CitaSerializer(serializers.ModelSerializer):
             ct = ContentType.objects.get_for_model(
                 Empleado if tipo == AsistenteCita.Tipo.EMPLEADO else Contacto
             )
-            AsistenteCita.objects.create(
-                cita=cita,
-                nombre=nombre,
-                email=email,
-                telefono=telefono,
-                tipo=tipo,
-                content_type=ct,
-                object_id=persona_id,
+            creados.append(
+                AsistenteCita.objects.create(
+                    cita=cita,
+                    nombre=nombre,
+                    email=email,
+                    telefono=telefono,
+                    tipo=tipo,
+                    content_type=ct,
+                    object_id=persona_id,
+                )
             )
+        return creados

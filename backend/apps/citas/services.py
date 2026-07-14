@@ -53,6 +53,66 @@ def enviar_cancelacion_cita(cita) -> int:
         return 0
 
 
+def enviar_invitacion_asistentes(cita, asistentes) -> int:
+    """Envía la invitación (gafete + protocolo) solo a un subconjunto de asistentes.
+
+    Se usa al **agregar** invitados a una cita existente: se invita únicamente a los nuevos, sin
+    reenviar a los que ya la habían recibido. Best-effort.
+    """
+    try:
+        if cita.tipo_cita == "walk_in":
+            return 0
+        return _notificar_asistentes(cita, asistentes=list(asistentes))
+    except Exception:  # noqa: BLE001
+        logger.exception("Error invitando asistentes de cita pk=%s", cita.pk)
+        return 0
+
+
+def enviar_baja_asistente(cita, asistente) -> bool:
+    """Avisa a UN asistente que fue **dado de baja** de la cita (correo + WhatsApp, sin gafete)."""
+    try:
+        if cita.tipo_cita == "walk_in" or (not asistente.email and not asistente.telefono):
+            return False
+        from apps.mensajeria.services import notificar_whatsapp
+
+        ctx = _contexto(cita)
+        parrafos = [
+            f"Le informamos que fue <strong>dado de baja</strong> de la cita "
+            f"«<strong>{ctx['nombre']}</strong>».",
+            *_detalle_parrafos(ctx),
+            "El gafete o invitación que haya recibido para esta cita <strong>queda sin "
+            "validez</strong>.",
+            "Si tiene dudas, comuníquese con el organizador.",
+        ]
+        texto_plano = (
+            f"Hola {asistente.nombre}:\n\n"
+            f"Fue dado de baja de la cita «{ctx['nombre']}».\n\n"
+            f"{_detalle_texto(ctx)}\n\n"
+            "El gafete o invitación que haya recibido queda sin validez.\n"
+            f"\n— {ctx['tenant']} · Xenty Acceso"
+        )
+        html = construir_correo(
+            nombre_tenant=ctx["tenant"],
+            asunto=f"Baja de cita: {ctx['nombre']}",
+            saludo=f"Hola {asistente.nombre},",
+            parrafos=parrafos,
+        )
+        if asistente.email:
+            enviar_correo_html(
+                asunto=f"Baja de cita: {ctx['nombre']}",
+                texto_plano=texto_plano,
+                html=html,
+                destino=asistente.email,
+            )
+        notificar_whatsapp(asistente.telefono, texto_plano)
+        return True
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Error notificando baja de asistente pk=%s", getattr(asistente, "pk", None)
+        )
+        return False
+
+
 # ── Helpers de formato / contexto ─────────────────────────────────────────────
 
 
@@ -121,13 +181,22 @@ def _detalle_texto(ctx: dict) -> str:
 # ── Invitación ────────────────────────────────────────────────────────────────
 
 
-def _notificar_asistentes(cita) -> int:
+def _notificar_asistentes(cita, asistentes=None) -> int:
     import datetime
 
     from django.db import connection
 
     from apps.mensajeria.proveedores import AdjuntoWhatsApp
     from apps.mensajeria.services import adjunto_protocolo, notificar_whatsapp
+
+    from .models import AsistenteCita
+
+    # None = todos los activos (los cancelados no se re-invitan); una lista = solo esos (recién agregados).
+    lista = (
+        list(asistentes)
+        if asistentes is not None
+        else list(cita.asistentes.exclude(estado=AsistenteCita.Estado.CANCELADO))
+    )
 
     ctx = _contexto(cita)
     fecha, hora, recinto = ctx["fecha"], ctx["hora"], ctx["recinto"]
@@ -157,10 +226,9 @@ def _notificar_asistentes(cita) -> int:
 
     schema = connection.schema_name
     enviados = 0
-    total = cita.asistentes.count()
-    logger.info("_notificar_asistentes cita pk=%s total_asistentes=%s", cita.pk, total)
+    logger.info("_notificar_asistentes cita pk=%s total_asistentes=%s", cita.pk, len(lista))
 
-    for asistente in cita.asistentes.all():
+    for asistente in lista:
         if not asistente.email and not asistente.telefono:
             logger.info("Asistente pk=%s sin email ni teléfono — omitido", asistente.pk)
             continue

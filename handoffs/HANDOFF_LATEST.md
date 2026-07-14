@@ -284,6 +284,36 @@ el proveedor la rechaza, el **texto profesional ya se entregó**.
 
 ---
 
+## Citas: alta/baja de asistentes (baja lógica) — continuación 2026-07-13
+
+**Pedido:** en citas poder **dar de baja** y **agregar** asistentes a una cita existente; baja lógica
+(no borrado físico). Decisión del usuario: en citas se mantiene el botón «Eliminar» físico de la cita;
+en **eventos, nada por ahora** (el Evento ya se cancela por estado).
+
+**Hallazgo que de-riesga:** el escáner **ya** respeta el estado del asistente
+(`apps/acceso/services.py`): deniega con *"El invitado fue dado de baja de la cita"* cuando
+`asistente.estado == CANCELADO`. El mecanismo de baja lógica ya estaba cableado; solo faltaba
+exponerlo.
+
+**Backend:**
+- `AsistenteCitaViewSet.perform_destroy` → **baja lógica**: marca `estado=CANCELADO` (no borra), audita
+  en `HistorialCambio` y avisa al asistente (`enviar_baja_asistente`). Reactivar = `PATCH {estado:0}`.
+- `CitaViewSet` acción **`agregar-asistentes`** (POST `{asistentes:[...]}`): crea los invitados y envía
+  la invitación **solo a los nuevos** (`enviar_invitacion_asistentes`). Bloquea walk-in y cita cancelada.
+- `CitaSerializer._guardar_asistentes` ahora **devuelve** los creados. `_notificar_asistentes(cita,
+  asistentes=None)` acepta subconjunto (None = activos, excluye CANCELADO). Nuevo `enviar_baja_asistente`.
+- Guard de borrado de cita Directa: excluye asistentes CANCELADO (una cita con todos dados de baja sí se
+  puede borrar).
+
+**Frontend (`Citas.tsx`):** en el detalle, botón **Dar de baja / Reactivar** por asistente, y sección
+**Agregar invitados** (reusa el autocomplete de personas). Se extrajo `invitadoRows()` para no duplicar.
+
+**Verificación:** `test_citas_asistentes.py` (4, DB) + 2 de servicio en `test_notificaciones_adjuntos.py`.
+Suite sin aislamiento **98 verdes**; `ruff` limpio; `manage.py check` OK; `frontend-acceso` compila.
+**Sin migraciones** (se reusa `AsistenteCita.estado=CANCELADO`).
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):
