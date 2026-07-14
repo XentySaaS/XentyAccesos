@@ -436,6 +436,27 @@ hace falta `--profile` ni `--force-recreate`.)
 
 ---
 
+## nginx re-resuelve upstreams (tenant ya no se cae al recrear contenedores) — continuación 2026-07-13
+
+**Síntoma recurrente:** "no me deja entrar a mi tenant" (502/404) tras reiniciar/recrear contenedores.
+
+**Causa raíz:** `nginx/nginx.conf` usaba `proxy_pass http://backend:8000;` con el **host literal** →
+nginx resuelve la IP del contenedor **una vez al arrancar** y la cachea. Al recrear un backend/front
+(nueva IP), nginx seguía apuntando a la IP vieja → 502. El parche era `docker compose restart nginx`.
+
+**Fix de raíz (en `nginx/nginx.conf`):** `resolver 127.0.0.11 valid=10s ipv6=off;` (DNS embebido de
+Docker) + **hostname en variable** en cada `proxy_pass` (`set $u backend; proxy_pass http://$u:8000;`).
+Con el host en variable, nginx **re-resuelve en tiempo de request** (TTL 10s) en vez de cachear al
+boot → cuando un contenedor cambia de IP, nginx la reengancha solo en ≤10s **sin reiniciar nginx**.
+Aplicado a los 3 server (landing/admin/tenant) y a todos los upstreams (backend, superadmin-backend,
+frontends). El passthrough de URI no cambia (todos los `proxy_pass` eran "bare", sin path).
+
+**Verificado:** recreé `backend` + `frontend-acceso` (IPs nuevas) y el tenant siguió respondiendo
+(SPA 200, login llega al backend) **sin tocar nginx**. → El workaround "reiniciar nginx tras reiniciar
+backends" queda **obsoleto**.
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):
