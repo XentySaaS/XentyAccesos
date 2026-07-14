@@ -47,6 +47,16 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 7 (2026-07-14):** **buscador del padrón 69-B en Cumplimiento** (estilo visor fiscal).
+> Se activó `SearchFilter` en `SatEfoViewSet` (`filter_backends` explícito + `search_fields=["rfc",
+> "nombre"]`; el default global solo trae DjangoFilterBackend, así que el `search_fields` previo no
+> hacía nada) → `GET /api/cumplimiento/efos/?search=<rfc|razón social>&situacion=<...>`. En
+> `Cumplimiento.tsx`, tarjeta "Buscar en el listado completo" con input debounced (mín. 2 chars),
+> filtro de situación y tabla de resultados (RFC · razón social · situación con badge). Verifica
+> **cualquier** contribuyente del padrón (14k RFC en dev), no solo los proveedores del tenant. Test
+> `tests/test_cumplimiento_busqueda.py`. El modelo `SatEfo` no tiene columna DOF, así que no se
+> muestra esa columna del visor original.
+>
 > **Continuación 6 (2026-07-14):** **fix onboarding de proveedor — 413 de nginx.** Completar el alta
 > del proveedor fallaba con "Error al enviar." El POST `multipart` (INE + selfie + REPSE/SUA ≈ 1.9 MB)
 > superaba el **default de nginx `client_max_body_size` = 1 MB** → **413** *antes* de llegar al backend

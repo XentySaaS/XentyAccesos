@@ -19,7 +19,20 @@ interface Resumen {
   proveedores: ProveedorMarcado[];
 }
 
+interface EfoRow {
+  id: number; rfc: string; nombre: string | null; situacion: string;
+}
+
 const INK = "#0F1B2D";
+
+// Color de la situación en el padrón: Definitivo = firme (peor), Presunto = en proceso,
+// Desvirtuado / Sentencia Favorable = ya no representa riesgo.
+const SITUACION_BADGE: Record<string, { bg: string; text: string }> = {
+  "Definitivo":          { bg: "bg-red-100",    text: "text-red-700"   },
+  "Presunto":            { bg: "bg-amber-100",  text: "text-amber-700" },
+  "Desvirtuado":         { bg: "bg-slate-100",  text: "text-slate-600" },
+  "Sentencia Favorable": { bg: "bg-green-100",  text: "text-green-700" },
+};
 
 export default function Cumplimiento() {
   const navigate = useNavigate();
@@ -27,6 +40,13 @@ export default function Cumplimiento() {
   const [cargando, setCargando] = useState(true);
   const [revalidando, setRevalidando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Buscador del padrón completo 69-B (cualquier RFC/razón social, sea o no proveedor del tenant).
+  const [q, setQ] = useState("");
+  const [situacionFiltro, setSituacionFiltro] = useState("");
+  const [resultados, setResultados] = useState<EfoRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [buscando, setBuscando] = useState(false);
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -37,6 +57,26 @@ export default function Cumplimiento() {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Búsqueda con debounce (mínimo 2 caracteres). Sin término y sin filtro, no consulta.
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2 && !situacionFiltro) {
+      setResultados([]); setTotal(0); setBuscando(false);
+      return;
+    }
+    setBuscando(true);
+    const t = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (term.length >= 2) params.set("search", term);
+      if (situacionFiltro)  params.set("situacion", situacionFiltro);
+      api.get<{ count: number; results: EfoRow[] }>(`/api/cumplimiento/efos/?${params}`)
+        .then(r => { setResultados(r.data.results ?? []); setTotal(r.data.count ?? 0); })
+        .catch(() => { setResultados([]); setTotal(0); })
+        .finally(() => setBuscando(false));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [q, situacionFiltro]);
 
   async function revalidar() {
     setRevalidando(true); setMsg(null);
@@ -157,6 +197,88 @@ export default function Cumplimiento() {
           Ningún proveedor aparece en la lista 69-B del SAT.
         </div>
       ) : null}
+
+      {/* Buscador del padrón completo 69-B (cualquier RFC/razón social) */}
+      <div className="rounded-card bg-white p-5 shadow-card">
+        <h2 className="text-sm font-bold" style={{ color: INK }}>Buscar en el listado completo</h2>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Verifica a cualquier contribuyente en el padrón 69-B del SAT, esté o no dado de alta como
+          proveedor. Busca por RFC o razón social (mínimo 2 caracteres).
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          <div className="relative min-w-[16rem] flex-1">
+            <svg className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              placeholder="RFC o razón social…"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+            />
+          </div>
+          <select
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-600 outline-none focus:border-blue-400"
+            value={situacionFiltro}
+            onChange={e => setSituacionFiltro(e.target.value)}
+            title="Situación"
+          >
+            <option value="">Todas las situaciones</option>
+            <option value="Definitivo">Definitivo</option>
+            <option value="Presunto">Presunto</option>
+            <option value="Desvirtuado">Desvirtuado</option>
+            <option value="Sentencia Favorable">Sentencia Favorable</option>
+          </select>
+        </div>
+
+        {/* Resultados */}
+        <div className="mt-4">
+          {buscando ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="h-7 w-7 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
+            </div>
+          ) : q.trim().length < 2 && !situacionFiltro ? (
+            <p className="py-8 text-center text-sm text-slate-400">Escribe un RFC o razón social para buscar en el padrón.</p>
+          ) : resultados.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-400">Sin coincidencias en el padrón 69-B.</p>
+          ) : (
+            <>
+              <div className="overflow-x-auto rounded-xl ring-1 ring-slate-100">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <th className="px-4 py-2.5">RFC</th>
+                      <th className="px-4 py-2.5">Razón social</th>
+                      <th className="px-4 py-2.5">Situación</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {resultados.map(e => {
+                      const badge = SITUACION_BADGE[e.situacion] ?? { bg: "bg-slate-100", text: "text-slate-600" };
+                      return (
+                        <tr key={e.id} className="hover:bg-slate-50">
+                          <td className="px-4 py-2.5 font-mono text-xs text-slate-700">{e.rfc}</td>
+                          <td className="px-4 py-2.5 text-slate-700">{e.nombre || "—"}</td>
+                          <td className="px-4 py-2.5">
+                            <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${badge.bg} ${badge.text}`}>
+                              {e.situacion}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-2 text-right text-xs text-slate-400">
+                {total.toLocaleString("es-MX")} coincidencia{total !== 1 ? "s" : ""}
+                {total > resultados.length ? ` · mostrando ${resultados.length}` : ""}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

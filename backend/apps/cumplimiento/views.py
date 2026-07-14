@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets
+from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -104,11 +106,19 @@ class ResumenView(APIView):
 
 
 class SatEfoViewSet(viewsets.ReadOnlyModelViewSet):
+    """Consulta del padrón EFOS 69-B (compartido). Buscador `?search=` por RFC o razón social.
+
+    Permite verificar a cualquier contribuyente en el listado del SAT —esté o no dado de alta como
+    proveedor del tenant—, igual que el visor fiscal. El default de backends solo trae
+    DjangoFilterBackend, así que aquí se añade SearchFilter explícitamente.
+    """
+
     queryset = SatEfo.objects.all().order_by("rfc")
     serializer_class = SatEfoSerializer
     permission_classes = _PERMS
+    filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ["situacion"]
-    search_fields = ["rfc"]
+    search_fields = ["rfc", "nombre"]
 
 
 class ResultadoViewSet(viewsets.ReadOnlyModelViewSet):
