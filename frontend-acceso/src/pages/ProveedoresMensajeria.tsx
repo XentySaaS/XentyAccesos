@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 import { Ayuda } from "../components/Ayuda";
+import { WhatsAppVinculacion } from "../components/WhatsAppVinculacion";
 
 interface Disponible { clave: string; etiqueta: string; }
 interface Preferencia {
@@ -243,6 +244,12 @@ export default function ProveedoresMensajeria() {
           )}
         </div>
       </form>
+
+      {xccDisponible && (
+        <div className="mt-4">
+          <WhatsAppVinculacion />
+        </div>
+      )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ from apps.tenants.admin_api import (
     SuperAdminLoginView,
     TenantAdminViewSet,
 )
+from apps.tenants.connector_sesion_api import AdminSesionQRView, AdminSesionView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.health import LivenessView, ReadinessView
@@ -102,6 +103,16 @@ urlpatterns = [
         "api/admin/comunicaciones/",
         ConfiguracionConnectorView.as_view(),
         name="admin-comunicaciones",
+    ),
+    path(
+        "api/admin/comunicaciones/sesion/",
+        AdminSesionView.as_view(),
+        name="admin-comunicaciones-sesion",
+    ),
+    path(
+        "api/admin/comunicaciones/qr/",
+        AdminSesionQRView.as_view(),
+        name="admin-comunicaciones-qr",
     ),
     *router.urls,
 ]

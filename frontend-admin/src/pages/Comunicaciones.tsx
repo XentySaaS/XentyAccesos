@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import { AdminWhatsAppSesiones } from "../components/AdminWhatsAppSesiones";
 
 interface Config {
   habilitado: boolean;
@@ -215,6 +216,10 @@ export default function Comunicaciones() {
           )}
         </div>
       </form>
+
+      <div className="mt-5">
+        <AdminWhatsAppSesiones />
+      </div>
     </div>
   );
 }
