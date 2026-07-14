@@ -47,6 +47,14 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 13 (2026-07-14):** **atajo «crear empleado y agregar al evento»** en el modal
+> *Personal del evento* (frontend-proveedores `MisEventos.tsx`). Botón que despliega un mini-form
+> (nombre + email/teléfono opcionales) y en un paso hace `POST /api/empleados/` + `asignar-empleados`;
+> al recargar candidatos, el empleado nuevo aparece asignado y —si el evento requiere documentos— con
+> su panel de subida inline (reusa `EmpleadoFila`), así se cumple "solicitar los documentos requeridos
+> ahí mismo". Se oculta si el cupo está lleno; mensaje de éxito en verde. Solo frontend (endpoints ya
+> existían). El vacío "No tienes empleados" ahora apunta al atajo.
+>
 > **Continuación 12 (2026-07-14):** **fix — dar de baja / reactivar asistente de una cita.** El
 > frontend llamaba a `/api/asistentes/{id}/` (DELETE y PATCH) pero el ViewSet está registrado en
 > **`asistentes-cita`** → **404** ("No se pudo dar de baja al invitado"). Se corrigieron las dos URLs

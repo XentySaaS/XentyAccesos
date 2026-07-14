@@ -95,6 +95,13 @@ export default function MisEventos() {
   const [accion, setAccion] = useState<number | null>(null);     // empleado en proceso
   const [aviso, setAviso] = useState("");
 
+  /* alta rápida de empleado desde el evento */
+  const [showCrear, setShowCrear] = useState(false);
+  const [nuevoEmp, setNuevoEmp] = useState({ nombre: "", email: "", telefono: "" });
+  const [creando, setCreando] = useState(false);
+  const [crearError, setCrearError] = useState("");
+  const [crearOk, setCrearOk] = useState("");
+
   /* cajones de estacionamiento */
   const [cajones, setCajones] = useState<{ id: number; numero: number }[]>([]);
   const [loadingCajones, setLoadingCajones] = useState(false);
@@ -110,6 +117,7 @@ export default function MisEventos() {
 
   async function abrirGestion(inv: Invitacion) {
     setGestion(inv); setCand(null); setAviso(""); setCajones([]);
+    setShowCrear(false); setCrearError(""); setCrearOk(""); setNuevoEmp({ nombre: "", email: "", telefono: "" });
     setLoadingCand(true);
     if (inv.requiere_parking) setLoadingCajones(true);
     try {
@@ -176,6 +184,34 @@ export default function MisEventos() {
     } catch {
       setAviso("No se pudo quitar al empleado.");
     } finally { setAccion(null); }
+  }
+
+  /* Crea un empleado nuevo y lo asigna al evento en un solo paso (atajo desde el modal). */
+  async function crearYAsignar() {
+    if (!gestion || !nuevoEmp.nombre.trim()) return;
+    setCreando(true); setCrearError(""); setCrearOk("");
+    try {
+      const { data } = await api.post("/api/empleados/", {
+        nombre: nuevoEmp.nombre.trim(),
+        email: nuevoEmp.email.trim() || null,
+        telefono: nuevoEmp.telefono || null,
+      });
+      await api.post(`/api/evento-proveedores/${gestion.id}/asignar-empleados/`, { empleados: [data.id] });
+      const nombre = nuevoEmp.nombre.trim();
+      setNuevoEmp({ nombre: "", email: "", telefono: "" });
+      setShowCrear(false);
+      setCrearOk(`«${nombre}» se creó y agregó al evento. Sube sus documentos requeridos en su fila (abajo).`);
+      await recargarCand();
+      await cargar();
+    } catch (err: any) {
+      const d = err?.response?.data;
+      setCrearError(
+        typeof d === "object"
+          ? (d?.detail ?? d?.nombre?.[0] ?? d?.empleados?.[0] ?? "No se pudo crear el empleado.")
+          : "No se pudo crear el empleado.",
+      );
+      await recargarCand().catch(() => {});
+    } finally { setCreando(false); }
   }
 
   const cupoLleno = !!cand && cand.limite > 0 && cand.asignados_count >= cand.limite;
@@ -338,10 +374,60 @@ export default function MisEventos() {
                     </p>
                   )}
 
+                  {/* Atajo: crear un empleado nuevo y agregarlo al evento */}
+                  {!cupoLleno && (
+                    <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 p-3">
+                      {!showCrear ? (
+                        <button
+                          onClick={() => { setShowCrear(true); setCrearError(""); setCrearOk(""); }}
+                          className="flex w-full items-center justify-center gap-1.5 text-sm font-semibold text-blue-700 hover:text-blue-800">
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                          Crear empleado y agregarlo al evento
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Nuevo empleado</p>
+                          <input autoFocus value={nuevoEmp.nombre}
+                            onChange={e => setNuevoEmp({ ...nuevoEmp, nombre: e.target.value })}
+                            placeholder="Nombre completo"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="email" value={nuevoEmp.email}
+                              onChange={e => setNuevoEmp({ ...nuevoEmp, email: e.target.value })}
+                              placeholder="Email (opcional)"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                            <input value={nuevoEmp.telefono}
+                              onChange={e => setNuevoEmp({ ...nuevoEmp, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                              placeholder="Teléfono (opcional)" maxLength={10} inputMode="numeric"
+                              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                          </div>
+                          {crearError && <p className="text-[11px] text-red-500">{crearError}</p>}
+                          {cand.requiere_documentos && (
+                            <p className="text-[11px] text-slate-500">Al crearlo se agrega al evento; luego sube sus documentos requeridos en su fila.</p>
+                          )}
+                          <div className="flex gap-2">
+                            <button onClick={crearYAsignar} disabled={creando || !nuevoEmp.nombre.trim()}
+                              className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+                              style={{ backgroundColor: "#2563EB" }}>
+                              {creando ? "Creando…" : "Crear y agregar"}
+                            </button>
+                            <button onClick={() => { setShowCrear(false); setCrearError(""); }}
+                              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {crearOk && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">{crearOk}</div>
+                  )}
+
                   {/* Empleados */}
                   <div className="space-y-2">
                     {cand.empleados.length === 0 && (
-                      <p className="py-6 text-center text-sm text-slate-400">No tienes empleados activos. Agrégalos en la sección Empleados.</p>
+                      <p className="py-6 text-center text-sm text-slate-400">Aún no tienes empleados. Créalos aquí con el botón de arriba (o en la sección Empleados).</p>
                     )}
                     {cand.empleados.map(emp => (
                       <EmpleadoFila
