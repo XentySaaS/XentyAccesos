@@ -1,11 +1,16 @@
 /**
- * Verificación de documentos — diseño split panel.
- * Lista de bandeja (izq) + panel de previsualización y acciones (der).
- * Los archivos se sirven autenticados (download endpoint) y se muestran como blob URL.
+ * Verificación de documentos — workspace drill-down de 3 columnas.
+ * Proveedores (con conteos) → Empleados del proveedor → Documentos del empleado (preview + acciones).
+ * La agregación y los conteos vienen del backend (paginado) para escalar a mucho volumen.
+ * Filtros: estado (pendientes/aprobados/rechazados), evento, "solo mis eventos", y búsqueda por
+ * nombre en cada columna.
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api/client";
 
+interface Prov { proveedor_id: number; proveedor_nombre: string; docs: number; empleados: number; }
+interface Emp { emp_id: number; emp_nombre: string; docs: number; }
+interface EventoLite { id: number; nombre: string; }
 interface Documento {
   id: number;
   empleado: number;
@@ -15,80 +20,142 @@ interface Documento {
   proveedor_nombre: string;
   archivo: string | null;
   tipo_archivo: string | null;
-  estado: number; // 0=pendiente 1=verificado 2=rechazado
+  estado: number;
   motivo_rechazo: string | null;
   creado: string;
 }
 
-type Tab = 0 | 1 | 2;
-
-const TAB_LABEL: Record<Tab, string> = { 0: "Pendientes", 1: "Aprobados", 2: "Rechazados" };
+const INK = "#0F1B2D";
+type Estado = 0 | 1 | 2;
+const TAB_LABEL: Record<Estado, string> = { 0: "Pendientes", 1: "Aprobados", 2: "Rechazados" };
 const BADGE_STYLE: Record<number, { bg: string; text: string }> = {
-  0: { bg: "bg-amber-100",  text: "text-amber-800"  },
-  1: { bg: "bg-green-100",  text: "text-green-800"  },
-  2: { bg: "bg-red-100",    text: "text-red-700"    },
+  0: { bg: "bg-amber-100", text: "text-amber-800" },
+  1: { bg: "bg-green-100", text: "text-green-800" },
+  2: { bg: "bg-red-100", text: "text-red-700" },
 };
 
 function fmtFecha(iso: string) {
-  return new Date(iso).toLocaleString("es-MX", {
-    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-  });
+  return new Date(iso).toLocaleString("es-MX", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+const searchCls = "h-9 w-full rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100";
+
+function Lupa() {
+  return (
+    <svg className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+    </svg>
+  );
 }
 
 export default function Verificacion() {
-  const [docs,        setDocs]        = useState<Documento[]>([]);
-  const [tab,         setTab]         = useState<Tab>(0);
-  const [sel,         setSel]         = useState<Documento | null>(null);
-  const [loading,     setLoading]     = useState(true);
-  const [loadError,   setLoadError]   = useState("");
-  const [procesando,  setProcesando]  = useState(false);
+  // Filtros globales
+  const [estado, setEstado] = useState<Estado>(0);
+  const [evento, setEvento] = useState<string>("");
+  const [misEventos, setMisEventos] = useState(false);
+  const [eventos, setEventos] = useState<EventoLite[]>([]);
+
+  // Columnas
+  const [provs, setProvs] = useState<Prov[]>([]);
+  const [provQ, setProvQ] = useState("");
+  const [provSel, setProvSel] = useState<Prov | null>(null);
+  const [loadingProv, setLoadingProv] = useState(false);
+
+  const [emps, setEmps] = useState<Emp[]>([]);
+  const [empQ, setEmpQ] = useState("");
+  const [empSel, setEmpSel] = useState<Emp | null>(null);
+  const [loadingEmp, setLoadingEmp] = useState(false);
+
+  const [docs, setDocs] = useState<Documento[]>([]);
+  const [docSel, setDocSel] = useState<Documento | null>(null);
+  const [loadingDocs, setLoadingDocs] = useState(false);
+
+  // Preview + acciones
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [loadingBlob, setLoadingBlob] = useState(false);
+  const [procesando, setProcesando] = useState(false);
   const [motivoModal, setMotivoModal] = useState(false);
-  const [motivo,      setMotivo]      = useState("");
+  const [motivo, setMotivo] = useState("");
   const motivoRef = useRef<HTMLTextAreaElement>(null);
 
-  // Blob URL autenticado para previsualizar el archivo seleccionado.
-  const [blobUrl,     setBlobUrl]     = useState<string | null>(null);
-  const [loadingBlob, setLoadingBlob] = useState(false);
+  // ── Cargadores ────────────────────────────────────────────────
+  const loadProvs = useCallback(() => {
+    const p = new URLSearchParams({ estado: String(estado) });
+    if (evento) p.set("evento", evento);
+    if (misEventos) p.set("mis_eventos", "1");
+    if (provQ.trim()) p.set("search", provQ.trim());
+    setLoadingProv(true);
+    api.get(`/api/verificacion/proveedores/?${p}`)
+      .then(r => setProvs(r.data.results ?? []))
+      .catch(() => setProvs([]))
+      .finally(() => setLoadingProv(false));
+  }, [estado, evento, misEventos, provQ]);
 
-  async function cargar(estado: Tab) {
-    setLoading(true); setLoadError("");
-    try {
-      const d = await api.get("/api/documentos-empleado/", { params: { estado } });
-      setDocs(d.data.results ?? d.data);
-    } catch {
-      setLoadError("No se pudieron cargar los documentos. Verifica tu sesión.");
-      setDocs([]);
-    } finally { setLoading(false); }
-  }
+  const loadEmps = useCallback(() => {
+    if (!provSel) { setEmps([]); return; }
+    const p = new URLSearchParams({ estado: String(estado), proveedor: String(provSel.proveedor_id) });
+    if (evento) p.set("evento", evento);
+    if (misEventos) p.set("mis_eventos", "1");
+    if (empQ.trim()) p.set("search", empQ.trim());
+    setLoadingEmp(true);
+    api.get(`/api/verificacion/empleados/?${p}`)
+      .then(r => setEmps(r.data.results ?? []))
+      .catch(() => setEmps([]))
+      .finally(() => setLoadingEmp(false));
+  }, [provSel, estado, evento, misEventos, empQ]);
 
-  useEffect(() => { cargar(tab); setSel(null); }, [tab]);
+  const loadDocs = useCallback(() => {
+    if (!empSel) { setDocs([]); return; }
+    setLoadingDocs(true);
+    api.get(`/api/documentos-empleado/?empleado=${empSel.emp_id}&estado=${estado}`)
+      .then(r => setDocs(r.data.results ?? r.data))
+      .catch(() => setDocs([]))
+      .finally(() => setLoadingDocs(false));
+  }, [empSel, estado]);
 
-  // Al seleccionar un documento, descarga el archivo autenticado y crea un blob URL.
+  // Lista de eventos para el filtro (cambia con "mis eventos").
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (misEventos) p.set("mis_eventos", "1");
+    api.get(`/api/verificacion/eventos/?${p}`).then(r => setEventos(r.data.eventos ?? [])).catch(() => setEventos([]));
+  }, [misEventos]);
+
+  // Al cambiar filtros globales, reinicia las selecciones.
+  useEffect(() => { setProvSel(null); setEmps([]); setEmpSel(null); setDocs([]); setDocSel(null); }, [estado, evento, misEventos]);
+
+  // Proveedores: recarga inmediata en filtros; debounce en búsqueda.
+  useEffect(() => { const t = setTimeout(loadProvs, provQ ? 300 : 0); return () => clearTimeout(t); }, [loadProvs, provQ]);
+  // Empleados: al elegir proveedor / cambiar filtros; debounce en búsqueda.
+  useEffect(() => { const t = setTimeout(loadEmps, empQ ? 300 : 0); return () => clearTimeout(t); }, [loadEmps, empQ]);
+  // Documentos del empleado seleccionado.
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  // Reinicios en cascada.
+  useEffect(() => { setEmpSel(null); setEmpQ(""); setDocs([]); setDocSel(null); }, [provSel?.proveedor_id]);
+  useEffect(() => { setDocSel(null); }, [empSel?.emp_id, estado]);
+  // Auto-selecciona el primer documento de la bandeja.
+  useEffect(() => { setDocSel(prev => (prev && docs.some(d => d.id === prev.id) ? prev : docs[0] ?? null)); }, [docs]);
+
+  // Preview autenticado (blob) del documento seleccionado.
   useEffect(() => {
     if (blobUrl) { URL.revokeObjectURL(blobUrl); setBlobUrl(null); }
-    if (!sel?.archivo) return;
-
+    if (!docSel?.archivo) return;
     setLoadingBlob(true);
-    api.get(`/api/documentos-empleado/${sel.id}/download/`, { responseType: "blob" })
+    api.get(`/api/documentos-empleado/${docSel.id}/download/`, { responseType: "blob" })
       .then(r => setBlobUrl(URL.createObjectURL(r.data)))
       .catch(() => setBlobUrl(null))
       .finally(() => setLoadingBlob(false));
-  }, [sel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Liberar blob URL al desmontar.
+  }, [docSel?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { if (blobUrl) URL.revokeObjectURL(blobUrl); }, [blobUrl]);
 
-  const nombre = (d: Documento) => d.empleado_nombre || `#${d.empleado}`;
-  const tipo   = (d: Documento) => d.tipo_documento_nombre || `#${d.tipo_documento}`;
-  const pendientes = tab === 0 ? docs.length : docs.filter(d => d.estado === 0).length;
-  const esPDF = sel?.tipo_archivo === "pdf" || sel?.archivo?.toLowerCase().endsWith(".pdf");
+  // ── Acciones ──────────────────────────────────────────────────
+  function refrescarConteos() { loadDocs(); loadEmps(); loadProvs(); }
 
   async function aprobar(doc: Documento) {
     setProcesando(true);
     try {
       await api.post(`/api/documentos-empleado/${doc.id}/aprobar/`);
-      await cargar(tab);
-      setSel(null);
+      refrescarConteos();
     } finally { setProcesando(false); }
   }
 
@@ -98,233 +165,211 @@ export default function Verificacion() {
     try {
       await api.post(`/api/documentos-empleado/${doc.id}/rechazar/`, { motivo });
       setMotivoModal(false); setMotivo("");
-      await cargar(tab);
-      setSel(null);
+      refrescarConteos();
     } finally { setProcesando(false); }
   }
 
-  function abrirRechazo() {
-    setMotivoModal(true);
-    setMotivo("");
-    setTimeout(() => motivoRef.current?.focus(), 60);
-  }
+  function abrirRechazo() { setMotivoModal(true); setMotivo(""); setTimeout(() => motivoRef.current?.focus(), 60); }
 
-  const nombreArchivo = sel?.archivo?.split("/").pop() ?? "sin-archivo";
+  const esPDF = docSel?.tipo_archivo === "pdf" || docSel?.archivo?.toLowerCase().endsWith(".pdf");
+  const nombreArchivo = docSel?.archivo?.split("/").pop() ?? "sin-archivo";
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Header ────────────────────────────────────────────── */}
-      <div className="mb-5 flex items-center gap-3">
-        <div
-          className="flex h-9 w-9 items-center justify-center rounded-lg"
-          style={{ backgroundColor: "#EFF6FF" }}>
-          <svg className="h-5 w-5" style={{ color: "#2563EB" }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
-          </svg>
+      {/* Header + filtros */}
+      <div className="mb-4">
+        <div className="mb-3 flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: "#EFF6FF" }}>
+            <svg className="h-5 w-5" style={{ color: "#2563EB" }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-[20px] font-extrabold tracking-tight" style={{ color: INK }}>Verificación de documentos</h1>
+            <p className="text-xs text-slate-500">Revisa por proveedor → empleado → documento</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-[20px] font-extrabold tracking-tight" style={{ color: "#0F1B2D" }}>
-            Verificación de documentos
-            {pendientes > 0 && (
-              <span className="ml-2 rounded-full bg-amber-500 px-2 py-0.5 text-sm font-bold text-white align-middle">
-                {pendientes}
-              </span>
-            )}
-          </h1>
-          <p className="text-xs text-slate-500">Bandeja de revisión documental</p>
-        </div>
-      </div>
 
-      {loadError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</div>
-      )}
-
-      {/* ── Split layout ─────────────────────────────────────── */}
-      <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
-
-        {/* ── Lista izquierda ─────────────────────────── */}
-        <div className="flex w-96 flex-shrink-0 flex-col overflow-hidden rounded-card bg-white shadow-card">
-          {/* Tabs */}
-          <div className="flex border-b border-slate-100">
-            {([0, 1, 2] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 py-3 text-xs font-semibold transition-colors ${
-                  tab === t ? "border-b-2 text-blue-600" : "text-slate-400 hover:text-slate-600"
-                }`}
-                style={tab === t ? { borderBottomColor: "#2563EB", color: "#2563EB" } : {}}>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tabs de estado */}
+          <div className="inline-flex overflow-hidden rounded-lg border border-slate-200">
+            {([0, 1, 2] as Estado[]).map(t => (
+              <button key={t} onClick={() => setEstado(t)}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${estado === t ? "text-white" : "bg-white text-slate-500 hover:bg-slate-50"}`}
+                style={estado === t ? { backgroundColor: "#2563EB" } : {}}>
                 {TAB_LABEL[t]}
               </button>
             ))}
           </div>
+          {/* Filtro por evento */}
+          <select value={evento} onChange={e => setEvento(e.target.value)}
+            className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs text-slate-600 outline-none focus:border-blue-400">
+            <option value="">Todos los eventos</option>
+            {eventos.map(ev => <option key={ev.id} value={ev.id}>{ev.nombre}</option>)}
+          </select>
+          {/* Solo mis eventos */}
+          <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-600">
+            <input type="checkbox" checked={misEventos} onChange={e => { setMisEventos(e.target.checked); setEvento(""); }} className="accent-blue-600" />
+            Solo mis eventos
+          </label>
+        </div>
+      </div>
 
-          {/* Items */}
+      {/* Columnas */}
+      <div className="flex min-h-0 flex-1 gap-3 overflow-hidden">
+
+        {/* ① Proveedores */}
+        <div className="flex w-64 flex-shrink-0 flex-col overflow-hidden rounded-card bg-white shadow-card">
+          <div className="border-b border-slate-100 p-2.5">
+            <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Proveedores</p>
+            <div className="relative"><Lupa /><input value={provQ} onChange={e => setProvQ(e.target.value)} placeholder="Buscar proveedor…" className={searchCls} /></div>
+          </div>
           <div className="flex-1 overflow-y-auto">
-            {loading && (
-              <div className="space-y-2 p-3">
-                {[1,2,3].map(i => (
-                  <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100" />
-                ))}
-              </div>
-            )}
-            {!loading && docs.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <p className="text-sm font-medium text-slate-400">Sin documentos en esta bandeja.</p>
-              </div>
-            )}
-            {!loading && docs.map(doc => {
-              const activo = sel?.id === doc.id;
+            {loadingProv ? <Skeleton /> : provs.length === 0 ? (
+              <Vacio texto={`Sin proveedores con ${TAB_LABEL[estado].toLowerCase()}.`} />
+            ) : provs.map(p => {
+              const activo = provSel?.proveedor_id === p.proveedor_id;
               return (
-                <button key={doc.id} onClick={() => setSel(doc)}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
-                  style={{
-                    backgroundColor: activo ? "#EFF6FF" : "transparent",
-                    borderLeft: activo ? "3px solid #2563EB" : "3px solid transparent",
-                  }}>
-                  <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                    <svg className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                    </svg>
-                  </div>
+                <button key={p.proveedor_id} onClick={() => setProvSel(p)}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                  style={{ backgroundColor: activo ? "#EFF6FF" : "transparent", borderLeft: activo ? "3px solid #2563EB" : "3px solid transparent" }}>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold" style={{ color: "#0F1B2D" }}>
-                      {nombre(doc)}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">{tipo(doc)} · {doc.proveedor_nombre}</p>
-                    <p className="tabular mt-0.5 font-mono text-[10px] text-slate-400">
-                      {fmtFecha(doc.creado)}
-                    </p>
+                    <p className="truncate text-sm font-semibold" style={{ color: INK }}>{p.proveedor_nombre || "—"}</p>
+                    <p className="text-[11px] text-slate-400">{p.empleados} empleado{p.empleados !== 1 ? "s" : ""}</p>
                   </div>
-                  <span className={`mt-0.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${BADGE_STYLE[doc.estado]?.bg} ${BADGE_STYLE[doc.estado]?.text}`}>
-                    {TAB_LABEL[doc.estado as Tab] ?? doc.estado}
-                  </span>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${BADGE_STYLE[estado].bg} ${BADGE_STYLE[estado].text}`}>{p.docs}</span>
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* ── Panel derecho ───────────────────────────── */}
+        {/* ② Empleados */}
+        <div className="flex w-64 flex-shrink-0 flex-col overflow-hidden rounded-card bg-white shadow-card">
+          <div className="border-b border-slate-100 p-2.5">
+            <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">Empleados</p>
+            <div className="relative"><Lupa /><input value={empQ} onChange={e => setEmpQ(e.target.value)} placeholder="Buscar empleado…" disabled={!provSel} className={`${searchCls} disabled:bg-slate-50`} /></div>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {!provSel ? <Vacio texto="Elige un proveedor." /> : loadingEmp ? <Skeleton /> : emps.length === 0 ? (
+              <Vacio texto="Sin empleados en esta bandeja." />
+            ) : emps.map(e => {
+              const activo = empSel?.emp_id === e.emp_id;
+              return (
+                <button key={e.emp_id} onClick={() => setEmpSel(e)}
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left transition-colors hover:bg-slate-50"
+                  style={{ backgroundColor: activo ? "#EFF6FF" : "transparent", borderLeft: activo ? "3px solid #2563EB" : "3px solid transparent" }}>
+                  <p className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{e.emp_nombre || "—"}</p>
+                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${BADGE_STYLE[estado].bg} ${BADGE_STYLE[estado].text}`}>{e.docs}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ③ Documentos + preview */}
         <div className="flex flex-1 flex-col overflow-hidden rounded-card bg-white shadow-card">
-          {!sel ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
-                <svg className="h-8 w-8 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                </svg>
-              </div>
-              <p className="text-sm font-medium text-slate-400">Selecciona un documento de la lista.</p>
-            </div>
+          {!empSel ? (
+            <Centro texto="Selecciona un empleado para revisar sus documentos." />
           ) : (
             <>
-              {/* Cabecera del documento */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                <div>
-                  <p className="text-base font-bold" style={{ color: "#0F1B2D" }}>{tipo(sel)}</p>
-                  <p className="text-sm text-slate-500">{nombre(sel)} · {sel.proveedor_nombre}</p>
-                </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${BADGE_STYLE[sel.estado]?.bg} ${BADGE_STYLE[sel.estado]?.text}`}>
-                  {TAB_LABEL[sel.estado as Tab]}
-                </span>
+              <div className="border-b border-slate-100 px-4 py-3">
+                <p className="text-sm font-bold" style={{ color: INK }}>{empSel.emp_nombre}</p>
+                <p className="text-xs text-slate-500">{provSel?.proveedor_nombre}</p>
               </div>
 
-              {/* Previsualización */}
-              <div className="flex flex-1 items-center justify-center overflow-hidden bg-slate-50 p-4">
-                {!sel.archivo ? (
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <svg className="h-12 w-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-                    </svg>
-                    <p className="text-sm text-slate-400">Sin archivo adjunto</p>
+              {/* Selector de documentos del empleado */}
+              {loadingDocs ? (
+                <div className="p-3"><Skeleton /></div>
+              ) : docs.length === 0 ? (
+                <Centro texto={`Sin documentos ${TAB_LABEL[estado].toLowerCase()} para este empleado.`} />
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-1.5 border-b border-slate-100 px-4 py-2.5">
+                    {docs.map(d => {
+                      const activo = docSel?.id === d.id;
+                      return (
+                        <button key={d.id} onClick={() => setDocSel(d)} title={fmtFecha(d.creado)}
+                          className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${activo ? "border-blue-400 bg-blue-50 text-blue-700" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                          {d.tipo_documento_nombre || `#${d.tipo_documento}`}
+                        </button>
+                      );
+                    })}
                   </div>
-                ) : loadingBlob ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-                    <p className="text-sm text-slate-400">Cargando archivo…</p>
-                  </div>
-                ) : !blobUrl ? (
-                  <div className="flex flex-col items-center gap-2 text-center">
-                    <svg className="h-12 w-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                    </svg>
-                    <p className="text-sm text-slate-400">No se pudo cargar el archivo.</p>
-                  </div>
-                ) : esPDF ? (
-                  <iframe src={blobUrl} className="h-full w-full rounded-lg" title="Documento PDF" />
-                ) : (
-                  <img
-                    src={blobUrl} alt="Documento"
-                    className="max-h-full max-w-full rounded-lg object-contain shadow-sm"
-                  />
-                )}
-              </div>
 
-              {/* Barra de acciones */}
-              <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
-                <div className="min-w-0">
-                  <p className="font-mono text-[11px] text-slate-400">
-                    {nombreArchivo}
-                    {sel.tipo_archivo && <span className="ml-2 uppercase">{sel.tipo_archivo}</span>}
-                  </p>
-                  {sel.motivo_rechazo && (
-                    <p className="mt-0.5 truncate text-xs text-red-600">Motivo: {sel.motivo_rechazo}</p>
-                  )}
-                </div>
+                  {/* Preview */}
+                  <div className="flex flex-1 items-center justify-center overflow-hidden bg-slate-50 p-3">
+                    {!docSel?.archivo ? (
+                      <Centro texto="Sin archivo adjunto" />
+                    ) : loadingBlob ? (
+                      <div className="flex flex-col items-center gap-2"><div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" /><p className="text-sm text-slate-400">Cargando archivo…</p></div>
+                    ) : !blobUrl ? (
+                      <Centro texto="No se pudo cargar el archivo." />
+                    ) : esPDF ? (
+                      <iframe src={blobUrl} className="h-full w-full rounded-lg" title="Documento PDF" />
+                    ) : (
+                      <img src={blobUrl} alt="Documento" className="max-h-full max-w-full rounded-lg object-contain shadow-sm" />
+                    )}
+                  </div>
 
-                <div className="flex gap-2">
-                  {blobUrl && (
-                    <a href={blobUrl} download={nombreArchivo}
-                      className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
-                      Descargar ↓
-                    </a>
+                  {/* Acciones */}
+                  {docSel && (
+                    <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="font-mono text-[11px] text-slate-400">{nombreArchivo}{docSel.tipo_archivo && <span className="ml-2 uppercase">{docSel.tipo_archivo}</span>}</p>
+                        {docSel.motivo_rechazo && <p className="mt-0.5 truncate text-xs text-red-600">Motivo: {docSel.motivo_rechazo}</p>}
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        {blobUrl && <a href={blobUrl} download={nombreArchivo} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Descargar ↓</a>}
+                        {(docSel.estado === 0 || docSel.estado === 2) && (
+                          <button onClick={abrirRechazo} disabled={procesando} className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50" style={{ borderColor: "#DC2626", color: "#DC2626" }}>Rechazar</button>
+                        )}
+                        {(docSel.estado === 0 || docSel.estado === 2) && (
+                          <button onClick={() => aprobar(docSel)} disabled={procesando} className="rounded-lg px-4 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50" style={{ backgroundColor: "#16A34A" }}>{procesando ? "Guardando…" : "Aprobar"}</button>
+                        )}
+                      </div>
+                    </div>
                   )}
-                  {(sel.estado === 0 || sel.estado === 2) && (
-                    <button onClick={abrirRechazo} disabled={procesando}
-                      className="rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50"
-                      style={{ borderColor: "#DC2626", color: "#DC2626" }}>
-                      Rechazar
-                    </button>
-                  )}
-                  {(sel.estado === 0 || sel.estado === 2) && (
-                    <button onClick={() => aprobar(sel)} disabled={procesando}
-                      className="rounded-lg px-4 py-1.5 text-xs font-semibold text-white transition disabled:opacity-50"
-                      style={{ backgroundColor: "#16A34A" }}>
-                      {procesando ? "Guardando…" : "Aprobar documento"}
-                    </button>
-                  )}
-                </div>
-              </div>
+                </>
+              )}
             </>
           )}
         </div>
       </div>
 
-      {/* ── Modal motivo de rechazo ───────────────────────────── */}
-      {motivoModal && sel && (
+      {/* Modal motivo de rechazo */}
+      {motivoModal && docSel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-modal bg-white p-6 shadow-panel">
-            <h2 className="mb-1 text-base font-bold" style={{ color: "#0F1B2D" }}>Rechazar documento</h2>
+            <h2 className="mb-1 text-base font-bold" style={{ color: INK }}>Rechazar documento</h2>
             <p className="mb-4 text-sm text-slate-500">Explica el motivo — el proveedor lo verá.</p>
-            <textarea
-              ref={motivoRef}
-              required rows={3} value={motivo}
-              onChange={e => setMotivo(e.target.value)}
+            <textarea ref={motivoRef} required rows={3} value={motivo} onChange={e => setMotivo(e.target.value)}
               placeholder="Documento ilegible, información incorrecta…"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100"
-            />
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100" />
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => { setMotivoModal(false); setMotivo(""); }}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">
-                Cancelar
-              </button>
-              <button onClick={() => rechazar(sel)} disabled={procesando || !motivo.trim()}
-                className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                style={{ backgroundColor: "#DC2626" }}>
-                Rechazar documento
-              </button>
+              <button type="button" onClick={() => { setMotivoModal(false); setMotivo(""); }} className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+              <button onClick={() => rechazar(docSel)} disabled={procesando || !motivo.trim()} className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ backgroundColor: "#DC2626" }}>Rechazar documento</button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Skeleton() {
+  return <div className="space-y-2 p-3">{[1, 2, 3].map(i => <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100" />)}</div>;
+}
+function Vacio({ texto }: { texto: string }) {
+  return <div className="flex flex-col items-center justify-center py-12 px-4 text-center"><p className="text-xs font-medium text-slate-400">{texto}</p></div>;
+}
+function Centro({ texto }: { texto: string }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+        <svg className="h-7 w-7 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+      </div>
+      <p className="text-sm font-medium text-slate-400">{texto}</p>
     </div>
   );
 }

@@ -47,6 +47,22 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 14 (2026-07-14):** **workspace de verificación segmentado (drill-down 3 columnas)**
+> para manejar mucho volumen. La pantalla anterior era una bandeja plana doc-por-doc que solo mostraba
+> la 1ª página (25) sin paginación, sin búsqueda ni agrupación. Nuevo diseño: **Proveedores →
+> Empleados → Documentos** con la **agregación y conteos en el backend** (no en el cliente).
+> - **Backend** `apps/documentos/verificacion_api.py` (3 endpoints, permisos verificador/admin):
+>   `GET /api/verificacion/proveedores/` y `/empleados/` (ORM `values().annotate(Count distinct)`,
+>   paginados) con dimensiones `estado`, `evento`, `mis_eventos` (los que el usuario verifica) y
+>   `search`; `/eventos/` para el dropdown del filtro (el `EventoViewSet` normal no admite rol
+>   *verificador*). Nivel de documentos reusa `documentos-empleado/?empleado=&estado=`. Rutas en
+>   `documentos/urls.py`. Tests `tests/test_verificacion_workspace.py` (3).
+> - **Frontend** `Verificacion.tsx` rescrito: 3 columnas con búsqueda por columna + tabs de estado +
+>   filtro por evento + toggle "solo mis eventos"; col ③ reusa el preview (blob autenticado) +
+>   Aprobar/Rechazar; tras cada acción se recargan los conteos de las 3 columnas.
+> - Análisis previo confirmado con el usuario (layout 3 columnas + segmentar por evento). Pendiente
+>   opcional (F3): atajos de teclado A/R, "revisar siguiente", bulk por empleado.
+>
 > **Continuación 13 (2026-07-14):** **atajo «crear empleado y agregar al evento»** en el modal
 > *Personal del evento* (frontend-proveedores `MisEventos.tsx`). Botón que despliega un mini-form
 > (nombre + email/teléfono opcionales) y en un paso hace `POST /api/empleados/` + `asignar-empleados`;

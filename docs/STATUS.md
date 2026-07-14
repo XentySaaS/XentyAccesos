@@ -11,7 +11,7 @@
 | proveedores | ✔ | CuentaProveedor, Proveedor, onboarding, JWT proveedores |
 | empleados | ✔ | CRUD, import Excel, foto (ImageField), docs |
 | recintos | ✔ | Recinto, Zona, Acceso, Ubicacion, Entrada, AreaAutorizada, Protocolo |
-| documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados |
+| documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados. **Workspace de verificación drill-down** (`verificacion_api.py`): agregación server-side proveedor→empleado con conteos, paginada, filtros estado/evento/`mis_eventos`/búsqueda (`/api/verificacion/proveedores|empleados|eventos/`) para escalar a mucho volumen; UI 3 columnas en `Verificacion.tsx` |
 | eventos | ✔ | Evento, EventoProveedor, asignación empleados, gafete QR. Invitación/asignación adjuntan **protocolo** y mandan gafete/pases por **WhatsApp** además del correo; cancelaciones con aviso dedicado |
 | citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita. Invitación con **gafete + protocolo** adjuntos por correo **y WhatsApp** (redacción profesional); **cancelar** manda aviso de cancelación (no reenvía invitación). **Alta/baja de asistentes** en cita existente: agregar (invita solo a los nuevos, **dedup por email/teléfono**), dar de baja = **baja lógica** (estado CANCELADO; el escáner ya lo bloquea) + reactivar. **Cita cancelada = terminal** (no editar ni reenviar) |
 | acceso | ✔ | RegistroAcceso, scanner QR, bitácora |
