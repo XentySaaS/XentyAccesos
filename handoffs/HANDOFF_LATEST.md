@@ -47,6 +47,17 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 15 (2026-07-14):** **empleado: correo y teléfono obligatorios + dedup de correo.**
+> `EmpleadoSerializer` ahora exige `email` (EmailField) y `telefono` (TelefonoField) al alta, y
+> `validate_email` rechaza duplicados **por empresa** (`proveedor__proveedor_id`, ignorando bajas y a
+> sí mismo al editar; correo normalizado a minúsculas). En PATCH parcial (solo foto/estado) no se
+> exigen. El **import Excel** ahora omite filas sin correo (llave de dedup), deduplica a nivel empresa
+> y devuelve `omitidos`. Frontend proveedores: formularios de *Nuevo empleado*/*Editar* y el atajo de
+> *MisEventos* marcan ambos campos requeridos (patrón 10 dígitos, botón deshabilitado hasta válido) y
+> muestran el error del backend legible (dedup/requerido) en vez de JSON. Tests
+> `tests/test_empleados_validacion.py` (4). Nota: model sigue `null=True` (no migración; se enforce en
+> el serializer para no romper filas viejas).
+>
 > **Continuación 14 (2026-07-14):** **workspace de verificación segmentado (drill-down 3 columnas)**
 > para manejar mucho volumen. La pantalla anterior era una bandeja plana doc-por-doc que solo mostraba
 > la 1ª página (25) sin paginación, sin búsqueda ni agrupación. Nuevo diseño: **Proveedores →

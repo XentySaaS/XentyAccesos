@@ -45,19 +45,36 @@ class EmpleadoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
         from openpyxl import load_workbook
 
+        from common.phone import normalizar_telefono
+
+        empresa_id = request.user.proveedor_id
         ws = load_workbook(archivo, read_only=True, data_only=True).active
-        creados = actualizados = 0
+        creados = actualizados = omitidos = 0
         for fila in ws.iter_rows(min_row=2, values_only=True):
             if not fila or not fila[0]:
                 continue
             nombre = str(fila[0]).strip()
-            email = str(fila[1]).strip().lower() if len(fila) > 1 and fila[1] else None
-            telefono = str(fila[2]).strip() if len(fila) > 2 and fila[2] else None
-            _, creado = Empleado.objects.update_or_create(
-                proveedor=request.user,
-                email=email,
-                defaults={"nombre": nombre, "telefono": telefono},
+            email = str(fila[1]).strip().lower() if len(fila) > 1 and fila[1] else ""
+            telefono = normalizar_telefono(str(fila[2])) if len(fila) > 2 and fila[2] else ""
+            # El correo es la llave de deduplicación (y ahora obligatorio): sin él, se omite la fila.
+            if not email:
+                omitidos += 1
+                continue
+            # Deduplica a nivel EMPRESA (los empleados se comparten entre cuentas del mismo Proveedor).
+            existente = (
+                Empleado.objects.filter(proveedor__proveedor_id=empresa_id, email__iexact=email)
+                .exclude(estado=Empleado.Estado.BAJA)
+                .first()
             )
-            creados += int(creado)
-            actualizados += int(not creado)
-        return Response({"creados": creados, "actualizados": actualizados})
+            if existente:
+                existente.nombre = nombre
+                if telefono:
+                    existente.telefono = telefono
+                existente.save(update_fields=["nombre", "telefono", "actualizado"])
+                actualizados += 1
+            else:
+                Empleado.objects.create(
+                    proveedor=request.user, email=email, nombre=nombre, telefono=telefono or None
+                )
+                creados += 1
+        return Response({"creados": creados, "actualizados": actualizados, "omitidos": omitidos})

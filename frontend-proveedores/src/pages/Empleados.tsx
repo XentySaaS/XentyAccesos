@@ -69,7 +69,7 @@ export default function Empleados() {
 
   // ── Importar ───────────────────────────────────────────────
   const [importando,   setImportando]   = useState(false);
-  const [importResult, setImportResult] = useState<{ creados: number; actualizados: number } | null>(null);
+  const [importResult, setImportResult] = useState<{ creados: number; actualizados: number; omitidos?: number } | null>(null);
   const [globalError,  setGlobalError]  = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -95,8 +95,9 @@ export default function Empleados() {
       setForm({ nombre: "", email: "", telefono: "" });
       cargar();
     } catch (err: unknown) {
-      const e = err as { response?: { data?: unknown } };
-      setCreateError(JSON.stringify(e.response?.data ?? "Error"));
+      const e = err as { response?: { data?: Record<string, string[] | string> } };
+      const d = e.response?.data;
+      setCreateError(d && typeof d === "object" ? Object.values(d).flat().join(" ") : "No se pudo crear el empleado.");
     } finally { setSaving(false); }
   };
 
@@ -120,8 +121,9 @@ export default function Empleados() {
       setEditModal(null);
       cargar();
     } catch (err: unknown) {
-      const e = err as { response?: { data?: unknown } };
-      setEditError(JSON.stringify(e.response?.data ?? "Error al guardar."));
+      const e = err as { response?: { data?: Record<string, string[] | string> } };
+      const d = e.response?.data;
+      setEditError(d && typeof d === "object" ? Object.values(d).flat().join(" ") : "No se pudo guardar.");
     } finally { setEditSaving(false); }
   };
 
@@ -233,7 +235,8 @@ export default function Empleados() {
       {importResult && (
         <div className="mb-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
           Importación completada: <strong>{importResult.creados}</strong> creados,{" "}
-          <strong>{importResult.actualizados}</strong> actualizados.
+          <strong>{importResult.actualizados}</strong> actualizados
+          {importResult.omitidos ? <> · <strong>{importResult.omitidos}</strong> omitidos (sin correo)</> : null}.
           <button className="ml-2 font-medium underline" onClick={() => setImportResult(null)}>Cerrar</button>
         </div>
       )}
@@ -321,13 +324,14 @@ export default function Empleados() {
                   className={inputCls} placeholder="Juan García López" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
-                <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                <label className="mb-1 block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                   className={inputCls} placeholder="juan@empresa.com" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono</label>
-                <input value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                <input required pattern="[0-9]{10}" title="10 dígitos, sin lada" value={form.telefono}
+                  onChange={e => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                   className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
               </div>
             </div>
@@ -373,13 +377,14 @@ export default function Empleados() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Email</label>
-                <input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                <label className="mb-1 block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })}
                   className={inputCls} placeholder="juan@empresa.com" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono</label>
-                <input value={editForm.telefono} onChange={e => setEditForm({ ...editForm, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                <input required pattern="[0-9]{10}" title="10 dígitos, sin lada" value={editForm.telefono}
+                  onChange={e => setEditForm({ ...editForm, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                   className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
               </div>
             </div>

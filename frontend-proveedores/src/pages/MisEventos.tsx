@@ -240,11 +240,8 @@ export default function MisEventos() {
       await cargar();
     } catch (err: any) {
       const d = err?.response?.data;
-      setCrearError(
-        typeof d === "object"
-          ? (d?.detail ?? d?.nombre?.[0] ?? d?.empleados?.[0] ?? "No se pudo crear el empleado.")
-          : "No se pudo crear el empleado.",
-      );
+      const msg = d && typeof d === "object" ? Object.values(d).flat().join(" ") : "";
+      setCrearError(msg || "No se pudo crear el empleado.");
       await recargarCand().catch(() => {});
     } finally { setCreando(false); }
   }
@@ -429,11 +426,11 @@ export default function MisEventos() {
                           <div className="grid grid-cols-2 gap-2">
                             <input type="email" value={nuevoEmp.email}
                               onChange={e => setNuevoEmp({ ...nuevoEmp, email: e.target.value })}
-                              placeholder="Email (opcional)"
+                              placeholder="Email *"
                               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                             <input value={nuevoEmp.telefono}
                               onChange={e => setNuevoEmp({ ...nuevoEmp, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
-                              placeholder="Teléfono (opcional)" maxLength={10} inputMode="numeric"
+                              placeholder="Teléfono * (10 dígitos)" maxLength={10} inputMode="numeric"
                               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
                           </div>
                           {crearError && <p className="text-[11px] text-red-500">{crearError}</p>}
@@ -457,7 +454,10 @@ export default function MisEventos() {
                             </div>
                           )}
                           <div className="flex gap-2">
-                            <button onClick={crearYAsignar} disabled={creando || !nuevoEmp.nombre.trim()}
+                            <button
+                              onClick={crearYAsignar}
+                              disabled={creando || !nuevoEmp.nombre.trim() || !/^\S+@\S+\.\S+$/.test(nuevoEmp.email) || !/^\d{10}$/.test(nuevoEmp.telefono)}
+                              title="Correo y teléfono (10 dígitos) son obligatorios"
                               className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
                               style={{ backgroundColor: "#2563EB" }}>
                               {creando ? "Creando…" : "Crear y agregar"}
