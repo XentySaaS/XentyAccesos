@@ -143,6 +143,17 @@ up` → connector + redis healthy; arranque con nonce+ownership en Redis; contra
 orden de proveedores. **Falta solo provisionar en un host de producción** (mismo bloqueo que el CD del
 principal). Para stop: `docker compose -f docker-compose.prod.yml down` en `xenty-connector`.
 
+**Pantallas de vinculación de WhatsApp** (principal `6a10439`): los usuarios ya **no necesitan CLI**
+para vincular el número. El navegador nunca ve el secreto HMAC — el backend firma por él
+(`apps/mensajeria/connector_client.py`, reusa la firma de `ConnectorProvider`):
+- **Admin del tenant** (frontend-acceso, *Mensajería · Proveedores*): tarjeta "WhatsApp del Connector"
+  con estado, botón **Vincular** → QR con polling hasta conectar, y **Desvincular**. Endpoints
+  `/api/mensajeria/whatsapp/sesion/` (GET/POST/DELETE) + `/qr/` (conexión = `PreferenciaMensajeria.connection_id`).
+- **Super-admin** (frontend-admin, *Comunicaciones*): sección "Sesiones por tenant" (tenant + conn →
+  vincular/estado/QR/desvincular). Endpoints `/api/admin/comunicaciones/sesion/` + `/qr/`.
+- Tests: 5 (`test_connector_sesiones.py`). Verificado en vivo: el proxy firmado alcanzó el XCC local y
+  devolvió la sesión de `museos` (200). Ambas SPAs compilan.
+
 **Verificación:**
 - **Connector** (contenedor `node:20-slim`, Node no está en el host): `typecheck` + `build` limpios;
   `npm test` → **29 tests** (nonce/metrics/webhook/ownership/server); integración Redis (nonce +

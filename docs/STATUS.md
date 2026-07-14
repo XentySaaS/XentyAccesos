@@ -58,6 +58,12 @@
 (`ConfiguracionConnector` global: `habilitado`, `url_base`, `hmac_secret` cifrado, umbrales del breaker).
 El `hmac_secret` debe ser idéntico al `XCC_HMAC_SECRET` del servicio.
 
+**Vinculación por UI (sin CLII):** el admin del tenant vincula su WhatsApp en *Mensajería · Proveedores*
+(tarjeta "WhatsApp del Connector": estado + QR con polling + desvincular) y el super-admin gestiona
+sesiones por tenant en *Comunicaciones*. El navegador **nunca** ve el secreto HMAC: el backend firma
+por él (`apps/mensajeria/connector_client.py` → `/api/mensajeria/whatsapp/*` y
+`/api/admin/comunicaciones/sesion|qr`).
+
 **Decisión pendiente — proveedor de WhatsApp (costos):** hoy **UltraMsg** es el primario (~$39/mes,
 no-oficial). XCC (Baileys, self-host) es **más barato** (~$0 + servidor) pero también **no-oficial**
 (mismo riesgo de baneo). La **WhatsApp Cloud API oficial** (Meta) no tiene cuota fija (pago por
