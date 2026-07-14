@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface Empleado {
   id: number;
@@ -358,17 +359,26 @@ export default function Empleados() {
             {createError && <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{createError}</p>}
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Nombre completo</label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Nombre completo</label>
+                  <Ayuda>Nombre y apellidos del empleado tal como aparecen en su identificación. Se imprime en el gafete de acceso.</Ayuda>
+                </div>
                 <input required value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })}
                   className={inputCls} placeholder="Juan García López" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                  <Ayuda>Correo del empleado. Es obligatorio porque sirve para identificarlo y evitar duplicados: si ya existe en tu empresa, se actualizan sus datos en vez de crear otro.</Ayuda>
+                </div>
                 <input type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                   className={inputCls} placeholder="juan@empresa.com" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                  <Ayuda>Celular a 10 dígitos, sin lada internacional (ej. 5512345678). Se usa para notificarle por WhatsApp sobre sus accesos.</Ayuda>
+                </div>
                 <input required pattern="[0-9]{10}" title="10 dígitos, sin lada" value={form.telefono}
                   onChange={e => setForm({ ...form, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                   className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
@@ -416,12 +426,18 @@ export default function Empleados() {
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Email <span className="text-red-500">*</span></label>
+                  <Ayuda>Correo del empleado. Es obligatorio: identifica a la persona y evita duplicados dentro de tu empresa.</Ayuda>
+                </div>
                 <input type="email" required value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })}
                   className={inputCls} placeholder="juan@empresa.com" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Teléfono <span className="text-red-500">*</span></label>
+                  <Ayuda>Celular a 10 dígitos, sin lada internacional (ej. 5512345678). Se usa para notificarle por WhatsApp sobre sus accesos.</Ayuda>
+                </div>
                 <input required pattern="[0-9]{10}" title="10 dígitos, sin lada" value={editForm.telefono}
                   onChange={e => setEditForm({ ...editForm, telefono: e.target.value.replace(/\D/g, "").slice(0, 10) })}
                   className={inputCls} placeholder="5512345678" maxLength={10} inputMode="numeric" />
@@ -497,7 +513,10 @@ export default function Empleados() {
               {/* Subir nuevo documento */}
               {!loadingDocs && tipos.length > 0 && (
                 <div className="border-t border-slate-100 pt-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Subir documento</p>
+                  <div className="mb-2 flex items-center gap-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Subir documento</p>
+                    <Ayuda>Elige el tipo de documento requerido (INE, comprobante, etc.) y adjunta el archivo. El recinto lo revisará y podrá aprobarlo o rechazarlo; sin los documentos aprobados el empleado no obtiene acceso.</Ayuda>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={tipoSel}

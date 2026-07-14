@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 const INK = "#0F1B2D";
 
@@ -418,7 +419,10 @@ export default function MisEventos() {
                         </button>
                       ) : (
                         <div className="space-y-2">
-                          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Nuevo empleado</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">Nuevo empleado</p>
+                            <Ayuda>Da de alta a la persona sin salir del evento. Nombre, email y teléfono (10 dígitos) son obligatorios; el email evita duplicados dentro de tu empresa. Al crearlo queda asignado a este evento.</Ayuda>
+                          </div>
                           <input autoFocus value={nuevoEmp.nombre}
                             onChange={e => setNuevoEmp({ ...nuevoEmp, nombre: e.target.value })}
                             placeholder="Nombre completo"
@@ -436,10 +440,13 @@ export default function MisEventos() {
                           {crearError && <p className="text-[11px] text-red-500">{crearError}</p>}
                           {reqTipos.length > 0 && (
                             <div className="space-y-1.5 rounded-lg border border-slate-200 bg-white p-2.5">
-                              <p className="text-[11px] font-semibold text-slate-600">
-                                Documentos requeridos
-                                <span className="ml-1 font-normal text-slate-400">— súbelos ahora (opcional)</span>
-                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-[11px] font-semibold text-slate-600">
+                                  Documentos requeridos
+                                  <span className="ml-1 font-normal text-slate-400">— súbelos ahora (opcional)</span>
+                                </p>
+                                <Ayuda>Documentos que este evento exige para dar acceso. Puedes adjuntarlos ahora o dejarlos pendientes; el recinto los revisará y el acceso se confirma cuando estén aprobados.</Ayuda>
+                              </div>
                               {reqTipos.map(t => (
                                 <div key={t.id} className="flex items-center justify-between gap-2">
                                   <span className="min-w-0 flex-1 truncate text-xs text-slate-600">{t.nombre}</span>
@@ -602,6 +609,7 @@ function EmpleadoFila({ emp, epId, cupoLleno, enAccion, onAsignar, onQuitar, onS
 
           {subibles.length > 0 && (
             <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Ayuda>Sube aquí los documentos que le faltan a este empleado para este evento. Elige el tipo, adjunta el archivo (PDF, JPG o PNG) y el recinto lo revisará.</Ayuda>
               <select value={tipoSel} onChange={e => setTipoSel(e.target.value ? Number(e.target.value) : "")}
                 className="h-8 rounded-lg border border-slate-200 bg-white px-2 text-xs">
                 <option value="">Tipo de documento…</option>

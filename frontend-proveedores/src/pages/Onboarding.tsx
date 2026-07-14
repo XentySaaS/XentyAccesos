@@ -1,6 +1,7 @@
 import axios from "axios";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Ayuda } from "../components/Ayuda";
 
 const INK    = "#0F1B2D";
 const SIGNAL = "#2563EB";
@@ -46,10 +47,22 @@ const inp  = (err?: string) =>
       : "border-slate-200 focus:border-blue-400 focus:ring-blue-100"
   }`;
 
-function Lbl({ children, req }: { children: React.ReactNode; req?: boolean }) {
+function Lbl({
+  children,
+  req,
+  ayuda,
+}: {
+  children: React.ReactNode;
+  req?: boolean;
+  ayuda?: React.ReactNode;
+}) {
   return (
-    <span className="mb-1 block text-xs font-semibold text-slate-600">
-      {children}{req && <span className="ml-0.5 text-red-500">*</span>}
+    <span className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+      <span>
+        {children}
+        {req && <span className="ml-0.5 text-red-500">*</span>}
+      </span>
+      {ayuda && <Ayuda>{ayuda}</Ayuda>}
     </span>
   );
 }
@@ -59,15 +72,16 @@ function Err({ msg }: { msg?: string }) {
 
 // ── Subida de archivos ─────────────────────────────────────────────────────
 function FileZone({
-  label, accept, file, onChange, hint, req, error,
+  label, accept, file, onChange, hint, req, error, ayuda,
 }: {
   label: string; accept: string; file: File | null;
   onChange: (f: File | null) => void; hint?: string; req?: boolean; error?: string;
+  ayuda?: React.ReactNode;
 }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
     <div>
-      {label && <Lbl req={req}>{label}</Lbl>}
+      {label && <Lbl req={req} ayuda={ayuda}>{label}</Lbl>}
       <div
         role="button" tabIndex={0}
         onClick={() => ref.current?.click()}
@@ -318,7 +332,7 @@ function IneCaptura({
 
   return (
     <div>
-      <Lbl req>Identificación oficial (INE/IFE)</Lbl>
+      <Lbl req ayuda="Credencial para votar (INE/IFE) del responsable, por ambos lados y legible. Puedes subir la imagen o tomarla con la cámara para autocompletar nombre y CURP. Se almacena cifrada.">Identificación oficial (INE/IFE)</Lbl>
 
       {/* Tabs */}
       <div className="mb-3 flex rounded-xl border border-slate-200 bg-slate-50 p-1 gap-1">
@@ -752,14 +766,14 @@ export default function Onboarding() {
               <div className="space-y-4">
                 <SectionTitle>Datos de la empresa</SectionTitle>
                 <label className="block">
-                  <Lbl req>Nombre de la empresa</Lbl>
+                  <Lbl req ayuda="Nombre comercial con el que opera tu empresa (como la conocen tus clientes). Puede ser distinto de la razón social.">Nombre de la empresa</Lbl>
                   <input value={form.nombre} className={inp(errs.nombre)}
                     onChange={e => { set("nombre", e.target.value); clr("nombre"); }} />
                   <Err msg={errs.nombre} />
                 </label>
 
                 <label className="block">
-                  <Lbl req>Razón social</Lbl>
+                  <Lbl req ayuda="Nombre legal completo tal como aparece en el acta constitutiva o en el RFC, incluyendo el tipo de sociedad (ej. 'Servicios ACME, S.A. de C.V.').">Razón social</Lbl>
                   <input value={form.razon_social} className={inp(errs.razon_social)}
                     onChange={e => { set("razon_social", e.target.value); clr("razon_social"); }} />
                   <Err msg={errs.razon_social} />
@@ -767,14 +781,14 @@ export default function Onboarding() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <label className="block">
-                    <Lbl>RFC</Lbl>
+                    <Lbl ayuda="Registro Federal de Contribuyentes de la empresa: 12 caracteres si es persona moral, 13 si es persona física (ej. AAA010101XXX). Se valida contra la lista negra del SAT (art. 69-B).">RFC</Lbl>
                     <input value={form.rfc} maxLength={13} placeholder="AAA010101XXX"
                       className={`${inp(errs.rfc)} font-mono uppercase`}
                       onChange={e => { set("rfc", e.target.value.toUpperCase()); clr("rfc"); }} />
                     <Err msg={errs.rfc} />
                   </label>
                   <label className="block">
-                    <Lbl req>Teléfono</Lbl>
+                    <Lbl req ayuda="Teléfono de contacto de la empresa, 10 dígitos sin lada internacional (ej. 5512345678).">Teléfono</Lbl>
                     <input value={form.telefono_empresa} placeholder="5512345678" maxLength={10} inputMode="numeric"
                       className={inp(errs.telefono_empresa)}
                       onChange={e => { set("telefono_empresa", e.target.value.replace(/\D/g, "").slice(0, 10)); clr("telefono_empresa"); }} />
@@ -783,7 +797,7 @@ export default function Onboarding() {
                 </div>
 
                 <label className="block">
-                  <Lbl>Correo electrónico de la empresa</Lbl>
+                  <Lbl ayuda="Correo institucional de la empresa para recibir notificaciones. Puede ser distinto al correo con el que inicias sesión.">Correo electrónico de la empresa</Lbl>
                   <input type="email" value={form.email_empresa}
                     className={inp(errs.email_empresa)}
                     onChange={e => { set("email_empresa", e.target.value); clr("email_empresa"); }} />
@@ -793,9 +807,11 @@ export default function Onboarding() {
                 <SectionTitle>Documentos</SectionTitle>
                 <div className="grid grid-cols-2 gap-4">
                   <FileZone label="Documento REPSE" accept=".pdf,.jpg,.jpeg,.png" req
+                    ayuda="Constancia de tu registro en el REPSE (Registro de Prestadoras de Servicios Especializados de la STPS), obligatorio para subcontratar personal especializado."
                     file={form.repse} onChange={f => { set("repse", f); clr("repse"); }}
                     hint="PDF o imagen · máx. 10 MB" error={errs.repse} />
                   <FileZone label="Documento SUA" accept=".pdf,.jpg,.jpeg,.png" req
+                    ayuda="Comprobante del SUA (Sistema Único de Autodeterminación del IMSS) que acredita el pago de las cuotas de seguridad social de tu personal."
                     file={form.sua} onChange={f => { set("sua", f); clr("sua"); }}
                     hint="PDF o imagen · máx. 10 MB" error={errs.sua} />
                 </div>
@@ -808,26 +824,26 @@ export default function Onboarding() {
                 <SectionTitle>Datos del responsable</SectionTitle>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="block">
-                    <Lbl req>Nombre(s)</Lbl>
+                    <Lbl req ayuda="Nombre(s) del responsable de la cuenta, tal como aparecen en su identificación oficial.">Nombre(s)</Lbl>
                     <input value={form.nombre_resp} className={inp(errs.nombre_resp)}
                       onChange={e => { set("nombre_resp", e.target.value); clr("nombre_resp"); }} />
                     <Err msg={errs.nombre_resp} />
                   </label>
                   <label className="block">
-                    <Lbl req>Apellidos</Lbl>
+                    <Lbl req ayuda="Apellidos del responsable, tal como aparecen en su identificación oficial.">Apellidos</Lbl>
                     <input value={form.apellidos} className={inp(errs.apellidos)}
                       onChange={e => { set("apellidos", e.target.value); clr("apellidos"); }} />
                     <Err msg={errs.apellidos} />
                   </label>
                   <label className="block">
-                    <Lbl req>Puesto</Lbl>
+                    <Lbl req ayuda="Cargo del responsable dentro de la empresa (ej. Director General, Coordinador de Operaciones).">Puesto</Lbl>
                     <input value={form.puesto} placeholder="Ej. Director General"
                       className={inp(errs.puesto)}
                       onChange={e => { set("puesto", e.target.value); clr("puesto"); }} />
                     <Err msg={errs.puesto} />
                   </label>
                   <label className="block">
-                    <Lbl req>WhatsApp</Lbl>
+                    <Lbl req ayuda="Celular del responsable a 10 dígitos. Ahí recibirás avisos de acceso y notificaciones por WhatsApp.">WhatsApp</Lbl>
                     <input value={form.whatsapp} placeholder="5512345678" maxLength={10} inputMode="numeric"
                       className={inp(errs.whatsapp)}
                       onChange={e => { set("whatsapp", e.target.value.replace(/\D/g, "").slice(0, 10)); clr("whatsapp"); }} />
@@ -836,7 +852,7 @@ export default function Onboarding() {
                 </div>
 
                 <label className="block">
-                  <Lbl req>Correo electrónico (será tu usuario de acceso)</Lbl>
+                  <Lbl req ayuda="Con este correo iniciarás sesión en el portal de proveedores. Debe ser único y válido; ahí llega la verificación de tu cuenta.">Correo electrónico (será tu usuario de acceso)</Lbl>
                   <input type="email" value={form.email} className={inp(errs.email)}
                     onChange={e => { set("email", e.target.value); clr("email"); }} />
                   <Err msg={errs.email} />
@@ -844,14 +860,14 @@ export default function Onboarding() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <label className="block">
-                    <Lbl>CURP</Lbl>
+                    <Lbl ayuda="Clave Única de Registro de Población del responsable: 18 caracteres (ej. XEXX010101HNEXXXA4). Se almacena cifrada. Puede autocompletarse al escanear tu INE.">CURP</Lbl>
                     <input value={form.curp} maxLength={18} placeholder="XEXX010101HNEXXXA4"
                       className={`${inp(errs.curp)} font-mono uppercase`}
                       onChange={e => { set("curp", e.target.value.toUpperCase()); clr("curp"); }} />
                     <Err msg={errs.curp} />
                   </label>
                   <label className="block">
-                    <Lbl>NSS</Lbl>
+                    <Lbl ayuda="Número de Seguridad Social del responsable ante el IMSS: 11 dígitos. Se almacena cifrado.">NSS</Lbl>
                     <input value={form.nss} maxLength={11} placeholder="12345678901"
                       className={`${inp(errs.nss)} font-mono`}
                       onChange={e => { set("nss", e.target.value.replace(/\D/g, "")); clr("nss"); }} />
@@ -874,6 +890,7 @@ export default function Onboarding() {
                 />
 
                 <FileZone label="Foto del responsable" accept=".jpg,.jpeg,.png"
+                  ayuda="Fotografía reciente del rostro del responsable, de frente y bien iluminada. Se imprime en su gafete de acceso."
                   file={form.foto} onChange={f => set("foto", f)}
                   hint="JPG o PNG · máx. 5 MB" />
               </div>
@@ -885,14 +902,14 @@ export default function Onboarding() {
                 <SectionTitle>Crea tu contraseña</SectionTitle>
                 <div className="grid grid-cols-2 gap-4">
                   <label className="block">
-                    <Lbl req>Contraseña</Lbl>
+                    <Lbl req ayuda="Mínimo 8 caracteres. La usarás junto con tu correo para entrar al portal; combina letras, números y símbolos para mayor seguridad.">Contraseña</Lbl>
                     <input type="password" minLength={8} value={form.password}
                       className={inp(errs.password)}
                       onChange={e => { set("password", e.target.value); clr("password"); }} />
                     <Err msg={errs.password} />
                   </label>
                   <label className="block">
-                    <Lbl req>Confirmar contraseña</Lbl>
+                    <Lbl req ayuda="Vuelve a escribir la misma contraseña para confirmar que quedó bien capturada.">Confirmar contraseña</Lbl>
                     <input type="password" minLength={8} value={form.confirmar}
                       className={inp(errs.confirmar)}
                       onChange={e => { set("confirmar", e.target.value); clr("confirmar"); }} />

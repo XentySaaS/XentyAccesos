@@ -85,8 +85,14 @@ no para filtros de búsqueda. **Referencia de estilo:**
 [Eventos.tsx](../frontend-acceso/src/pages/Eventos.tsx) (primer módulo migrado).
 
 > El componente vive en `frontend-acceso/src/components/Ayuda.tsx` (SPA del tenant/operación).
-> Si un formulario del SPA de proveedores (`frontend-proveedores/`) o del super-admin
-> (`frontend-admin/`) lo requiere, replica el mismo patrón con su propio `Ayuda` equivalente.
+> El **SPA de proveedores** ya tiene su propio equivalente en
+> [`frontend-proveedores/src/components/Ayuda.tsx`](../frontend-proveedores/src/components/Ayuda.tsx):
+> mismo patrón e ícono, pero **sin `@radix-ui/react-popover`** (esa SPA no lo trae) — el popover se
+> posiciona con `position: fixed` calculado desde el botón para no recortarse dentro de modales con
+> overflow. Ya está aplicado en Empleados, Documentos, MisEventos (atajo de alta) y **Onboarding**
+> (registro público: RFC, CURP, NSS, INE, REPSE/SUA, etc.). Quedan fuera `Login`, `Recuperar` y
+> `Restablecer` (correo/contraseña obvios). Si un formulario del super-admin (`frontend-admin/`) lo
+> requiere, replica el mismo patrón con su propio `Ayuda` equivalente.
 
 ## 5. Checklist al crear/editar un formulario
 

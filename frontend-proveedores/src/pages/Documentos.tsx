@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api from "../api/client";
+import { Ayuda } from "../components/Ayuda";
 
 interface TipoDocumento { id: number; nombre: string; }
 interface Empleado { id: number; nombre: string; }
@@ -96,21 +97,30 @@ export default function Documentos() {
             {error && <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Empleado</label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Empleado</label>
+                  <Ayuda>Persona de tu empresa a la que pertenece este documento. Debe estar dado de alta antes de subirle documentos.</Ayuda>
+                </div>
                 <select required value={form.empleado} onChange={(e) => setForm({ ...form, empleado: e.target.value })} className={inputCls}>
                   <option value="">Seleccionar…</option>
                   {empleados.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Tipo de documento</label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Tipo de documento</label>
+                  <Ayuda>Qué documento estás subiendo (INE, comprobante de domicilio, etc.). El recinto define qué tipos exige para dar acceso.</Ayuda>
+                </div>
                 <select required value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} className={inputCls}>
                   <option value="">Seleccionar…</option>
                   {tipos.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Archivo (PDF, JPG, PNG · máx. 10 MB)</label>
+                <div className="mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-medium text-slate-600">Archivo (PDF, JPG, PNG · máx. 10 MB)</label>
+                  <Ayuda>Sube el documento escaneado o fotografiado, legible y completo. Formatos aceptados: PDF, JPG o PNG. El recinto lo revisará para aprobarlo o rechazarlo.</Ayuda>
+                </div>
                 <input ref={fileRef} required type="file" accept=".pdf,.jpg,.jpeg,.png"
                   onChange={(e) => setArchivo(e.target.files?.[0] ?? null)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-700" />
