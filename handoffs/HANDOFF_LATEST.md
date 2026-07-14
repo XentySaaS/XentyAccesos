@@ -416,6 +416,26 @@ reinicia, el contenedor `backend` se recrea desde la imagen prod → reinstalar 
 
 ---
 
+## Connector siempre activo tras reiniciar Docker — continuación 2026-07-13
+
+**Síntoma:** el WhatsApp del Connector aparecía "Desconectado" tras reiniciar/relevantar los contenedores.
+
+**Causa raíz:** el `connector` es un servicio con **profile** (`profiles: [connector]`, DEC-008). Un
+`docker compose up -d` **sin** `--profile connector` recrea el resto del stack en una red nueva pero
+**deja al connector en la red vieja** → no resuelve el host `redis` (`getaddrinfo ENOTFOUND redis` en
+bucle). Con Redis inalcanzable, `/v1` falla-cerrado (503) y la sesión (ownership por Redis) no arranca →
+"Desconectado". La **recuperación de sesión sí funciona** (creds persistidas en el volumen `xcc_data`;
+al boot el connector loguea "restaurando sesión persistida" → "sesión conectada").
+
+**Fix de raíz:** `COMPOSE_PROFILES=connector` en el `.env` (dev). Así `docker compose up -d` **normal**
+incluye el connector, lo (re)crea en la **misma red** que redis, y la sesión se auto-recupera. Sigue
+siendo profile (prod lo omite dejando `COMPOSE_PROFILES` vacío → DEC-008 intacto). Documentado en
+`.env.example`. Verificado: `docker compose config --services` ya lista `connector`; sesión de museos =
+`state:open, connected:true`. (Si Docker recrea la red, un `docker compose up -d` la reengancha; ya no
+hace falta `--profile` ni `--force-recreate`.)
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):
