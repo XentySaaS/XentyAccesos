@@ -53,40 +53,32 @@ export default function Layout() {
         } w-60 ${collapsed ? "md:w-16" : "md:w-60"}`}
       >
         {/* Logo + toggles */}
-        <div className="flex items-center justify-between px-4 py-5">
-          {mostrarLabels ? (
-            <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="h-6 w-auto" />
-          ) : (
-            <svg
-              className="mx-auto h-7 w-7 text-white" viewBox="0 0 24 24" fill="none"
-              role="img" aria-label="Xenty"
-            >
-              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-              <circle cx="12" cy="12" r="3.25" fill="currentColor" />
-            </svg>
+        <div className={`flex items-center px-3 py-4 ${mostrarLabels ? "justify-between" : "justify-center"}`}>
+          {mostrarLabels && (
+            <img src={`${import.meta.env.BASE_URL}xenty-white.png`} alt="Xenty" className="ml-1 h-6 w-auto" />
           )}
           <button
             onClick={() => setCollapsed((c) => !c)}
-            className="ml-auto hidden rounded p-1 text-slate-400 hover:text-white hover:bg-white/10 md:block"
-            title={collapsed ? "Expandir" : "Colapsar"}
+            className="hidden rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white md:block"
+            title={collapsed ? "Expandir menú" : "Colapsar menú"}
           >
             {collapsed ? (
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
             ) : (
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
             )}
           </button>
           <button
             onClick={() => setMobileOpen(false)}
-            className="ml-auto rounded p-1 text-slate-400 hover:text-white hover:bg-white/10 md:hidden"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white md:hidden"
             title="Cerrar menú"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-2 pb-4 space-y-0.5">
+        {/* Nav. Scrollbar delgada y discreta. */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-4 [scrollbar-color:rgba(148,163,184,0.35)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/15 [&::-webkit-scrollbar]:w-1.5">
           {NAV_ITEMS.map((item) => {
             const active = location.pathname === item.to;
             return (
@@ -94,14 +86,16 @@ export default function Layout() {
                 key={item.to}
                 to={item.to}
                 title={!mostrarLabels ? item.label : undefined}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                className={`flex items-center rounded-lg py-2 text-sm font-medium transition-colors ${
+                  mostrarLabels ? "gap-3 px-3" : "justify-center px-0"
+                } ${
                   active
                     ? "bg-[#2563EB] text-white"
                     : "text-[#CBD5E1] hover:bg-white/10 hover:text-white"
                 }`}
               >
                 <NavIcon label={item.label} active={active} />
-                {mostrarLabels && <span>{item.label}</span>}
+                {mostrarLabels && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
