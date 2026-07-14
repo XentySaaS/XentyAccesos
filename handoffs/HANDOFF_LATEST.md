@@ -47,6 +47,13 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 12 (2026-07-14):** **fix — dar de baja / reactivar asistente de una cita.** El
+> frontend llamaba a `/api/asistentes/{id}/` (DELETE y PATCH) pero el ViewSet está registrado en
+> **`asistentes-cita`** → **404** ("No se pudo dar de baja al invitado"). Se corrigieron las dos URLs
+> en `Citas.tsx` a `/api/asistentes-cita/{id}/`. Verificado: `asistentes-cita` → 401 (existe),
+> `asistentes` → 404. Backend intacto (perform_destroy = baja lógica estado CANCELADO; reactivar =
+> PATCH `{estado:0}`, con `estado` escribible en el serializer).
+>
 > **Continuación 11 (2026-07-14):** **Historial de cambios más amigable.** (a) Al desplegar una
 > entrada, el detalle **antes/después** ya no se muestra como JSON crudo (`<pre>{JSON.stringify}`)
 > sino como lista **«Campo: valor»** con etiquetas en español (`Historial.tsx` → helpers

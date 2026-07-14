@@ -437,7 +437,7 @@ export default function Citas() {
     if (!window.confirm(`¿Dar de baja a ${a.nombre}? Su gafete quedará sin validez en el acceso.`)) return;
     setAsistBusy(a.id);
     try {
-      await api.delete(`/api/asistentes/${a.id}/`);
+      await api.delete(`/api/asistentes-cita/${a.id}/`);
       await refrescarDetalle(detalle.id);
     } catch {
       alert("No se pudo dar de baja al invitado.");
@@ -450,7 +450,7 @@ export default function Citas() {
     if (!detalle) return;
     setAsistBusy(a.id);
     try {
-      await api.patch(`/api/asistentes/${a.id}/`, { estado: 0 });
+      await api.patch(`/api/asistentes-cita/${a.id}/`, { estado: 0 });
       await refrescarDetalle(detalle.id);
     } catch {
       alert("No se pudo reactivar al invitado.");
