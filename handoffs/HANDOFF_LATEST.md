@@ -47,6 +47,16 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 17 (2026-07-14):** **fix gafete — texto empalmado.** En `apps/gafetes/services.py`
+> `componer_gafete` (usada por **eventos y citas**) tenía alturas de sección **fijas** (`PZ_H=114` sin
+> foto), pero el contenido es dinámico: una zona de 2 palabras ("ZONA NORTE") + el punto de acceso se
+> desbordaban y se encimaban con "Nombre del evento". Se hicieron **dinámicas** las alturas de las
+> secciones con texto envolvente (zona+punto, nombre de evento, nombre de invitado): se mide el
+> contenido con un nuevo helper `_wrap_count` y se reserva el alto real (`H` total crece en vez de
+> recortar). Verificado visualmente (sin foto y con foto + zona/evento/invitado largos + etiquetas de
+> cita). Tests `tests/test_gafetes_layout.py` (2, sin BD). Aplica a los gafetes de estacionamiento no,
+> ese es otra función y no presentaba el problema.
+>
 > **Continuación 16 (2026-07-14):** **verificación — paginación "cargar más" + orden.** El backend ya
 > paginaba (25/pág) pero la UI solo mostraba la 1ª página por columna (mismo límite del diseño viejo).
 > Se agregó **"Cargar más"** en las columnas Proveedores/Empleados (acumula páginas vía `?page=`; los

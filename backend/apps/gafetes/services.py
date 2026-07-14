@@ -280,6 +280,24 @@ def _wrap_text(draw, text: str, x: int, y: int, max_w: int, font, fill, leading:
         draw.text((x, y), line, font=font, fill=fill)
 
 
+def _wrap_count(draw, text: str, max_w: int, font) -> int:
+    """Cuántas líneas ocuparía ``text`` con el mismo criterio que ``_wrap_text`` (para medir alto)."""
+    words = text.split()
+    if not words:
+        return 0
+    lineas, line = 0, ""
+    for word in words:
+        trial = (line + " " + word).strip()
+        bb = draw.textbbox((0, 0), trial, font=font)
+        if bb[2] - bb[0] <= max_w:
+            line = trial
+        else:
+            if line:
+                lineas += 1
+            line = word
+    return lineas + (1 if line else 0)
+
+
 def _text_ls(draw, text: str, x: int, y: int, font, fill, ls: int = 2) -> None:
     """Dibuja texto carácter a carácter con letter-spacing manual."""
     for ch in text:
@@ -491,10 +509,43 @@ def componer_gafete(
 
     BAR_H = 5
     HDR_H = 62
-    PZ_H = (16 + PHOTO_H_I + 16) if foto_bytes else 114  # 164 con foto, 114 sin foto
-    EVT_H = 84
+
+    # ── Alturas dinámicas de las secciones con texto envolvente ──────────────────
+    # Con altura fija, el texto largo (zona en 2 líneas como "ZONA NORTE", el punto de acceso, el
+    # nombre del evento o del invitado) se encimaba con la sección siguiente. Se mide el contenido
+    # real y se reserva ese alto (aplica a gafetes de eventos y de citas: misma función).
+    _m = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
+    if foto_bytes:
+        _zx = PAD + PHOTO_W + 14
+        _zone_col_w = W - PAD - _zx
+    else:
+        _zone_col_w = W - PAD * 2
+    # Fuente de zona ajustada al ancho de la columna (misma lógica que el dibujo, para medir igual).
+    _fz = _bebas(z_size)
+    for _wd in zona.upper().split():
+        _bw = _m.textbbox((0, 0), _wd, font=_fz)
+        if (_bw[2] - _bw[0]) > _zone_col_w:
+            _fz = _bebas(max(round(z_size * _zone_col_w / max(_bw[2] - _bw[0], 1)), 22))
+    _cy = 16 + 13  # py(=y1+16) + offset de la 1ª línea de la zona
+    for _wd in zona.upper().split():
+        _bw = _m.textbbox((0, 0), _wd, font=_fz)
+        _cy += round((_bw[3] - _bw[1]) * 0.88)
+    _div = _cy + 11  # divisor dorado bajo la zona
+    if punto_de_acceso:
+        _pa_lines = max(_wrap_count(_m, punto_de_acceso, _zone_col_w, _inter(11, bold=True)), 1)
+        _pz_needed = _div + 22 + _pa_lines * 15 + 14
+    else:
+        _pz_needed = _div + 16
+    PZ_H = max((16 + PHOTO_H_I + 16) if foto_bytes else 114, _pz_needed)
+
+    _ev_lines = max(_wrap_count(_m, nombre_evento, W - PAD * 2, _inter(13, bold=True)), 1)
+    EVT_H = max(84, 27 + _ev_lines * 17 + 14)
+
     DT_H = 62
-    GN_H = 100
+
+    _gn_lines = max(_wrap_count(_m, nombre_invitado, W - PAD * 2, _inter(17, bold=True)), 1)
+    GN_H = max(100, 27 + _gn_lines * 22 + 16)
+
     QR_H = 360
     FT_H = 33
     H = BAR_H + HDR_H + PZ_H + EVT_H + DT_H + GN_H + QR_H + FT_H
