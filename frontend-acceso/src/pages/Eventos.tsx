@@ -430,11 +430,13 @@ export default function Eventos() {
                         <button onClick={() => transicion(ev,"cancelar")}
                           className="text-xs text-red-500 hover:underline">Cancelar</button>
                       )}
-                      <button onClick={() => abrirEditar(ev)}
-                        className="rounded border border-slate-200 px-3 py-1 text-xs font-medium text-signal-600 hover:bg-signal-50 transition-colors"
-                        style={{ color: "#2563EB" }}>
-                        ✎ Editar
-                      </button>
+                      {ev.estado !== "cancelado" && (
+                        <button onClick={() => abrirEditar(ev)}
+                          className="rounded border border-slate-200 px-3 py-1 text-xs font-medium text-signal-600 hover:bg-signal-50 transition-colors"
+                          style={{ color: "#2563EB" }}>
+                          ✎ Editar
+                        </button>
+                      )}
                       <button onClick={() => eliminar(ev)}
                         className="rounded border border-red-100 px-3 py-1 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
                         ✕ Borrar

@@ -139,6 +139,43 @@ def test_asistente_dado_de_baja_no_bloquea_realta(dos_tenants):
         assert len(creados) == 1  # el cancelado no bloquea
 
 
+def test_no_editar_cita_cancelada(dos_tenants):
+    """Una cita cancelada es terminal: perform_update la rechaza."""
+    from rest_framework.exceptions import PermissionDenied
+
+    from apps.citas.models import Cita
+    from apps.citas.serializers import CitaSerializer
+    from apps.citas.views import CitaViewSet
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        cita, u = _cita_directa()
+        cita.estado = Cita.Estado.CANCELADA
+        cita.save(update_fields=["estado"])
+
+        vs = CitaViewSet()
+        vs.request = SimpleNamespace(user=u)
+        with pytest.raises(PermissionDenied):
+            vs.perform_update(CitaSerializer(instance=cita))
+
+
+def test_no_reenviar_invitacion_cita_cancelada(dos_tenants):
+    from apps.citas.models import Cita
+    from apps.citas.views import CitaViewSet
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        cita, u = _cita_directa()
+        cita.estado = Cita.Estado.CANCELADA
+        cita.save(update_fields=["estado"])
+
+        vs = CitaViewSet()
+        vs.request = SimpleNamespace(user=u)
+        vs.get_object = lambda: cita
+        resp = vs.reenviar_invitacion(vs.request, cita.pk)
+        assert resp.status_code == 400
+
+
 def test_cita_no_borrable_con_asistente_activo(dos_tenants):
     from rest_framework.exceptions import PermissionDenied
 

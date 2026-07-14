@@ -67,6 +67,12 @@ class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         serializer.validated_data["creado_por"] = self.request.user
         super().perform_create(serializer)
 
+    def perform_update(self, serializer):
+        # Un evento cancelado es terminal (el estado ya no transiciona): tampoco se editan sus datos.
+        if serializer.instance.estado == Evento.Estado.CANCELADO:
+            raise PermissionDenied("El evento está cancelado; no se puede editar.")
+        super().perform_update(serializer)
+
     def perform_destroy(self, instance):
         # No eliminable si tiene proveedores o empleados asignados (SAR_FUNC §6.1).
         if EventoProveedor.objects.filter(evento=instance).exists():
@@ -242,6 +248,9 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         self._exige_operacion()
+        evento = serializer.validated_data.get("evento")
+        if evento and evento.estado == Evento.Estado.CANCELADO:
+            raise PermissionDenied("El evento está cancelado; no se pueden invitar proveedores.")
         super().perform_create(serializer)
         ep = serializer.instance
         self._sync_cajones(ep)
@@ -251,6 +260,8 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         self._exige_operacion()
+        if serializer.instance.evento.estado == Evento.Estado.CANCELADO:
+            raise PermissionDenied("El evento está cancelado; no se puede editar la invitación.")
         super().perform_update(serializer)
         ep = serializer.instance
         self._sync_cajones(ep)

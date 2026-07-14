@@ -86,6 +86,9 @@ class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # Estado previo (DB) antes de aplicar el update, para detectar la transición a cancelada.
         estado_previo = serializer.instance.estado
+        # Una cita cancelada es terminal: no se edita ni se reactiva (crear una nueva si hace falta).
+        if estado_previo == Cita.Estado.CANCELADA:
+            raise PermissionDenied("La cita está cancelada; no se puede editar.")
         super().perform_update(serializer)
         cita = serializer.instance
         from .services import enviar_cancelacion_cita, enviar_notificacion_cita
@@ -202,6 +205,11 @@ class CitaViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         if cita.tipo_cita == Cita.TipoCita.WALK_IN:
             return Response(
                 {"detail": "Las citas walk-in no envían invitaciones."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if cita.estado == Cita.Estado.CANCELADA:
+            return Response(
+                {"detail": "La cita está cancelada; no se pueden reenviar invitaciones."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         from .services import enviar_notificacion_cita

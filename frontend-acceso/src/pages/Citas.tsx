@@ -665,13 +665,15 @@ export default function Citas() {
                           className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">
                           Ver
                         </button>
-                        <button onClick={() => abrirEditar(c.id)}
-                          className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
-                          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                          </svg>
-                        </button>
+                        {c.estado !== "cancelada" && (
+                          <button onClick={() => abrirEditar(c.id)}
+                            className="rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700">
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                          </button>
+                        )}
                         {c.estado === "pendiente" && (
                           <button onClick={() => cambiarEstado(c.id, "confirmada")}
                             className="rounded-lg px-2 py-1 text-xs font-semibold text-white bg-green-600 hover:bg-green-700">
@@ -684,7 +686,7 @@ export default function Citas() {
                             Cancelar
                           </button>
                         )}
-                        {c.tipo_cita !== "walk_in" && (
+                        {c.tipo_cita !== "walk_in" && c.estado !== "cancelada" && (
                           <div className="flex flex-col items-end gap-0.5">
                             <button
                               onClick={() => reenviarInvitacion(c.id)}
@@ -977,7 +979,7 @@ export default function Citas() {
                 )}
 
                 {/* Reenviar invitación */}
-                {detalle.tipo_cita !== "walk_in" && (
+                {detalle.tipo_cita !== "walk_in" && detalle.estado !== "cancelada" && (
                   <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
                     <div className="flex items-center justify-between gap-3">
                       <div>

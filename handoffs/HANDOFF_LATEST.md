@@ -457,6 +457,28 @@ backends" queda **obsoleto**.
 
 ---
 
+## Cita/Evento cancelado = terminal (no editar ni reenviar) — continuación 2026-07-13
+
+**Pedido:** una cita o evento **cancelado** ya no debe poder **editarse** ni **reenviar notificaciones**.
+
+**Backend (fuente de verdad):**
+- Citas (`apps/citas/views.py`): `perform_update` **rechaza** (`PermissionDenied`) si la cita ya está
+  `CANCELADA` (terminal; cancelar sigue permitido porque es la transición desde otro estado);
+  `reenviar_invitacion` responde **400** si está cancelada. (`agregar-asistentes` ya lo bloqueaba.)
+- Eventos (`apps/eventos/views.py`): `EventoViewSet.perform_update` rechaza si el evento está
+  `CANCELADO`. `EventoProveedorViewSet.perform_create`/`perform_update` rechazan si el evento padre
+  está cancelado (no se invita/reenvía a proveedores de un evento muerto). Las transiciones de estado
+  ya eran terminales (`CANCELADO → ∅`).
+
+**Frontend:** en la lista de **Citas** se ocultan **Editar** y **Reenviar** cuando `estado==cancelada`
+(y el bloque "Reenviar invitación" del detalle); en **Eventos** se oculta **✎ Editar** cuando
+`estado==cancelado`.
+
+**Verificación:** `test_citas_asistentes.py` (+2: no-editar / no-reenviar) + `test_eventos_cancelado.py`
+(no-editar). Tests verdes; `ruff` limpio; `frontend-acceso` compila. Sin migraciones.
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):
