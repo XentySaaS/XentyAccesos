@@ -612,8 +612,14 @@ export default function Onboarding() {
       await http.post("/api/onboarding/proveedor/", fd);
       setSuccess(true);
     } catch (err: any) {
+      const status = err?.response?.status;
       const d = err?.response?.data;
-      if (d && typeof d === "object") {
+      if (status === 413) {
+        // El servidor rechazó el envío por tamaño (INE + selfie + documentos). Mensaje claro en vez
+        // del genérico, e indica cómo resolverlo.
+        setErrs({ general: "Los archivos superan el tamaño permitido. Reduce el tamaño de las imágenes o documentos (o vuelve a tomar las fotos) e inténtalo de nuevo." });
+        setStep(1);
+      } else if (d && typeof d === "object") {
         const mapped: typeof errs = {};
         for (const [k, v] of Object.entries(d)) {
           mapped[k as keyof FormState] = (Array.isArray(v) ? v[0] : v) as string;

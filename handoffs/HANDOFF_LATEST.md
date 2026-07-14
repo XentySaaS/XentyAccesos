@@ -47,6 +47,16 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 6 (2026-07-14):** **fix onboarding de proveedor — 413 de nginx.** Completar el alta
+> del proveedor fallaba con "Error al enviar." El POST `multipart` (INE + selfie + REPSE/SUA ≈ 1.9 MB)
+> superaba el **default de nginx `client_max_body_size` = 1 MB** → **413** *antes* de llegar al backend
+> (por eso no había traceback: el 413 no aparece en logs de Django, solo en los de nginx; el frontend
+> mostraba el genérico porque el 413 es HTML, no JSON). No fue regresión: el directive nunca existió.
+> Fix de raíz: `client_max_body_size 25m;` en el bloque `http` de `nginx/nginx.conf` (montado como
+> volumen → sobrevive reinicios; `nginx -s reload` aplicado). Además, `frontend-proveedores`
+> Onboarding ahora detecta 413 y muestra un mensaje claro. Los intentos previos murieron en nginx →
+> el backend nunca creó cuenta parcial (proveedor sigue PENDIENTE, el reintento completa limpio).
+>
 > **Continuación 5 (2026-07-14):** **Bitácora de accesos AL SISTEMA** (feature nueva) — los admins del
 > tenant ahora tienen un historial de **autenticación**: modelo `config.BitacoraAcceso` (login /
 > logout / intentos fallidos, con **IP + dispositivo**, para los dos contextos: *acceso* y
