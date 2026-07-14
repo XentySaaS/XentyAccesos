@@ -69,6 +69,22 @@ export default function Seguridad() {
     }
   }
 
+  async function desactivar() {
+    if (!window.confirm("¿Desactivar el código de app (TOTP)? Podrás volver a configurarlo cuando quieras.")) return;
+    setMsg(null);
+    setCargando("desactivar");
+    try {
+      await api.post("/api/auth/mfa/totp/desactivar/");
+      setEnrol(null);
+      setMsg({ tipo: "ok", texto: "Código de app (TOTP) desactivado." });
+      await cargarMe();
+    } catch {
+      setMsg({ tipo: "error", texto: "No se pudo desactivar el TOTP." });
+    } finally {
+      setCargando(null);
+    }
+  }
+
   async function registrar() {
     setMsg(null);
     setCargando("llave");
@@ -141,13 +157,24 @@ export default function Seguridad() {
         </div>
 
         {!enrol ? (
-          <button
-            onClick={enrolar}
-            disabled={cargando !== null}
-            className="mt-4 rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-          >
-            {cargando === "enrolar" ? "Generando…" : totp ? "Reconfigurar" : "Configurar código"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={enrolar}
+              disabled={cargando !== null}
+              className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {cargando === "enrolar" ? "Generando…" : totp ? "Reconfigurar" : "Configurar código"}
+            </button>
+            {totp && (
+              <button
+                onClick={desactivar}
+                disabled={cargando !== null}
+                className="rounded-lg border border-red-200 px-3.5 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                {cargando === "desactivar" ? "Desactivando…" : "Desactivar"}
+              </button>
+            )}
+          </div>
         ) : (
           <div className="mt-4 border-t border-slate-100 pt-4">
             <p className="text-xs text-slate-500">

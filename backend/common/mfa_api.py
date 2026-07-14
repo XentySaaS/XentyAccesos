@@ -102,6 +102,30 @@ class ActivarTOTPView(APIView):
         return Response(data)
 
 
+class DesactivarTOTPView(APIView):
+    """Desactiva el 2º factor por TOTP del actor (borra el secreto persistido).
+
+    Si el actor no tiene otros métodos MFA (WebAuthn), el MFA queda deshabilitado por completo; si
+    conserva llaves WebAuthn, el MFA sigue activo por esa vía. Idempotente: desactivar cuando no hay
+    TOTP no falla.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        if not hasattr(user, "mfa_totp_secret"):
+            return Response({"detail": "MFA no disponible para este actor."}, status=400)
+        user.mfa_totp_secret = None
+        tiene_webauthn = (
+            user.credenciales_webauthn.exists() if hasattr(user, "credenciales_webauthn") else False
+        )
+        user.mfa_habilitado = tiene_webauthn
+        user.save(update_fields=["mfa_totp_secret", "mfa_habilitado"])
+        cache.delete(_enrol_key(request))  # descarta cualquier enrolamiento en curso
+        return Response({"detail": "TOTP desactivado."})
+
+
 class VerificarMFAView(APIView):
     """Completa la sesión: con un token MFA pendiente + código TOTP, emite tokens 'full'."""
 

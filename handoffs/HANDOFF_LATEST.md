@@ -347,6 +347,28 @@ tenant. `WEBAUTHN_RP_ID`/`WEBAUTHN_ORIGINS` quedan solo como fallback; ya no hay
 
 ---
 
+## TOTP "fantasma" en tenant + Desactivar TOTP — continuación 2026-07-13
+
+**Síntoma:** en el tenant, TOTP salía "Activado" (botón "Reconfigurar") aunque el usuario nunca lo
+configuró.
+
+**Causa:** dato viejo. En museos, `manuel@elevation.com.mx` tenía `mfa_totp_secret` **persistido** (del
+código anterior al fix de cache) con `mfa_habilitado=False`. La UI del tenant deriva "Activado" de
+`totp_habilitado = bool(mfa_totp_secret)` (`MeView`), así que un secreto huérfano se veía como activado
+aunque el MFA no se enforce. Se **limpió** ese secreto en dev (`mfa_totp_secret=None`; sin WebAuthn →
+`mfa_habilitado=False`).
+
+**Gap de raíz (arreglado):** no había forma de **desactivar** TOTP desde la UI (solo "Reconfigurar").
+Nuevo `DesactivarTOTPView` en `common/mfa_api.py` (compartido) → borra el secreto y pone
+`mfa_habilitado = (tiene WebAuthn)`; idempotente. Rutas: `api/auth/mfa/totp/desactivar/` (tenant) y
+`api/admin/mfa/totp/desactivar/` (control plane). Botón **Desactivar** (rojo, junto a Reconfigurar) en
+`frontend-acceso/Seguridad.tsx` y `frontend-admin/Seguridad.tsx`, visible solo cuando TOTP está activo.
+
+**Verificación:** `test_mfa_totp.py` (2: desactivar apaga MFA sin WebAuthn / lo conserva con WebAuthn) +
+webauthn 8 → 10 verdes; `ruff` limpio; ambas SPAs compilan. **Sin migraciones.**
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):

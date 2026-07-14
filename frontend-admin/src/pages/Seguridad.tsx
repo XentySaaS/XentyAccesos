@@ -13,7 +13,9 @@ export default function Seguridad() {
   const [codigo, setCodigo]     = useState("");
   const [nombreLlave, setNombreLlave] = useState("");
   const [msg, setMsg]           = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
-  const [cargando, setCargando] = useState<"me" | "enrolar" | "activar" | "llave" | null>("me");
+  const [cargando, setCargando] = useState<
+    "me" | "enrolar" | "activar" | "desactivar" | "llave" | null
+  >("me");
 
   async function registrar() {
     setMsg(null);
@@ -73,6 +75,22 @@ export default function Seguridad() {
     }
   }
 
+  async function desactivar() {
+    if (!window.confirm("¿Desactivar el MFA por TOTP? Podrás volver a configurarlo cuando quieras.")) return;
+    setMsg(null);
+    setCargando("desactivar");
+    try {
+      await api.post("/api/admin/mfa/totp/desactivar/");
+      setEnrol(null);
+      setMsg({ tipo: "ok", texto: "MFA por TOTP desactivado." });
+      await cargarMe();
+    } catch {
+      setMsg({ tipo: "error", texto: "No se pudo desactivar el MFA." });
+    } finally {
+      setCargando(null);
+    }
+  }
+
   const activo = me?.mfa_habilitado === true;
 
   return (
@@ -117,13 +135,24 @@ export default function Seguridad() {
                 ? "Puedes volver a configurar el segundo factor (esto reemplaza el secreto actual)."
                 : "Protege el control plane exigiendo un código temporal además de tu contraseña."}
             </p>
-            <button
-              onClick={enrolar}
-              disabled={cargando !== null}
-              className="mt-3 rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-            >
-              {cargando === "enrolar" ? "Generando…" : activo ? "Reconfigurar MFA" : "Configurar MFA"}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={enrolar}
+                disabled={cargando !== null}
+                className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {cargando === "enrolar" ? "Generando…" : activo ? "Reconfigurar MFA" : "Configurar MFA"}
+              </button>
+              {activo && (
+                <button
+                  onClick={desactivar}
+                  disabled={cargando !== null}
+                  className="rounded-lg border border-red-200 px-3.5 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {cargando === "desactivar" ? "Desactivando…" : "Desactivar"}
+                </button>
+              )}
+            </div>
           </div>
         )}
 

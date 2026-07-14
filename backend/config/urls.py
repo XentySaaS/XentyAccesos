@@ -40,7 +40,12 @@ from apps.soporte.api import (
 from common.auth_api import LogoutView, MeView
 from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
-from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
+from common.mfa_api import (
+    ActivarTOTPView,
+    DesactivarTOTPView,
+    EnrolarTOTPView,
+    VerificarMFAView,
+)
 from common.webauthn_api import (
     LoginOpcionesView as WALoginOpcionesView,
 )
@@ -85,6 +90,11 @@ urlpatterns = [
     path("api/auth/me/", MeView.as_view(), name="me"),
     path("api/auth/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="mfa-totp-enrolar"),
     path("api/auth/mfa/totp/activar/", ActivarTOTPView.as_view(), name="mfa-totp-activar"),
+    path(
+        "api/auth/mfa/totp/desactivar/",
+        DesactivarTOTPView.as_view(),
+        name="mfa-totp-desactivar",
+    ),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
     path(
         "api/auth/mfa/webauthn/registro/opciones/",

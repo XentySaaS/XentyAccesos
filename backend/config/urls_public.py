@@ -24,7 +24,12 @@ from apps.tenants.connector_sesion_api import AdminSesionQRView, AdminSesionView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.health import LivenessView, ReadinessView
-from common.mfa_api import ActivarTOTPView, EnrolarTOTPView, VerificarMFAView
+from common.mfa_api import (
+    ActivarTOTPView,
+    DesactivarTOTPView,
+    EnrolarTOTPView,
+    VerificarMFAView,
+)
 from common.webauthn_api import (
     LoginOpcionesView as WALoginOpcionesView,
 )
@@ -73,6 +78,11 @@ urlpatterns = [
     path("api/admin/me/", MeView.as_view(), name="admin-me"),
     path("api/admin/mfa/totp/enrolar/", EnrolarTOTPView.as_view(), name="admin-mfa-enrolar"),
     path("api/admin/mfa/totp/activar/", ActivarTOTPView.as_view(), name="admin-mfa-activar"),
+    path(
+        "api/admin/mfa/totp/desactivar/",
+        DesactivarTOTPView.as_view(),
+        name="admin-mfa-desactivar",
+    ),
     path("api/admin/mfa/verificar/", VerificarMFAView.as_view(), name="admin-mfa-verificar"),
     path(
         "api/admin/mfa/webauthn/registro/opciones/",
