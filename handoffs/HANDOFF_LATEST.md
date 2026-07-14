@@ -47,6 +47,14 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 10 (2026-07-14):** dos ajustes de UI en frontend-acceso. (a) **Calendario**: las
+> citas/eventos **cancelados** ahora se pintan en **rojo** (#DC2626) en las marcas del día (con
+> tachado), con ítem "Canceladas" en la leyenda y el chip del modal de detalle también en rojo (antes
+> solo se atenuaban con el color normal). (b) **Catálogos › Protocolos**: el campo de archivo decía
+> "PDF / imagen" y aceptaba `.jpg/.png` aunque el backend ya validaba **solo PDF** (`validar_archivo
+> extensiones=(".pdf",), max_mb=10`); se alineó el frontend a **solo PDF, máx. 10 MB** (label, ayuda,
+> hint y `accept=".pdf,application/pdf"`).
+>
 > **Continuación 9 (2026-07-14):** **branding «Xenty Accesos»** en la instalación y los correos.
 > Los logos oficiales viven en el Drive (carpeta Xenty, varias verticales) pero **no son accesibles**
 > desde la cuenta conectada (link-shared por un tercero; `file/d/1YQQ...` da "not found"). Se recreó

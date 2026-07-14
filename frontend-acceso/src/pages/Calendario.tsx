@@ -23,6 +23,7 @@ type Detalle = { tipo: "evento"; item: EventoCal } | { tipo: "cita"; item: CitaC
 const INK = "#0F1B2D";
 const AZUL = "#2563EB";   // eventos
 const VERDE = "#16A34A";  // citas
+const ROJO = "#DC2626";   // cancelados (citas o eventos)
 
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS  = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
@@ -105,6 +106,10 @@ export default function Calendario() {
     }
   }
 
+  // Color del detalle: rojo si está cancelado; si no, azul (evento) / verde (cita).
+  const detCancel = !!detalle && (detalle.item.estado === "cancelado" || detalle.item.estado === "cancelada");
+  const detColor = detCancel ? ROJO : detalle?.tipo === "evento" ? AZUL : VERDE;
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -138,6 +143,7 @@ export default function Calendario() {
       <div className="flex items-center gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: AZUL }} /> Eventos</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: VERDE }} /> Citas</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: ROJO }} /> Canceladas</span>
         {cargando && <span className="text-slate-400">Cargando…</span>}
       </div>
 
@@ -168,7 +174,7 @@ export default function Calendario() {
                   {marcas.slice(0, 3).map((m, j) => (
                     <button key={j} onClick={() => abrirMarca(m)} title={m.nombre}
                       className="block w-full truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white hover:opacity-90"
-                      style={{ backgroundColor: m.tipo === "evento" ? AZUL : VERDE, opacity: m.cancelado ? 0.45 : 1, textDecoration: m.cancelado ? "line-through" : "none" }}>
+                      style={{ backgroundColor: m.cancelado ? ROJO : m.tipo === "evento" ? AZUL : VERDE, textDecoration: m.cancelado ? "line-through" : "none" }}>
                       {m.nombre}
                     </button>
                   ))}
@@ -189,9 +195,9 @@ export default function Calendario() {
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest"
-                  style={{ color: detalle.tipo === "evento" ? AZUL : VERDE }}>
-                  <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: detalle.tipo === "evento" ? AZUL : VERDE }} />
-                  {detalle.tipo === "evento" ? "Evento" : "Cita"}
+                  style={{ color: detColor }}>
+                  <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: detColor }} />
+                  {detalle.tipo === "evento" ? "Evento" : "Cita"}{detCancel ? " · cancelado" : ""}
                 </span>
                 <h2 className="mt-0.5 text-lg font-extrabold tracking-tight" style={{ color: INK }}>{detalle.item.nombre}</h2>
               </div>

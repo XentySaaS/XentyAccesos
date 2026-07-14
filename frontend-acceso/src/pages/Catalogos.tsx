@@ -417,8 +417,8 @@ function Protocolos() {
             </div>
             <div>
               <div className="mb-1 flex items-center gap-1.5">
-                <label className="text-xs font-semibold text-slate-600">Archivo (PDF / imagen)</label>
-                <Ayuda>Documento descargable por los proveedores. PDF, JPG o PNG, máx. 20 MB. El nombre del archivo lo asigna el servidor por seguridad.</Ayuda>
+                <label className="text-xs font-semibold text-slate-600">Archivo (PDF)</label>
+                <Ayuda>Documento descargable por los proveedores. Solo PDF, máx. 10 MB. El nombre del archivo lo asigna el servidor por seguridad.</Ayuda>
               </div>
               <div
                 role="button" tabIndex={0}
@@ -434,11 +434,11 @@ function Protocolos() {
                   <><svg className="h-4 w-4 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                       <path d="M12 16V8m0 0l-3 3m3-3l3 3M20 16.5A3.5 3.5 0 0016.5 13H15a5 5 0 10-9.9 1M4 16.5A3.5 3.5 0 007.5 20h9"/>
                     </svg>
-                    <span className="text-xs text-slate-400">Haz clic para seleccionar · PDF, JPG o PNG · máx. 20 MB</span>
+                    <span className="text-xs text-slate-400">Haz clic para seleccionar · Solo PDF · máx. 10 MB</span>
                   </>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={e => setArchivoFile(e.target.files?.[0] ?? null)}/>
+              <input ref={fileRef} type="file" accept=".pdf,application/pdf" className="hidden" onChange={e => setArchivoFile(e.target.files?.[0] ?? null)}/>
               <Err msg={errs.archivo}/>
             </div>
             <div>
