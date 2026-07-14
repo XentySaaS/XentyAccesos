@@ -369,6 +369,44 @@ webauthn 8 → 10 verdes; `ruff` limpio; ambas SPAs compilan. **Sin migraciones.
 
 ---
 
+## Rediseño de correos: plantilla unificada «Xenty Accesos» (oscura) — continuación 2026-07-13
+
+**Pedido:** reemplazar todos los templates de correo por una plantilla unificada oscura (referencia
+`Email Xenty.dc.html`, 6 tipos), sin cambiar la lógica; quitar links de "Cancelar suscripción"/"Soporte"
+del pie.
+
+**`common/email_builder.py::construir_correo` rediseñado** (único shell de todos los correos):
+cabecera con logo + barra de acento + hero (ícono + título + subtítulo) + **tarjeta de datos** (filas
+etiqueta/valor) + bloque de mensaje + CTA + pie. **Layout por tablas + estilos inline** (compatibilidad
+Gmail/Outlook/Apple Mail; sin flexbox ni `<style>`). Registro `_TIPOS` con 6 acentos/íconos
+(`acceso`, `parking`, `recordatorio`, `modificacion`, `alerta`, `bienvenida`) + `info` (neutro azul
+para reset/verificación). `_SOLID` da color sólido de respaldo por tipo (Outlook no pinta gradientes →
+la barra/botón no caen a dorado). Nuevos params: `tipo`, `titulo`, `subtitulo`, `filas` (`{label,valor,
+color?,mono?,grande?,full?}`), `card_titulo`, `mensaje`, `pre_header`, `footer_legal`, `privacy_url`.
+**Retrocompatible**: `saludo`+`parrafos` siguen funcionando (se renderizan como cuerpo bajo el hero).
+
+**Llamadores mapeados a tipo:**
+- **Citas** (`apps/citas/services.py`) → **tarjeta completa** (`filas` con Invitado/Responsable, Cita,
+  Fecha, Hora, Recinto, Área, Punto, Protocolo): invitación asistente + nueva cita proveedor =
+  `acceso`; cancelaciones + baja de asistente = `modificacion`. Se eliminó `_detalle_parrafos` (helper
+  muerto).
+- **Eventos** (`apps/eventos/services.py`) → shell + acento correcto (conserva su cuerpo de texto):
+  invitación + asignación = `acceso`; invitación-cancelada/desasignación/evento-cancelado = `modificacion`.
+- **`common/emails.py`** (wrappers): invitación/activación proveedor = `bienvenida`; verificación +
+  reset de contraseña = `info`.
+- **Documentos** (`apps/documentos/services.py`): verificado = `bienvenida`, rechazado = `modificacion`.
+
+**Footer:** solo el link «Política de privacidad» (nunca "Cancelar suscripción"/"Soporte"). El
+`texto_plano` (fallback y cuerpo de WhatsApp) **no cambió** en ningún correo.
+
+**Verificación:** suite sin aislamiento **105 verdes**; `ruff` limpio; render de los 6 tipos revisado
+(preview publicado como Artifact). **Sin migraciones.** Los correos reales se ven en **Mailpit**
+(`http://localhost:8025`) al disparar una notificación. Gotcha de la sesión: si Docker Desktop se
+reinicia, el contenedor `backend` se recrea desde la imagen prod → reinstalar dev-deps
+(`docker compose exec backend pip install -r requirements-dev.txt`) antes de correr ruff/pytest.
+
+---
+
 ## Contexto NO obvio (IMPORTANTE)
 
 0. **El repo `xenty-connector` ya tiene remoto** (resuelto 2026-07-13):

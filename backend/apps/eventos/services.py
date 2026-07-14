@@ -213,11 +213,14 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
 
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="acceso",
+        titulo="Invitación a un evento",
         saludo=f"Hola {responsable},",
         parrafos=parrafos,
         cta_texto="Ingresar al panel de proveedor" if cta_url else None,
         cta_url=cta_url,
         asunto=asunto,
+        pre_header=f"{nombre_tenant} te invitó a un evento.",
     )
     enviar_correo_html(
         asunto=asunto,
@@ -245,9 +248,12 @@ def notificar_invitacion_cancelada(ep, *, nombre_tenant: str) -> None:
     )
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="modificacion",
+        titulo="Invitación cancelada",
         saludo="Aviso importante,",
         parrafos=parrafos,
         asunto=asunto,
+        pre_header=f"Tu invitación al evento «{ep.evento.nombre}» fue cancelada.",
     )
     _enviar_whatsapp(proveedor.telefono, texto_plano)
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=destino)
@@ -371,9 +377,13 @@ def notificar_asignacion_empleado(asignacion, *, nombre_tenant: str) -> None:
 
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="acceso",
+        titulo="Tu gafete de acceso",
         saludo=f"Hola {empleado.nombre},",
         parrafos=parrafos,
         asunto=asunto,
+        pre_header=f"Tu gafete de acceso para «{ev.nombre}» está listo.",
+        footer_legal="El gafete es personal e intransferible. Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(
         asunto=asunto,
@@ -399,9 +409,12 @@ def notificar_desasignacion_empleado(empleado, evento, *, nombre_tenant: str) ->
     )
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="modificacion",
+        titulo="Acceso revocado",
         saludo=f"Hola {empleado.nombre},",
         parrafos=parrafos,
         asunto=asunto,
+        pre_header=f"Tu acceso al evento «{evento.nombre}» fue revocado.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=empleado.email)
     _enviar_whatsapp(empleado.telefono, texto_plano)
@@ -521,9 +534,12 @@ def notificar_evento_cancelado(evento, *, nombre_tenant: str) -> int:
         responsable = (ep.proveedor.nombre_responsable or ep.proveedor.nombre or "").strip().title()
         html = construir_correo(
             nombre_tenant=nombre_tenant,
+            tipo="modificacion",
+            titulo="Evento cancelado",
             saludo=f"Hola {responsable}," if responsable else "Estimado proveedor,",
             parrafos=parrafos,
             asunto=asunto,
+            pre_header=f"El evento «{evento.nombre}» fue cancelado.",
         )
         _enviar_whatsapp(ep.proveedor.telefono, texto_plano)
         enviar_correo_html(

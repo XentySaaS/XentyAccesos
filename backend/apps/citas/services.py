@@ -76,14 +76,6 @@ def enviar_baja_asistente(cita, asistente) -> bool:
         from apps.mensajeria.services import notificar_whatsapp
 
         ctx = _contexto(cita)
-        parrafos = [
-            f"Le informamos que fue <strong>dado de baja</strong> de la cita "
-            f"«<strong>{ctx['nombre']}</strong>».",
-            *_detalle_parrafos(ctx),
-            "El gafete o invitación que haya recibido para esta cita <strong>queda sin "
-            "validez</strong>.",
-            "Si tiene dudas, comuníquese con el organizador.",
-        ]
         texto_plano = (
             f"Hola {asistente.nombre}:\n\n"
             f"Fue dado de baja de la cita «{ctx['nombre']}».\n\n"
@@ -93,9 +85,17 @@ def enviar_baja_asistente(cita, asistente) -> bool:
         )
         html = construir_correo(
             nombre_tenant=ctx["tenant"],
+            tipo="modificacion",
+            titulo="Fuiste dado de baja de la cita",
+            subtitulo=f"Ya no formas parte de «{ctx['nombre']}».",
+            filas=_filas_cita(ctx, {"label": "Invitado", "valor": asistente.nombre}),
+            card_titulo="Cita",
+            mensaje=(
+                "El gafete o invitación que haya recibido para esta cita <strong>queda sin "
+                "validez</strong>. Si tiene dudas, comuníquese con el organizador."
+            ),
             asunto=f"Baja de cita: {ctx['nombre']}",
-            saludo=f"Hola {asistente.nombre},",
-            parrafos=parrafos,
+            pre_header=f"Fuiste dado de baja de «{ctx['nombre']}».",
         )
         if asistente.email:
             enviar_correo_html(
@@ -148,19 +148,6 @@ def _contexto(cita) -> dict:
     }
 
 
-def _detalle_parrafos(ctx: dict) -> list[str]:
-    """Bloque de detalles de la visita para el correo (uno por línea, se filtran los vacíos)."""
-    lineas = [
-        f"• Fecha: {ctx['fecha']}",
-        f"• Hora: {ctx['hora']}",
-        f"• Recinto: {ctx['recinto']}" if ctx["recinto"] else "",
-        f"• Área: {ctx['zona']}" if ctx["zona"] else "",
-        f"• Punto de acceso: {ctx['punto']}" if ctx["punto"] else "",
-        f"• Protocolo: {ctx['protocolo']}" if ctx["protocolo"] else "",
-    ]
-    return [line for line in lineas if line]
-
-
 def _detalle_texto(ctx: dict) -> str:
     """Bloque de detalles para WhatsApp (texto plano con íconos)."""
     partes = [
@@ -176,6 +163,25 @@ def _detalle_texto(ctx: dict) -> str:
     if ctx["protocolo"]:
         partes.append(f"📋 Protocolo: {ctx['protocolo']}")
     return "\n".join(partes)
+
+
+def _filas_cita(ctx: dict, primero: dict) -> list[dict]:
+    """Celdas de la tarjeta del correo (``primero`` = Invitado o Responsable)."""
+    filas = [
+        primero,
+        {"label": "Cita", "valor": ctx["nombre"]},
+        {"label": "Fecha", "valor": ctx["fecha"]},
+        {"label": "Hora", "valor": ctx["hora"]},
+    ]
+    if ctx["recinto"]:
+        filas.append({"label": "Recinto", "valor": ctx["recinto"]})
+    if ctx["zona"]:
+        filas.append({"label": "Área", "valor": ctx["zona"]})
+    if ctx["punto"]:
+        filas.append({"label": "Punto de acceso", "valor": ctx["punto"]})
+    if ctx["protocolo"]:
+        filas.append({"label": "Protocolo", "valor": ctx["protocolo"]})
+    return filas
 
 
 # ── Invitación ────────────────────────────────────────────────────────────────
@@ -285,29 +291,23 @@ def _notificar_asistentes(cita, asistentes=None) -> int:
         con_protocolo = prot_adj is not None
         requiere_ine = bool(getattr(asistente, "requiere_ine", False))
 
-        # ── Correo (HTML profesional + adjuntos: gafete y protocolo) ──
-        parrafos = [
-            f"Le damos la bienvenida. <strong>{ctx['tenant']}</strong> le ha registrado como "
-            f"invitado a «<strong>{ctx['nombre']}</strong>».",
-            "<strong>Detalles de su visita</strong>",
-            *_detalle_parrafos(ctx),
-            (
-                "Presente el <strong>gafete adjunto</strong> (código QR) en el punto de acceso "
-                "para registrar su ingreso."
-                if con_gafete
-                else "Presente este correo en el punto de acceso para registrar su ingreso."
-            ),
+        # ── Correo (tarjeta de acceso + adjuntos: gafete y protocolo) ──
+        instrucciones = [
+            "Presente el <strong>gafete adjunto</strong> (código QR) en el punto de acceso "
+            "para registrar su ingreso."
+            if con_gafete
+            else "Presente este correo en el punto de acceso para registrar su ingreso."
         ]
         if requiere_ine:
-            parrafos.append(
-                "Traiga consigo una <strong>identificación oficial vigente</strong> (INE)."
+            instrucciones.append(
+                "Traiga una <strong>identificación oficial vigente</strong> (INE)."
             )
         if con_protocolo:
-            parrafos.append(
+            instrucciones.append(
                 f"Adjuntamos el <strong>protocolo de acceso</strong> («{ctx['protocolo']}»); "
                 "le pedimos revisarlo antes de su visita."
             )
-        parrafos.append(
+        instrucciones.append(
             f"Su acceso es personal e intransferible y estará vigente hasta el {vigencia_hasta}."
             if vigencia_hasta
             else "Su acceso es personal e intransferible."
@@ -323,9 +323,15 @@ def _notificar_asistentes(cita, asistentes=None) -> int:
 
         html = construir_correo(
             nombre_tenant=ctx["tenant"],
+            tipo="acceso",
+            titulo="Tu acceso está confirmado",
+            subtitulo=f"{ctx['tenant']} te registró como invitado a «{ctx['nombre']}».",
+            filas=_filas_cita(ctx, {"label": "Invitado", "valor": asistente.nombre}),
+            card_titulo="Detalles del acceso",
+            mensaje=" ".join(instrucciones),
             asunto=f"Invitación: {ctx['nombre']}",
-            saludo=f"Hola {asistente.nombre},",
-            parrafos=parrafos,
+            pre_header=f"Tu acceso a «{ctx['nombre']}» está listo.",
+            footer_legal="El acceso es personal e intransferible y válido únicamente para el titular registrado. Xenty Accesos.",
         )
 
         # ── WhatsApp (texto profesional + gafete y protocolo como media) ──
@@ -393,21 +399,18 @@ def _notificar_proveedor(cita) -> None:
         else None
     )
 
-    parrafos = [
-        f"<strong>{ctx['tenant']}</strong> ha programado la cita "
-        f"«<strong>{ctx['nombre']}</strong>» para su empresa.",
-        "<strong>Detalles de la cita</strong>",
-        *_detalle_parrafos(ctx),
-        f"• Personas permitidas: {cita.limite}" if cita.limite else "",
+    filas = _filas_cita(ctx, {"label": "Responsable", "valor": nombre_resp})
+    if cita.limite:
+        filas.append({"label": "Personas permitidas", "valor": str(cita.limite)})
+    mensaje = (
         "Ingrese al panel de proveedores para asignar al personal que asistirá; cada persona "
-        "recibirá su gafete de acceso con código QR.",
-    ]
+        "recibirá su gafete de acceso con código QR."
+    )
     if prot_adj:
-        parrafos.append(
-            f"Adjuntamos el <strong>protocolo de acceso</strong> («{ctx['protocolo']}»); "
+        mensaje += (
+            f" Adjuntamos el <strong>protocolo de acceso</strong> («{ctx['protocolo']}»); "
             "compártalo con el personal asignado."
         )
-    parrafos = [p_ for p_ in parrafos if p_]
 
     texto_plano = (
         f"Hola {nombre_resp}:\n\n"
@@ -421,9 +424,14 @@ def _notificar_proveedor(cita) -> None:
 
     html = construir_correo(
         nombre_tenant=ctx["tenant"],
+        tipo="acceso",
+        titulo="Nueva cita programada",
+        subtitulo=f"{ctx['tenant']} programó «{ctx['nombre']}» para tu empresa.",
+        filas=filas,
+        card_titulo="Detalles de la cita",
+        mensaje=mensaje,
         asunto=f"Nueva cita: {ctx['nombre']}",
-        saludo=f"Hola {nombre_resp},",
-        parrafos=parrafos,
+        pre_header=f"Nueva cita para tu empresa: «{ctx['nombre']}».",
     )
     if email:
         enviar_correo_html(
@@ -449,14 +457,6 @@ def _cancelar_asistentes(cita) -> int:
     for asistente in cita.asistentes.all():
         if not asistente.email and not asistente.telefono:
             continue
-        parrafos = [
-            f"Le informamos que la cita «<strong>{ctx['nombre']}</strong>» a la que estaba "
-            f"invitado ha sido <strong>cancelada</strong>.",
-            *_detalle_parrafos(ctx),
-            "El gafete o invitación que haya recibido para esta cita <strong>queda sin "
-            "validez</strong>. Si se reprograma, recibirá una nueva invitación.",
-            "Si tiene dudas, comuníquese con el organizador.",
-        ]
         texto_plano = (
             f"Hola {asistente.nombre}:\n\n"
             f"La cita «{ctx['nombre']}» a la que estaba invitado ha sido CANCELADA.\n\n"
@@ -467,9 +467,18 @@ def _cancelar_asistentes(cita) -> int:
         )
         html = construir_correo(
             nombre_tenant=ctx["tenant"],
+            tipo="modificacion",
+            titulo="Cita cancelada",
+            subtitulo=f"La cita «{ctx['nombre']}» a la que estabas invitado fue cancelada.",
+            filas=_filas_cita(ctx, {"label": "Invitado", "valor": asistente.nombre}),
+            card_titulo="Cita cancelada",
+            mensaje=(
+                "El gafete o invitación que haya recibido para esta cita <strong>queda sin "
+                "validez</strong>. Si se reprograma, recibirá una nueva invitación. Si tiene dudas, "
+                "comuníquese con el organizador."
+            ),
             asunto=f"Cita cancelada: {ctx['nombre']}",
-            saludo=f"Hola {asistente.nombre},",
-            parrafos=parrafos,
+            pre_header=f"La cita «{ctx['nombre']}» fue cancelada.",
         )
         if asistente.email:
             enviar_correo_html(
@@ -496,14 +505,6 @@ def _cancelar_proveedor(cita) -> None:
 
     ctx = _contexto(cita)
     nombre_resp = getattr(p, "nombre_responsable", None) or p.nombre or "Responsable"
-    parrafos = [
-        f"Le informamos que la cita «<strong>{ctx['nombre']}</strong>» programada para su empresa "
-        f"ha sido <strong>cancelada</strong>.",
-        *_detalle_parrafos(ctx),
-        "Los gafetes emitidos para esta cita <strong>quedan sin validez</strong>. Si se "
-        "reprograma, se le notificará nuevamente.",
-        "Si tiene dudas, comuníquese con el organizador.",
-    ]
     texto_plano = (
         f"Hola {nombre_resp}:\n\n"
         f"La cita «{ctx['nombre']}» programada para su empresa ha sido CANCELADA.\n\n"
@@ -513,9 +514,17 @@ def _cancelar_proveedor(cita) -> None:
     )
     html = construir_correo(
         nombre_tenant=ctx["tenant"],
+        tipo="modificacion",
+        titulo="Cita cancelada",
+        subtitulo=f"La cita «{ctx['nombre']}» programada para tu empresa fue cancelada.",
+        filas=_filas_cita(ctx, {"label": "Responsable", "valor": nombre_resp}),
+        card_titulo="Cita cancelada",
+        mensaje=(
+            "Los gafetes emitidos para esta cita <strong>quedan sin validez</strong>. Si se "
+            "reprograma, se le notificará nuevamente. Si tiene dudas, comuníquese con el organizador."
+        ),
         asunto=f"Cita cancelada: {ctx['nombre']}",
-        saludo=f"Hola {nombre_resp},",
-        parrafos=parrafos,
+        pre_header=f"La cita «{ctx['nombre']}» fue cancelada.",
     )
     if email:
         enviar_correo_html(

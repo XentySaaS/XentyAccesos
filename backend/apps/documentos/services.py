@@ -93,9 +93,12 @@ def _avisar_documento(documento, *, verificado: bool) -> None:
     email = getattr(cuenta, "email", None)
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="bienvenida" if verificado else "modificacion",
+        titulo="Documento verificado" if verificado else "Documento rechazado",
         saludo=f"Hola {responsable}," if responsable else "Estimado proveedor,",
         parrafos=parrafos,
         asunto=asunto,
+        pre_header=f"El documento «{documento.tipo_documento}» fue {estado_txt}.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email)
 

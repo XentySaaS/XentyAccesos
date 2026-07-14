@@ -24,6 +24,11 @@
 | soporte | ◑ | Mesa de Ayuda Nivel B: salud de config + cliente (probar/enviar, sandbox) + config por tenant + pantalla `Soporte.tsx`. **Cliente-only**: el servicio externo de Mesa aún no existe → ítem de menú **oculto temporalmente** (KNOWN_ISSUES ISSUE-006) |
 | dispositivos | ✔ | `EdgeHMACAuthentication` con nonce anti-replay (Redis); `DispositivoEdge`/`ComandoEdge` en apps.tenants |
 
+> **Correos (transversal):** plantilla unificada **«Xenty Accesos»** (oscura, por tablas) en
+> `common/email_builder.py::construir_correo` — 6 tipos (`acceso`/`parking`/`recordatorio`/
+> `modificacion`/`alerta`/`bienvenida`) + `info`, con hero + tarjeta de datos + mensaje + CTA. Todos los
+> llamadores (citas, eventos, proveedores, documentos, reset/verificación) mapeados a su tipo.
+
 ## Frontends
 
 | SPA | Estado | Detalle |

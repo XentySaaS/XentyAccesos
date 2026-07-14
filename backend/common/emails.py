@@ -68,11 +68,15 @@ def enviar_invitacion_proveedor(
     texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="bienvenida",
+        titulo="Te invitamos a registrarte",
         saludo=saludo,
         parrafos=parrafos,
         cta_texto="Completar mi registro",
         cta_url=url,
         asunto=asunto,
+        pre_header=f"Regístrate como proveedor de {nombre_tenant} (enlace válido 72 horas).",
+        footer_legal="Si no esperabas esta invitación, ignora este correo. Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
     _notificar_wa(telefono, texto_plano)
@@ -97,11 +101,15 @@ def enviar_verificacion_email(
     texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="info",
+        titulo="Confirma tu correo",
         saludo=saludo,
         parrafos=parrafos,
         cta_texto="Confirmar mi correo",
         cta_url=url,
         asunto=asunto,
+        pre_header=f"Confirma tu correo para activar tu cuenta en {nombre_tenant}.",
+        footer_legal="Si no realizaste este registro, ignora este mensaje. Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
 
@@ -127,11 +135,15 @@ def enviar_reset_password(
     texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="info",
+        titulo="Restablece tu contraseña",
         saludo=saludo,
         parrafos=parrafos,
         cta_texto="Restablecer mi contraseña",
         cta_url=url,
         asunto=asunto,
+        pre_header=f"Restablece la contraseña de tu cuenta en {nombre_tenant} (enlace válido 1 hora).",
+        footer_legal="Si no solicitaste este cambio, ignora este mensaje. Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
     _notificar_wa(telefono, texto_plano)
@@ -159,11 +171,15 @@ def enviar_activacion_proveedor(
     texto_plano = _plano(saludo, parrafos, url=url, nombre_tenant=nombre_tenant)
     html = construir_correo(
         nombre_tenant=nombre_tenant,
+        tipo="bienvenida",
+        titulo="Tu acceso está listo",
         saludo=saludo,
         parrafos=parrafos,
         cta_texto="Ir al panel de proveedor",
         cta_url=url,
         asunto=asunto,
+        pre_header=f"Tu acceso como proveedor de {nombre_tenant} ya está activo.",
+        footer_legal="Xenty Accesos · Sistema de Control de Acceso.",
     )
     enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
     _notificar_wa(telefono, texto_plano)
