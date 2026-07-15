@@ -170,6 +170,15 @@ export default function Sanciones() {
         resolviendoRef.current = true;
         try {
           const { data } = await api.post("/api/sanciones/resolver-qr/", { qr: texto });
+          // Si el evento del gafete no está en la lista de activos, lo agregamos como opción para que
+          // el select lo refleje (si no, el empleado quedaría con el select de evento en blanco).
+          if (data.evento_id) {
+            setEventos(prev =>
+              prev.some(ev => ev.id === data.evento_id)
+                ? prev
+                : [...prev, { id: data.evento_id, nombre: data.evento_nombre ?? `Evento #${data.evento_id}`, estado: "" }],
+            );
+          }
           setForm(f => ({ ...f, empleado: String(data.empleado_id), evento: data.evento_id ? String(data.evento_id) : f.evento }));
           setEmpLabel(data.empresa ? `${data.empleado_nombre} — ${data.empresa}` : data.empleado_nombre);
           setScanOpen(false);
@@ -310,11 +319,33 @@ export default function Sanciones() {
             )}
 
             <div className="space-y-3">
-              {/* 1) Evento activo (primero: acota a sus asistentes) */}
+              {/* Atajo rápido (arriba): escanear el gafete resuelve empleado + evento de una vez. */}
+              <button type="button" onClick={() => { setScanError(null); setScanOpen(true); }}
+                className="flex w-full items-center gap-3 rounded-lg border-2 border-dashed border-blue-300 bg-blue-50/60 px-4 py-3 text-left transition hover:border-blue-400 hover:bg-blue-50">
+                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-white" style={{ backgroundColor: "#2563EB" }}>
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/>
+                    <path d="M21 16h-3v3M18 21h3M21 19v-3M13 3v5h5M13 13h5v5M13 8v5M8 13H3"/>
+                  </svg>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-blue-800">Escanear gafete QR</span>
+                  <span className="block text-[11px] leading-snug text-blue-700/80">Lo más rápido: identifica al empleado y su evento al instante.</span>
+                </span>
+              </button>
+
+              {/* El QR es el atajo; abajo el mismo dato se captura a mano (con sus validaciones). */}
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-slate-200" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">o captura manualmente</span>
+                <div className="h-px flex-1 bg-slate-200" />
+              </div>
+
+              {/* Evento activo: acota los asistentes buscables. */}
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label htmlFor="san-evento" className="text-xs font-semibold text-slate-600">Evento *</label>
-                  <Ayuda>Evento activo en cuyo contexto ocurrió la falta. Selecciónalo primero: la búsqueda de empleado se acota a quienes asisten a ese evento. Se autocompleta al escanear un gafete.</Ayuda>
+                  <Ayuda>Evento activo en cuyo contexto ocurrió la falta. Selecciónalo para buscar a un empleado entre sus asistentes. Se autocompleta al escanear un gafete.</Ayuda>
                 </div>
                 <select id="san-evento" value={F.evento} onChange={e => seleccionarEvento(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100">
@@ -323,11 +354,11 @@ export default function Sanciones() {
                 </select>
               </div>
 
-              {/* 2) Empleado del evento: escaneo QR o búsqueda manual */}
+              {/* Empleado: chip si ya elegido; si no, búsqueda acotada al evento (deshabilitada sin evento). */}
               <div>
                 <div className="mb-1 flex items-center gap-1.5">
                   <label className="text-xs font-semibold text-slate-600">Empleado *</label>
-                  <Ayuda>Persona sancionada, entre los asistentes al evento elegido. Escanea su gafete QR si lo lleva, o búscala por nombre. La sanción bloquea su acceso según la penalidad.</Ayuda>
+                  <Ayuda>Persona sancionada. Escanea su gafete arriba, o elige un evento y búscala por nombre entre sus asistentes. La sanción bloquea su acceso según la penalidad.</Ayuda>
                 </div>
 
                 {form.empleado ? (
@@ -335,43 +366,34 @@ export default function Sanciones() {
                     <span className="font-medium text-slate-700">{empLabel || `Empleado #${form.empleado}`}</span>
                     <button type="button" onClick={limpiarEmpleado} className="text-xs text-slate-400 hover:text-red-500">Cambiar</button>
                   </div>
-                ) : !form.evento ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400">
-                    Selecciona primero un evento para elegir a un empleado, o escanea su gafete.
-                  </p>
                 ) : (
                   <>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => { setScanError(null); setScanOpen(true); }}
-                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                          <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/>
-                          <path d="M21 16h-3v3M18 21h3M21 19v-3M13 3v5h5M13 13h5v5M13 8v5M8 13H3"/>
-                        </svg>
-                        Escanear QR
-                      </button>
-                      <div className="relative flex-1">
-                        <input value={empQuery} onChange={e => setEmpQuery(e.target.value)}
-                          placeholder="Empleado del evento (nombre)…"
-                          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
-                        {(buscando || empSugs.length > 0) && (
-                          <ul className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
-                            {buscando && <li className="px-3 py-2 text-xs text-slate-400">Buscando…</li>}
-                            {!buscando && empSugs.length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Sin asistentes que coincidan.</li>}
-                            {empSugs.map(o => (
-                              <li key={o.id}>
-                                <button type="button" onClick={() => seleccionarEmpleado(o)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
-                                  <span className="font-medium text-slate-800">{o.nombre}</span>
-                                  {o.empresa && <span className="ml-1 text-xs text-slate-400">({o.empresa})</span>}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
+                    <div className="relative">
+                      <input value={empQuery} onChange={e => setEmpQuery(e.target.value)}
+                        disabled={!form.evento}
+                        placeholder={form.evento ? "Empleado del evento (nombre)…" : "Selecciona un evento para buscar…"}
+                        className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400" />
+                      {form.evento && (buscando || empSugs.length > 0) && (
+                        <ul className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+                          {buscando && <li className="px-3 py-2 text-xs text-slate-400">Buscando…</li>}
+                          {!buscando && empSugs.length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Sin asistentes que coincidan.</li>}
+                          {empSugs.map(o => (
+                            <li key={o.id}>
+                              <button type="button" onClick={() => seleccionarEmpleado(o)}
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
+                                <span className="font-medium text-slate-800">{o.nombre}</span>
+                                {o.empresa && <span className="ml-1 text-xs text-slate-400">({o.empresa})</span>}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    <p className="mt-1 text-[11px] text-slate-400">Muestra los asistentes al evento; escribe para filtrar o escanea su gafete.</p>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      {form.evento
+                        ? "Muestra los asistentes al evento; escribe para filtrar."
+                        : "Elige un evento para buscar entre sus asistentes, o escanea el gafete de arriba."}
+                    </p>
                   </>
                 )}
               </div>
