@@ -47,6 +47,42 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 22 (2026-07-15):** **conector: reconexión fiable tras reiniciar Docker/equipo** (fix
+> en el repo **XentyC** `7cbb84f`, complementa la sección "Connector siempre activo…" de 2026-07-13).
+> Síntoma: WhatsApp del Connector "Desconectado" tras reinicio. Causa: al arrancar, `restoreAll()` →
+> `getOrCreate` hace `await ownership.claim()` (Redis) **antes** de levantar la sesión; tras reiniciar,
+> el connector bootea sin orden garantizado y `redis` aún no resuelve → `claim` lanza "Command timed
+> out" → restore aborta **sin reintento** → "Desconectado" permanente (las creds del volumen quedan
+> intactas). Fix: `claim`/`ownerOf` **fail-open** (sin Redis → propiedad local, no bloquea) + `restoreAll`
+> **reintenta** con backoff (12×, ≤30s). Verificado end-to-end: con `redis` detenido al reiniciar el
+> connector, log muestra "fail-open" + "sesión conectada"; al volver redis, `state:open`. Nota op.: para
+> revivir tras apagar el equipo, Docker Desktop debe iniciar con Windows y no haber hecho `compose down`.
+> El conector del tenant es `xentyaccesos-connector-1` (compose de XentyAccesos, perfil `connector`), NO
+> el standalone. Aparte: flapping conocido de Baileys (init-queries timeout ~60s → reconecta) no es este bug.
+>
+> **Continuación 21 (2026-07-15):** **sidebar — colapsado prolijo + ítems por prioridad/agrupados** (los
+> 3 paneles, `8e98ddc`). Colapsado: iconos centrados, pill activo centrado, header limpio (solo chevron),
+> scrollbar delgada (webkit+firefox). Agrupación por prioridad: acceso (19 ítems) → General/Operación/
+> Control/Directorio/Mensajería/Administración (título al expandir, divisor al colapsar); admin →
+> General/Clientes/Plataforma; proveedores queda plano. Orden/grupos en estructura de datos fácil de
+> reordenar. `tsc` + `vite build` verdes.
+>
+> **Continuación 20 (2026-07-15):** **ayuda contextual (ⓘ) en frontend-proveedores** (`5d2f9c2`). La SPA
+> no tenía el componente. Nuevo `Ayuda` propio (sin `@radix-ui/react-popover`, que esta SPA no trae):
+> popover con `position:fixed` calculado desde el botón (no se recorta en modales con overflow). Aplicado
+> en Empleados, Documentos, MisEventos (atajo) y **Onboarding** (RFC/CURP/NSS/INE/REPSE/SUA, con nota de
+> PII cifrada). Fuera: Login/Recuperar/Restablecer. `Lbl`/`FileZone` de Onboarding extendidos con prop
+> `ayuda`. Doc `AYUDA_CONTEXTUAL.md` actualizado.
+>
+> **Continuación 19 (2026-07-15):** **plantilla .xlsx + nota de formato en importar empleados** (SPA
+> proveedores, `bc3e7e2`). Nuevo `GET /api/empleados/plantilla/` (openpyxl) con encabezados que consume
+> `importar` (nombre, email, telefono) + fila de ejemplo; botón "Descargar plantilla" + nota (email
+> obligatorio como llave de dedup). Test `tests/test_empleados_plantilla.py` fija el contrato.
+>
+> **Continuación 18 (2026-07-15):** **Mensajería — "campaña" → "mensaje masivo"** en la UI (`a18ddd4`).
+> Solo textos visibles de `frontend-acceso/src/pages/Mensajeria.tsx` (botón, modal, subtítulo, estado
+> vacío, ayudas); sin cambios de lógica/API.
+>
 > **Continuación 17 (2026-07-14):** **fix gafete — texto empalmado.** En `apps/gafetes/services.py`
 > `componer_gafete` (usada por **eventos y citas**) tenía alturas de sección **fijas** (`PZ_H=114` sin
 > foto), pero el contenido es dinámico: una zona de 2 palabras ("ZONA NORTE") + el punto de acceso se
