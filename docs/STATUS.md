@@ -1,6 +1,6 @@
 # Estado del Proyecto — Xenty Acceso
 
-> Actualizado: 2026-07-13 (ver `handoffs/HANDOFF_LATEST.md`)
+> Actualizado: 2026-07-15 (ver `handoffs/HANDOFF_LATEST.md`)
 
 ## Backend
 
@@ -9,15 +9,15 @@
 | tenants | ✔ | Tenant, Domain, Plan, TenantMainMiddleware |
 | accounts | ✔ | Usuario, PermisoUsuario, roles, JWT acceso |
 | proveedores | ✔ | CuentaProveedor, Proveedor, onboarding, JWT proveedores |
-| empleados | ✔ | CRUD, import Excel, foto (ImageField), docs |
+| empleados | ✔ | CRUD, import Excel (**plantilla `.xlsx` descargable** `/api/empleados/plantilla/` con los encabezados que consume el importador + nota de formato en la UI; email/teléfono **obligatorios**, dedup de email por empresa), foto (ImageField), docs |
 | recintos | ✔ | Recinto, Zona, Acceso, Ubicacion, Entrada, AreaAutorizada, Protocolo |
 | documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados. **Workspace de verificación drill-down** (`verificacion_api.py`): agregación server-side proveedor→empleado con conteos, paginada, filtros estado/evento/`mis_eventos`/búsqueda (`/api/verificacion/proveedores|empleados|eventos/`) para escalar a mucho volumen; UI 3 columnas en `Verificacion.tsx` |
 | eventos | ✔ | Evento, EventoProveedor, asignación empleados, gafete QR. Invitación/asignación adjuntan **protocolo** y mandan gafete/pases por **WhatsApp** además del correo; cancelaciones con aviso dedicado |
 | citas | ✔ | Cita, AsistenteCita, Contacto, EmpleadoCita. Invitación con **gafete + protocolo** adjuntos por correo **y WhatsApp** (redacción profesional); **cancelar** manda aviso de cancelación (no reenvía invitación). **Alta/baja de asistentes** en cita existente: agregar (invita solo a los nuevos, **dedup por email/teléfono**), dar de baja = **baja lógica** (estado CANCELADO; el escáner ya lo bloquea) + reactivar. **Cita cancelada = terminal** (no editar ni reenviar) |
 | acceso | ✔ | RegistroAcceso, scanner QR, bitácora |
 | gafetes | ✔ | componer_gafete (Premium Dark), estacionamiento, Fernet QR |
-| sanciones | ✔ | Sancion CRUD |
-| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`). **Adjuntos por WhatsApp** (gafete/protocolo) como media base64 (`AdjuntoWhatsApp`, texto primero + media best-effort). **Regla auditada: toda notificación transaccional va por correo + WhatsApp si el destinatario tiene ambos** (citas, eventos, documentos y los 4 wrappers de `common/emails.py`, incl. verificación de correo); `tests/test_emails_dual_canal.py`. **Quien invita es el tenant** (nombre display, no el schema): header del correo + firma `— {tenant}`; Xenty queda como marca de plataforma en el pie. Helper `common/tenant.py::nombre_tenant_actual()`. Ver §Connector |
+| sanciones | ✔ | Sancion CRUD; severidad/penalidad/fechas **solo-admin** (el guardia captura empleado+evento+motivo). Alta con **QR del gafete como atajo arriba** (resuelve empleado + evento de una vez) **y** captura manual **evento→empleado** (buscador acotado a los asistentes del evento, deshabilitado hasta elegir evento). Endpoints `resolver-qr`/`buscar-empleados`/`eventos`. Suspensión exige fecha_inicio/fin |
+| mensajeria | ✔ | MensajeWhatsApp, DestinatarioMensaje, Celery `enviar_campana` con retry. **Router con failover + circuit breaker** (`router.py`, `breaker.py`) sobre proveedores (`UltraMsg`, `Sandbox`, `xcc`) + preferencia por tenant. **Teléfonos: canónico 10 dígitos sin lada; la lada MX se antepone solo al enviar** (`common/phone.py`). **Adjuntos por WhatsApp** (gafete/protocolo) como media base64 (`AdjuntoWhatsApp`, texto primero + media best-effort). **Regla auditada: toda notificación transaccional va por correo + WhatsApp si el destinatario tiene ambos** (citas, eventos, documentos y los 4 wrappers de `common/emails.py`, incl. verificación de correo); `tests/test_emails_dual_canal.py`. **Quien invita es el tenant** (nombre display, no el schema): header del correo + firma `— {tenant}`; Xenty queda como marca de plataforma en el pie. Helper `common/tenant.py::nombre_tenant_actual()`. En la UI las «campañas» se llaman **«mensaje masivo»** (solo copy). Ver §Connector |
 | cumplimiento | ✔ | Backend (`importar_efos_task` con retry) + padrón EFOS global (`apps.efos`) + pantalla `Cumplimiento.tsx` en frontend-acceso. **Buscador del padrón completo 69-B** (`SatEfoViewSet` con `SearchFilter` sobre rfc+nombre + filtro `situacion`) → verifica cualquier RFC/razón social esté o no dado de alta como proveedor (estilo visor fiscal) |
 | ocr | ✔ | Textract + sandbox para INE |
 | config | ✔ | Opcion, HistorialCambio, AuditViewSetMixin, DashboardView, CalendarioView, ExportarAccesosView (F8). **`BitacoraAcceso`** = auditoría de **accesos al sistema** (login/logout/intentos fallidos con IP + dispositivo, ambos contextos de tenant); `registrar_acceso` enganchado en `BaseLoginView`/`LogoutView` (best-effort, se salta el schema public); API solo-admin `/api/accesos-sistema/` + página *Accesos al sistema* en frontend-acceso. Tres bitácoras distintas: HistorialCambio=cambios de datos, acceso.RegistroAcceso=accesos físicos, config.BitacoraAcceso=autenticación |
@@ -33,9 +33,14 @@
 
 | SPA | Estado | Detalle |
 |---|---|---|
-| frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación |
-| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos |
+| frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema |
+| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA) |
 | frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Control plane funcionalmente completo |
+
+> **UI transversal:** sidebar con **colapsado prolijo** (iconos centrados, pill activo centrado,
+> scrollbar delgada) e **ítems agrupados por prioridad** en los 3 paneles (acceso/admin/proveedores).
+> **Ayuda contextual ⓘ** (`docs/AYUDA_CONTEXTUAL.md`) en acceso **y** proveedores; el super-admin aún
+> sin ⓘ (opcional).
 
 ## Infraestructura
 
@@ -57,7 +62,7 @@
 |---|---|---|
 | F-C | Servicio XCC (Node 20 + Fastify + **Baileys**): REST `/v1` + HMAC, sesiones por tenant, QR/pairing, media, persistencia, reconexión | ✔ MVP en repo `xenty-connector` (build en `dist/`, `.env.example`, Docker) |
 | F-D | Enchufe al principal: `apps/mensajeria/connector_provider.py` (cliente REST+HMAC) + registro `xcc` en el Router con failover | ✔ Implementado y con tests (`tests/test_connector_provider.py`: firma, no-config, http≠202, **failover xcc→sandbox**) |
-| F-E | Escala horizontal + observabilidad | ✔ código completo (falta solo provisioning en host): **nonce en Redis** (`cd2c85e`) · **repo remoto** (`github.com/ElevationStudioMX/XentyC`) · **métricas Prometheus** (`GET /metrics`, `b3f2f04`) · **webhook de estados** (connector `b3f2f04` + principal `ade929e`, actualiza `DestinatarioMensaje` por `external_id`, estados `entregado`/`leido` mig. 0005) · **routing sticky** (propiedad de sesión en Redis, `f720b20`; header `X-XCC-Connection`) · **`connection_id` por tenant** (`e67e382`, mig. 0006, UI) · **deploy** (artefactos `DEPLOY.md`+prod compose+nginx, `cbf89dc`; **verificado end-to-end en host local/staging** 2026-07-13: prod compose healthy, HMAC + nonce Redis + `/metrics` OK, interop bidireccional main↔XCC; falta **host de producción**) |
+| F-E | Escala horizontal + observabilidad | ✔ código completo (falta solo provisioning en host): **nonce en Redis** (`cd2c85e`) · **repo remoto** (`github.com/ElevationStudioMX/XentyC`) · **métricas Prometheus** (`GET /metrics`, `b3f2f04`) · **webhook de estados** (connector `b3f2f04` + principal `ade929e`, actualiza `DestinatarioMensaje` por `external_id`, estados `entregado`/`leido` mig. 0005) · **routing sticky** (propiedad de sesión en Redis, `f720b20`; header `X-XCC-Connection`) · **`connection_id` por tenant** (`e67e382`, mig. 0006, UI) · **deploy** (artefactos `DEPLOY.md`+prod compose+nginx, `cbf89dc`; **verificado end-to-end en host local/staging** 2026-07-13: prod compose healthy, HMAC + nonce Redis + `/metrics` OK, interop bidireccional main↔XCC; falta **host de producción**) · **reconexión fiable tras reinicio** (XentyC `7cbb84f`, 2026-07-15): la sesión persiste (`useMultiFileAuthState`) y `restoreAll` la re-levanta al arrancar, pero `ownership.claim` colgaba el arranque si `redis` no estaba listo (carrera de orden tras reiniciar Docker/equipo) → restore abortaba sin reintento → "Desconectado" permanente. Fix: `claim`/`ownerOf` **fail-open** + `restoreAll` con **reintento** (backoff). Verificado con Redis detenido al reiniciar el connector → `sesión conectada`. (Aparte: flapping conocido de Baileys, no bloqueante.) |
 
 **Config runtime:** el super-admin activa/configura el Connector en la pantalla **Comunicaciones**
 (`ConfiguracionConnector` global: `habilitado`, `url_base`, `hmac_secret` cifrado, umbrales del breaker).
