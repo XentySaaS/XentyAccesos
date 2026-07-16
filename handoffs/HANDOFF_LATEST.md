@@ -47,6 +47,18 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 23 (2026-07-15):** **Sanciones — QR como atajo arriba + evento/empleado siempre
+> visibles** (`a0b9507`, `frontend-acceso/src/pages/Sanciones.tsx`). El "Escanear QR" estaba escondido
+> dentro del bloque de empleado y solo aparecía DESPUÉS de elegir evento → no servía de atajo. Ahora:
+> banda **"Escanear gafete QR" prominente ARRIBA** del modal, siempre disponible (resuelve empleado +
+> evento de una vez; si el evento del gafete no está en la lista de activos, se **inyecta como opción**
+> del select para que no quede en blanco) + separador "o captura manualmente". **Evento y Empleado
+> siguen visibles con sus validaciones:** el buscador de empleado sigue **acotado al evento**
+> (deshabilitado hasta elegir uno, placeholder que lo explica), cambiar de evento limpia el empleado, y
+> empleado obligatorio al registrar. Sin cambios de API/backend. Nota: `evento` sigue **opcional** al
+> enviar (un QR de **cita** resuelve empleado sin evento) aunque lleve `*` como campo principal. `tsc` +
+> `vite build` verdes.
+>
 > **Continuación 22 (2026-07-15):** **conector: reconexión fiable tras reiniciar Docker/equipo** (fix
 > en el repo **XentyC** `7cbb84f`, complementa la sección "Connector siempre activo…" de 2026-07-13).
 > Síntoma: WhatsApp del Connector "Desconectado" tras reinicio. Causa: al arrancar, `restoreAll()` →
