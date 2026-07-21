@@ -23,6 +23,7 @@ import Recuperar from "./pages/Recuperar";
 import Restablecer from "./pages/Restablecer";
 import Seguridad from "./pages/Seguridad";
 import Sanciones from "./pages/Sanciones";
+import Suscripcion from "./pages/Suscripcion";
 import Usuarios from "./pages/Usuarios";
 import Verificacion from "./pages/Verificacion";
 import { useAuth } from "./store/auth";
@@ -60,6 +61,7 @@ export const router = createBrowserRouter([
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },
       { path: "/configuracion", element: <Configuracion /> },
+      { path: "/suscripcion",  element: <Suscripcion /> },
       { path: "/historial",   element: <Historial /> },
       { path: "/accesos-sistema", element: <AccesosSistema /> },
       { path: "/privacidad",  element: <Privacidad /> },

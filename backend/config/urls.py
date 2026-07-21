@@ -37,6 +37,7 @@ from apps.soporte.api import (
     ProbarConexionView,
     SaludConfiguracionView,
 )
+from apps.tenants.suscripcion_api import SuscripcionTenantView
 from common.auth_api import LogoutView, MeView
 from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
@@ -121,6 +122,7 @@ urlpatterns = [
     path("api/soporte/configuracion/", ConfiguracionMesaView.as_view(), name="soporte-config"),
     path("api/soporte/probar-conexion/", ProbarConexionView.as_view(), name="soporte-probar"),
     path("api/soporte/enviar-diagnostico/", EnviarDiagnosticoView.as_view(), name="soporte-diag"),
+    path("api/suscripcion/", SuscripcionTenantView.as_view(), name="suscripcion-tenant"),
     path("api/ocr/ine/", ExtraerIneView.as_view(), name="ocr-ine"),
     path(
         "api/onboarding/proveedor/", OnboardingProveedorView.as_view(), name="onboarding-proveedor"
