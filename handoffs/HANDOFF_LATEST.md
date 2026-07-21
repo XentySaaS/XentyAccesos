@@ -47,6 +47,19 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 24 (2026-07-15):** **proveedores — acceso permanente al aviso de privacidad y
+> términos (footer)** (`b3cfdc0`). Antes los documentos legales solo se veían **durante el registro**
+> (endpoint con token de invitación `/api/onboarding/documento/`); ya registrado, el proveedor no
+> podía volver a verlos y no había enlace permanente en ninguna SPA (el endpoint público
+> `GET /api/privacidad/documento/<tipo>/`, AllowAny, ya existía pero **nadie lo consumía**). Ahora:
+> página pública `Legal.tsx` (rutas `/legal/aviso-privacidad` y `/legal/terminos`, sin sesión, axios
+> plano sin interceptor de auth; estados cargando/vigente con versión+fecha/no-publicado/desconocido/
+> error) + componente `LegalFooter` con enlaces a ambos, montado en el **portal** (Layout, todas las
+> pantallas autenticadas) y en el **Login** (entrada pública) → visible antes, durante y después del
+> registro. **Sin cambios de backend.** Verificado end-to-end vía nginx con Host del tenant: ambos
+> docs → HTTP 200 sin auth. `tsc` + `vite build` verdes. Pendiente opcional (no pedido): replicar el
+> enlace legal en el landing y en la SPA de acceso; footer también en Recuperar/Restablecer.
+>
 > **Continuación 23 (2026-07-15):** **Sanciones — QR como atajo arriba + evento/empleado siempre
 > visibles** (`a0b9507`, `frontend-acceso/src/pages/Sanciones.tsx`). El "Escanear QR" estaba escondido
 > dentro del bloque de empleado y solo aparecía DESPUÉS de elegir evento → no servía de atajo. Ahora:

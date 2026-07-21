@@ -34,7 +34,7 @@
 | SPA | Estado | Detalle |
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema |
-| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA) |
+| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA). **Acceso permanente al aviso de privacidad y términos** (footer del portal + Login → página pública `/legal/:tipo` que consume `GET /api/privacidad/documento/<tipo>/`; antes solo se veían durante el registro) |
 | frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Control plane funcionalmente completo |
 
 > **UI transversal:** sidebar con **colapsado prolijo** (iconos centrados, pill activo centrado,
@@ -98,7 +98,7 @@ de respaldo. El Router con failover ya soporta ambos caminos.
 | MFA TOTP | ✔ Enrolamiento + activación + verificación (super-admin con MFA obligatorio + tests) |
 | WebAuthn | ✔ Registro/login por passkey (data plane + control plane) |
 | Recuperación de contraseña | ✔ Self-service en acceso y proveedores (token firmado, un solo uso, 1h). QA E2E ✅ |
-| Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill) |
+| Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill). **Consultables permanentemente** por el proveedor (footer → `/legal/:tipo`, endpoint público) y editables por el admin en *Privacidad* |
 
 ## Pendientes críticos
 
