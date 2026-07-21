@@ -47,6 +47,16 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 27 (2026-07-15):** **UI de retención en Catálogos** (`8c8974c`). El admin del tenant
+> ya configura la retención desde la app (antes solo por `/api/opciones/` o env). Endpoint solo-admin
+> `GET/PUT /api/config/retencion/` (`apps/config/views.py::RetencionAuditoriaView`): GET devuelve valor
+> efectivo + `personalizado` + `default`; PUT valida entero **0..3650** (0 = conservar siempre) y
+> guarda las opciones `retencion_historial_dias`/`retencion_bitacora_dias` (las que lee la purga),
+> auditando el cambio en `HistorialCambio`. Nueva pestaña **"Retención"** en `Catalogos.tsx` (2 campos
+> con ayuda ⓘ, muestra el default). Tests `tests/test_retencion_config.py` (4). Ojo con DRF: un
+> `Request` "pelón" no trae parsers → en tests hay que pasar `parsers=[JSONParser()]` para el PUT.
+> `tsc`+`vite build`+ruff verdes; ruta verificada (401 sin auth).
+>
 > **Continuación 26 (2026-07-15):** **purga de auditoría por retención (Celery, configurable,
 > multitenant)** (`79f2f1b`). Las bitácoras (`HistorialCambio`=cambios de datos,
 > `BitacoraAcceso`=accesos al sistema/login) crecían sin límite → satura almacenamiento al escalar a
