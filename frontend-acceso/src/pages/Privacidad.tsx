@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import api from "../api/client";
 import { Ayuda } from "../components/Ayuda";
 
@@ -73,20 +73,31 @@ export default function Privacidad() {
     cargarDoc(docTipo).catch(() => {});
   }, [docTipo]);
 
-  async function buscar(e: FormEvent) {
-    e.preventDefault();
-    if (q.trim().length < 2) return;
+  // Búsqueda automática (debounced): busca sola mientras se escribe, sin botón (mín. 2 letras).
+  const buscar = useCallback(async () => {
+    if (q.trim().length < 2) {
+      setResultados([]);
+      return;
+    }
     setBuscando(true);
-    setMsg(null);
     try {
       const { data } = await api.get<{ resultados: Titular[] }>(
         `/api/cumplimiento/arco/titulares/?q=${encodeURIComponent(q.trim())}`,
       );
       setResultados(data.resultados);
+    } catch {
+      setResultados([]);
     } finally {
       setBuscando(false);
     }
-  }
+  }, [q]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      buscar();
+    }, 300);
+    return () => clearTimeout(t);
+  }, [buscar]);
 
   async function exportar(t: Titular) {
     setMsg(null);
@@ -123,7 +134,7 @@ export default function Privacidad() {
       setCancelTarget(null);
       setConfirmTxt("");
       // Refresca la lista de resultados y las solicitudes.
-      if (q.trim().length >= 2) await buscar({ preventDefault() {} } as FormEvent);
+      await buscar();
       await cargarSolicitudes();
     } catch {
       setMsg({ tipo: "error", texto: "No se pudo anonimizar al titular." });
@@ -193,22 +204,22 @@ export default function Privacidad() {
             datos personales (derecho de acceso) o anonimizarlos (cancelación).
           </Ayuda>
         </h2>
-        <form onSubmit={buscar} className="mt-2 flex gap-2">
+        <div className="relative mt-2">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Nombre o correo del titular…"
             className={inputCls}
           />
-          <button
-            type="submit"
-            disabled={buscando || q.trim().length < 2}
-            className="whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            style={{ backgroundColor: SIGNAL }}
-          >
-            {buscando ? "Buscando…" : "Buscar"}
-          </button>
-        </form>
+          {buscando && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+              Buscando…
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-[11px] text-slate-400">
+          Escribe al menos 2 letras; la búsqueda es automática.
+        </p>
 
         {resultados.length > 0 && (
           <ul className="mt-3 divide-y divide-slate-50">
@@ -245,6 +256,10 @@ export default function Privacidad() {
               </li>
             ))}
           </ul>
+        )}
+
+        {q.trim().length >= 2 && !buscando && resultados.length === 0 && (
+          <p className="mt-3 text-xs text-slate-400">Sin coincidencias.</p>
         )}
       </div>
 
