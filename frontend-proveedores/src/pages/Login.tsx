@@ -98,9 +98,17 @@ export default function Login() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-400">
-          Xenty Acceso © {new Date().getFullYear()}
-        </p>
+        <div className="mt-6 flex flex-col items-center gap-1.5 text-center text-xs text-slate-400">
+          <span>Xenty Accesos © {new Date().getFullYear()}</span>
+          <nav className="flex items-center gap-4">
+            <Link to="/legal/aviso-privacidad" className="transition hover:text-slate-600">
+              Aviso de Privacidad
+            </Link>
+            <Link to="/legal/terminos" className="transition hover:text-slate-600">
+              Términos y Condiciones
+            </Link>
+          </nav>
+        </div>
       </div>
     </div>
   );

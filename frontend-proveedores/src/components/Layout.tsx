@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import api from "../api/client";
 import { useAuth } from "../store/auth";
+import LegalFooter from "./LegalFooter";
 
 interface Me { nombre?: string; email?: string; empresa?: string; }
 
@@ -162,6 +163,8 @@ export default function Layout() {
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>
+
+        <LegalFooter />
       </div>
     </div>
   );

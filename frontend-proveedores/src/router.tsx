@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Documentos from "./pages/Documentos";
 import Empleados from "./pages/Empleados";
+import Legal from "./pages/Legal";
 import Login from "./pages/Login";
 import MisEventos from "./pages/MisEventos";
 import Onboarding from "./pages/Onboarding";
@@ -21,6 +22,8 @@ export const router = createBrowserRouter(
     { path: "/recuperar", element: <Recuperar /> },
     { path: "/restablecer", element: <Restablecer /> },
     { path: "/onboarding", element: <Onboarding /> },
+    // Documentos legales: públicos (sin sesión), accesibles siempre desde el footer.
+    { path: "/legal/:tipo", element: <Legal /> },
     {
       element: (
         <Protegida>
