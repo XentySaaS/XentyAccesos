@@ -35,7 +35,7 @@
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema, Catálogos (grupos/tipos/protocolos), **Configuración** (retención de bitácoras; pantalla extensible), **Suscripción** (plan/estado del tenant + zona peligrosa: cancelar cuenta self-service), Privacidad |
 | frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA). **Acceso permanente al aviso de privacidad y términos** (footer del portal + Login → página pública `/legal/:tipo` que consume `GET /api/privacidad/documento/<tipo>/`; antes solo se veían durante el registro) |
-| frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Control plane funcionalmente completo |
+| frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA** (TOTP + WebAuthn + **códigos de respaldo**; login con paso MFA). Control plane funcionalmente completo |
 
 > **UI transversal:** sidebar con **colapsado prolijo** (iconos centrados, pill activo centrado,
 > scrollbar delgada) e **ítems agrupados por prioridad** en los 3 paneles (acceso/admin/proveedores).
@@ -97,7 +97,7 @@ de respaldo. El Router con failover ya soporta ambos caminos.
 | Rate limiting | ✔ Login (10/m/IP), signup, onboarding, edge, ocr; `Ratelimited`→429 (handler DRF). Verificado en runtime (11º login → 429) |
 | MFA TOTP | ✔ Enrolamiento + activación + verificación (super-admin con MFA obligatorio + tests) |
 | WebAuthn | ✔ Registro/login por passkey (data plane + control plane) |
-| Códigos de respaldo | ✔ 3er método MFA (recovery codes) del `Usuario` del tenant: 10 códigos `XXXX-XXXX-XXXX` (CSPRNG), solo se guarda el **hash Argon2**, un solo uso (`usado_en`), regenerar exige reautenticación; `POST /api/auth/mfa/respaldo/{generar,verificar}` (rate-limited); 3ª tarjeta en *Seguridad* + opción en el login. `common/backup_codes.py`, `accounts.CodigoRespaldo` (mig. 0007). Falta extender a super-admin (trivial: subclase + montar en control plane) |
+| Códigos de respaldo | ✔ 3er método MFA (recovery codes) para el **`Usuario` del tenant Y el super-admin**: 10 códigos `XXXX-XXXX-XXXX` (CSPRNG), solo se guarda el **hash Argon2**, un solo uso (`usado_en`), regenerar exige reautenticación; rate-limited; 3ª tarjeta en *Seguridad* + opción en el login de ambos SPAs. Patrón actor-agnóstico (`common/backup_codes*.py`): `accounts.CodigoRespaldo` (data plane, `POST /api/auth/mfa/respaldo/*`, mig. 0007) y `tenants.CodigoRespaldoAdmin` (control plane, `POST /api/admin/mfa/respaldo/*`, mig. 0005) |
 | Recuperación de contraseña | ✔ Self-service en acceso y proveedores (token firmado, un solo uso, 1h). QA E2E ✅ |
 | Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill). **Consultables permanentemente** por el proveedor (footer → `/legal/:tipo`, endpoint público) y editables por el admin en *Privacidad* |
 

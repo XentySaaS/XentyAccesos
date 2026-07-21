@@ -47,6 +47,15 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 32 (2026-07-15):** **códigos de respaldo también para el super-admin** (`f391260`).
+> Extiende la Continuación 31 al control plane reutilizando las MISMAS vistas (actor-agnósticas):
+> `tenants.CodigoRespaldoAdmin` (FK SuperAdmin, `related_name="codigos_respaldo"`, public, mig.
+> `tenants.0005`) + endpoints montados en `urls_public.py` (`POST /api/admin/mfa/respaldo/{generar,
+> verificar}`); `MeView` (/api/admin/me/) ya expone disponibles/total. frontend-admin: 3ª tarjeta en
+> Seguridad (estilo del panel, sin ⓘ como sus otras tarjetas) + "Usa un código de respaldo" en el
+> paso MFA del login. Test añadido (super-admin tiene `codigos_respaldo` + un-solo-uso). tsc+build
+> (admin)+ruff verdes; rutas control-plane 401 sin auth. **Ambos actores cubiertos.**
+>
 > **Continuación 31 (2026-07-15):** **códigos de respaldo (recovery codes) como 3er método MFA**
 > (`17ee6ef`). 3ª tarjeta en *Seguridad* (frontend-acceso), mismo estilo que TOTP/WebAuthn. Patrón
 > **actor-agnóstico** como WebAuthn: `common/backup_codes.py` (modelo abstracto `CodigoRespaldoBase`
