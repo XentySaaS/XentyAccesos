@@ -47,6 +47,13 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 25 (2026-07-15):** **Privacidad — buscador de titular automático** (`d0200c7`,
+> `frontend-acceso/src/pages/Privacidad.tsx`). El buscador de "Titular de datos" (ARCO) pedía clic en
+> "Buscar"; ahora es **automático** (debounce 300ms, mín. 2 letras, como el de Sanciones): se quita el
+> botón, se añade indicador "Buscando…" y estado "Sin coincidencias". `buscar()` pasó a `useCallback`
+> sin evento (lo reusa el refresco tras anonimizar). Este es el mismo buscador que reusaría el modal
+> "Registrar solicitud ARCO" si se implementa. `tsc` + `vite build` verdes.
+>
 > **Continuación 24 (2026-07-15):** **proveedores — acceso permanente al aviso de privacidad y
 > términos (footer)** (`b3cfdc0`). Antes los documentos legales solo se veían **durante el registro**
 > (endpoint con token de invitación `/api/onboarding/documento/`); ya registrado, el proveedor no
