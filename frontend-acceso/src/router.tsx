@@ -6,6 +6,7 @@ import Bitacora from "./pages/Bitacora";
 import Calendario from "./pages/Calendario";
 import Catalogos from "./pages/Catalogos";
 import Citas from "./pages/Citas";
+import Configuracion from "./pages/Configuracion";
 import Cumplimiento from "./pages/Cumplimiento";
 import Dashboard from "./pages/Dashboard";
 import Escaner from "./pages/Escaner";
@@ -58,6 +59,7 @@ export const router = createBrowserRouter([
       { path: "/escaner",     element: <Escaner /> },
       { path: "/usuarios",    element: <Usuarios /> },
       { path: "/catalogos",   element: <Catalogos /> },
+      { path: "/configuracion", element: <Configuracion /> },
       { path: "/historial",   element: <Historial /> },
       { path: "/accesos-sistema", element: <AccesosSistema /> },
       { path: "/privacidad",  element: <Privacidad /> },

@@ -5,7 +5,7 @@ import { Ayuda } from "../components/Ayuda";
 const INK    = "#0F1B2D";
 const SIGNAL = "#2563EB";
 
-type Tab = "grupos" | "tipos" | "protocolos" | "retencion";
+type Tab = "grupos" | "tipos" | "protocolos";
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 interface Grupo    { id: number; nombre: string; descripcion: string; activo: boolean; }
@@ -464,96 +464,11 @@ function Protocolos() {
   );
 }
 
-// ── Retención de bitácoras ──────────────────────────────────────────────────
-function Retencion() {
-  const [hist,    setHist]    = useState("");
-  const [bita,    setBita]    = useState("");
-  const [defHist, setDefHist] = useState(365);
-  const [defBita, setDefBita] = useState(365);
-  const [loading, setLoading] = useState(true);
-  const [saving,  setSaving]  = useState(false);
-  const [errs,    setErrs]    = useState<Record<string, string>>({});
-  const [msg,     setMsg]     = useState<{ ok: boolean; texto: string } | null>(null);
-
-  useEffect(() => {
-    api.get("/api/config/retencion/")
-      .then(r => {
-        setHist(String(r.data.historial.dias));
-        setBita(String(r.data.bitacora.dias));
-        setDefHist(r.data.historial.default);
-        setDefBita(r.data.bitacora.default);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  async function guardar(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true); setErrs({}); setMsg(null);
-    try {
-      const { data } = await api.put("/api/config/retencion/", {
-        historial_dias: hist === "" ? undefined : Number(hist),
-        bitacora_dias:  bita === "" ? undefined : Number(bita),
-      });
-      setHist(String(data.historial.dias));
-      setBita(String(data.bitacora.dias));
-      setMsg({ ok: true, texto: "Retención guardada. Se aplica en la próxima purga diaria." });
-    } catch (err: any) {
-      setErrs(err?.response?.data ?? {});
-      setMsg({ ok: false, texto: "Revisa los valores." });
-    } finally { setSaving(false); }
-  }
-
-  if (loading) return <div className="py-12 text-center"><div className="mx-auto h-7 w-7 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"/></div>;
-
-  return (
-    <div className="max-w-xl">
-      <p className="mb-4 text-sm text-slate-500">
-        Cuánto tiempo se conservan las bitácoras antes de borrarse automáticamente. Una purga diaria
-        libera almacenamiento; escribe <strong>0</strong> para conservar sin límite.
-      </p>
-      {msg && (
-        <div className={`mb-4 rounded-lg px-4 py-2.5 text-sm ring-1 ${msg.ok ? "bg-green-50 text-green-700 ring-green-100" : "bg-red-50 text-red-700 ring-red-100"}`}>
-          {msg.texto}
-        </div>
-      )}
-      <form onSubmit={guardar} className="space-y-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5">
-            <label htmlFor="ret-hist" className="text-xs font-semibold text-slate-600">Historial de cambios (días)</label>
-            <Ayuda>Días que se conserva el Historial de cambios (quién creó / editó / eliminó datos) antes de borrar lo más antiguo. 0 = conservar sin límite.</Ayuda>
-          </div>
-          <input id="ret-hist" type="number" min={0} max={3650} inputMode="numeric"
-            value={hist} onChange={e => setHist(e.target.value.replace(/\D/g, ""))}
-            className={inp(errs.historial_dias)} />
-          <p className="mt-1 text-[11px] text-slate-400">Por defecto: {defHist} días.</p>
-          <Err msg={errs.historial_dias} />
-        </div>
-        <div>
-          <div className="mb-1 flex items-center gap-1.5">
-            <label htmlFor="ret-bita" className="text-xs font-semibold text-slate-600">Accesos al sistema (días)</label>
-            <Ayuda>Días que se conserva la bitácora de Accesos al sistema (inicios/cierres de sesión e intentos fallidos, con IP y dispositivo). 0 = conservar sin límite.</Ayuda>
-          </div>
-          <input id="ret-bita" type="number" min={0} max={3650} inputMode="numeric"
-            value={bita} onChange={e => setBita(e.target.value.replace(/\D/g, ""))}
-            className={inp(errs.bitacora_dias)} />
-          <p className="mt-1 text-[11px] text-slate-400">Por defecto: {defBita} días.</p>
-          <Err msg={errs.bitacora_dias} />
-        </div>
-        <div className="flex justify-end pt-2">
-          <button type="submit" disabled={saving} className="rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" style={{ backgroundColor: SIGNAL }}>
-            {saving ? "Guardando…" : "Guardar"}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
 // ── Página principal ──────────────────────────────────────────────────────
 const TABS: { id: Tab; label: string }[] = [
   { id: "grupos",     label: "Grupos de documentos" },
   { id: "tipos",      label: "Tipos de documento"  },
   { id: "protocolos", label: "Protocolos"           },
-  { id: "retencion",  label: "Retención"            },
 ];
 
 export default function Catalogos() {
@@ -563,7 +478,7 @@ export default function Catalogos() {
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold" style={{ color: INK }}>Catálogos</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Grupos de documentos, tipos, protocolos y retención de bitácoras del recinto.</p>
+        <p className="mt-0.5 text-sm text-slate-500">Configuración de grupos de documentos, tipos y protocolos del recinto.</p>
       </div>
 
       {/* Tabs */}
@@ -586,7 +501,6 @@ export default function Catalogos() {
       {tab === "grupos"     && <Grupos/>}
       {tab === "tipos"      && <Tipos/>}
       {tab === "protocolos" && <Protocolos/>}
-      {tab === "retencion"  && <Retencion/>}
     </div>
   );
 }
