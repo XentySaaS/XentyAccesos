@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from django.conf import settings
 from django.http import HttpResponse
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -17,8 +18,12 @@ from .serializers import (
     HistorialCambioSerializer,
     OpcionSerializer,
 )
+from .tasks import RETENCION_BITACORA_CLAVE, RETENCION_HISTORIAL_CLAVE
 
 _ADMIN = [*PERMISOS_BASE(), ContextoAcceso, RequiereRol("administrador")]
+
+# Tope sensato para la retención configurable en UI (10 años).
+_RETENCION_MAX_DIAS = 3650
 
 
 class OpcionViewSet(viewsets.ModelViewSet):
@@ -57,6 +62,73 @@ class BitacoraAccesoViewSet(viewsets.ReadOnlyModelViewSet):
         if p.get("fecha_hasta"):
             qs = qs.filter(creado__date__lte=p["fecha_hasta"])
         return qs
+
+
+class RetencionAuditoriaView(APIView):
+    """Config de retención de auditoría por tenant (la que consume la purga Celery).
+
+    GET  → valor efectivo (opción del tenant o default global) + si es personalizado + el default.
+    PUT  → guarda ``retencion_historial_dias`` / ``retencion_bitacora_dias`` (0 = conservar siempre).
+    """
+
+    permission_classes = _ADMIN
+
+    _CAMPOS = {
+        "historial_dias": (RETENCION_HISTORIAL_CLAVE, "RETENCION_HISTORIAL_DIAS"),
+        "bitacora_dias": (RETENCION_BITACORA_CLAVE, "RETENCION_BITACORA_DIAS"),
+    }
+
+    def _leer(self, clave: str, default: int) -> dict:
+        valor = Opcion.objects.filter(clave=clave).values_list("valor", flat=True).first()
+        if valor is not None:
+            try:
+                return {"dias": int(str(valor).strip()), "personalizado": True, "default": default}
+            except (TypeError, ValueError):
+                pass
+        return {"dias": default, "personalizado": False, "default": default}
+
+    def get(self, request):
+        return Response(
+            {
+                "historial": self._leer(
+                    RETENCION_HISTORIAL_CLAVE, settings.RETENCION_HISTORIAL_DIAS
+                ),
+                "bitacora": self._leer(RETENCION_BITACORA_CLAVE, settings.RETENCION_BITACORA_DIAS),
+            }
+        )
+
+    def put(self, request):
+        data = request.data or {}
+        errores: dict[str, str] = {}
+        a_guardar: dict[str, int] = {}
+        for campo, (clave, _) in self._CAMPOS.items():
+            if campo not in data or data[campo] == "":
+                continue
+            try:
+                n = int(data[campo])
+            except (TypeError, ValueError):
+                errores[campo] = "Debe ser un número entero de días."
+                continue
+            if n < 0 or n > _RETENCION_MAX_DIAS:
+                errores[campo] = f"Entre 0 y {_RETENCION_MAX_DIAS} días (0 = conservar siempre)."
+                continue
+            a_guardar[clave] = n
+        if errores:
+            return Response(errores, status=400)
+
+        for clave, n in a_guardar.items():
+            Opcion.objects.update_or_create(clave=clave, defaults={"valor": str(n)})
+        if a_guardar:
+            try:  # auditoría best-effort (no debe tumbar el guardado)
+                HistorialCambio.objects.create(
+                    descripcion="Retención de auditoría actualizada.",
+                    modelo="config.Opcion",
+                    accion=HistorialCambio.Accion.ACTUALIZADO,
+                    usuario=request.user if request.user.is_authenticated else None,
+                )
+            except Exception:  # noqa: BLE001
+                pass
+        return self.get(request)
 
 
 class DashboardView(APIView):

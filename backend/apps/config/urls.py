@@ -10,6 +10,7 @@ from .views import (
     ExportarAccesosView,
     HistorialCambioViewSet,
     OpcionViewSet,
+    RetencionAuditoriaView,
 )
 
 router = DefaultRouter()
@@ -18,6 +19,7 @@ router.register("historial", HistorialCambioViewSet)
 router.register("accesos-sistema", BitacoraAccesoViewSet)
 
 urlpatterns = [
+    path("config/retencion/", RetencionAuditoriaView.as_view(), name="retencion-auditoria"),
     path("reportes/dashboard/", DashboardView.as_view(), name="dashboard"),
     path("reportes/calendario/", CalendarioView.as_view(), name="calendario"),
     path("reportes/accesos.xlsx", ExportarAccesosView.as_view(), name="exportar-accesos"),
