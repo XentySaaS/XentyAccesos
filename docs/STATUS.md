@@ -33,7 +33,7 @@
 
 | SPA | Estado | Detalle |
 |---|---|---|
-| frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema, Catálogos (grupos/tipos/protocolos), **Configuración** (retención de bitácoras; pantalla extensible), Privacidad |
+| frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema, Catálogos (grupos/tipos/protocolos), **Configuración** (retención de bitácoras; pantalla extensible), **Suscripción** (plan/estado del tenant + zona peligrosa: cancelar cuenta self-service), Privacidad |
 | frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA). **Acceso permanente al aviso de privacidad y términos** (footer del portal + Login → página pública `/legal/:tipo` que consume `GET /api/privacidad/documento/<tipo>/`; antes solo se veían durante el registro) |
 | frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA TOTP** (login con paso MFA). Control plane funcionalmente completo |
 

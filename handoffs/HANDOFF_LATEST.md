@@ -47,6 +47,19 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 30 (2026-07-15):** **suscripción del tenant + zona peligrosa (cancelar cuenta)**
+> (`4353c7e`). Nueva pantalla **Suscripción** en frontend-acceso (sidebar Administración, solo-admin):
+> plan/precio/estado/fechas (solo lectura; el plan lo gobierna el super-admin) + **zona peligrosa**.
+> "Cancelar cuenta" = baja **suave** (reutiliza `billing.cancelar` → Suscripcion CANCELADA + Tenant
+> CANCELADO; el middleware bloquea; **datos conservados**; sin drop de schema — `auto_drop_schema=False`).
+> Confirmación fuerte: escribir el nombre exacto de la cuenta; se audita en HistorialCambio; la UI
+> muestra pantalla terminal + cerrar sesión. Backend `GET/POST /api/suscripcion/` (data plane,
+> `apps/tenants/suscripcion_api.py`, ContextoAcceso+admin; resuelve el tenant del schema activo).
+> Decisión del usuario (AskUserQuestion): acción = cancelar suave; ubicación = pantalla Suscripción
+> nueva. Tests `tests/test_suscripcion_tenant.py` (4). GET verificado en vivo (museos → plan Full);
+> el cancel real NO se ejecutó en dev (bloquearía museos). Pendiente opcional: hard-delete/purga real
+> del tenant (hoy es baja suave; el super-admin no tiene endpoint de drop de schema — es acción de ops).
+>
 > **Continuación 29 (2026-07-15):** **retención obligatoria en meses (1–5, por suscripción)**
 > (`1aebe72`). A pedido del usuario (SaaS por suscripción), la retención dejó de ser días libres con
 > "0 = para siempre" y pasó a ser **obligatoria en MESES, acotada a [1, 5]**. Backend: `tasks.py` en
