@@ -47,6 +47,15 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 29 (2026-07-15):** **retención obligatoria en meses (1–5, por suscripción)**
+> (`1aebe72`). A pedido del usuario (SaaS por suscripción), la retención dejó de ser días libres con
+> "0 = para siempre" y pasó a ser **obligatoria en MESES, acotada a [1, 5]**. Backend: `tasks.py` en
+> meses (`_meses_retencion` recorta a [1,5]; purga convierte ~30 días/mes; claves `retencion_*_meses`);
+> `RetencionAuditoriaView` valida entero 1..5 y expone `min`/`max`; GET devuelve `meses` (no `dias`);
+> settings/.env `RETENCION_*_MESES` (default 3). Frontend: Configuración → Retención con **dropdowns
+> "1 mes … 5 meses"** (obligatorio, rango leído del backend). 9 tests actualizados a meses. Verificado
+> en vivo (museos GET → `meses`+`min`/`max`). Nota: 1 mes = 30 días (aprox. suficiente para purga).
+>
 > **Continuación 28 (2026-07-15):** **pantalla Configuración dedicada** (`788a692`). A sugerencia del
 > usuario, la retención se movió de Catálogos a una pantalla **Configuración** propia (es config del
 > sistema, no un catálogo/datos maestros), con layout de **pestañas extensible** (hoy solo "Retención
