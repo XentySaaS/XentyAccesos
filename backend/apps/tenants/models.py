@@ -14,6 +14,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django_tenants.models import DomainMixin, TenantMixin
 
+from common.backup_codes import CodigoRespaldoBase
 from common.fields import EncryptedCharField
 from common.webauthn import CredencialWebAuthnBase
 
@@ -204,6 +205,14 @@ class CredencialWebAuthnAdmin(CredencialWebAuthnBase):
 
     superadmin = models.ForeignKey(
         SuperAdmin, on_delete=models.CASCADE, related_name="credenciales_webauthn"
+    )
+
+
+class CodigoRespaldoAdmin(CodigoRespaldoBase):
+    """Código de respaldo (2º factor de recuperación) de un super-admin. Vive en ``public``."""
+
+    superadmin = models.ForeignKey(
+        SuperAdmin, on_delete=models.CASCADE, related_name="codigos_respaldo"
     )
 
 

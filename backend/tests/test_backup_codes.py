@@ -76,6 +76,18 @@ def test_regenerar_consumir_una_sola_vez_e_invalidar(dos_tenants):
         assert backup_codes.consumir(u.codigos_respaldo, nuevos[0]) is True
 
 
+def test_super_admin_tambien_tiene_codigos_respaldo():
+    """El super-admin (control plane) usa el mismo related_name (patrón actor-agnóstico)."""
+    from apps.tenants.models import SuperAdmin
+    from common import backup_codes
+
+    sa = SuperAdmin.objects.create_user(email="sa@x.com", nombre="SA", password="x")
+    codigos = backup_codes.regenerar(sa.codigos_respaldo)
+    assert len(codigos) == 10
+    assert backup_codes.consumir(sa.codigos_respaldo, codigos[0]) is True
+    assert backup_codes.consumir(sa.codigos_respaldo, codigos[0]) is False  # un solo uso
+
+
 # ── Endpoints ────────────────────────────────────────────────────────────────
 def test_generar_primera_vez_sin_password(dos_tenants, settings):
     from common.backup_codes_api import GenerarCodigosRespaldoView

@@ -23,6 +23,10 @@ from apps.tenants.admin_api import (
 from apps.tenants.connector_sesion_api import AdminSesionQRView, AdminSesionView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
+from common.backup_codes_api import (
+    GenerarCodigosRespaldoView,
+    VerificarCodigoRespaldoView,
+)
 from common.health import LivenessView, ReadinessView
 from common.mfa_api import (
     ActivarTOTPView,
@@ -84,6 +88,16 @@ urlpatterns = [
         name="admin-mfa-desactivar",
     ),
     path("api/admin/mfa/verificar/", VerificarMFAView.as_view(), name="admin-mfa-verificar"),
+    path(
+        "api/admin/mfa/respaldo/generar/",
+        GenerarCodigosRespaldoView.as_view(),
+        name="admin-mfa-respaldo-generar",
+    ),
+    path(
+        "api/admin/mfa/respaldo/verificar/",
+        VerificarCodigoRespaldoView.as_view(),
+        name="admin-mfa-respaldo-verificar",
+    ),
     path(
         "api/admin/mfa/webauthn/registro/opciones/",
         WARegistroOpcionesView.as_view(),

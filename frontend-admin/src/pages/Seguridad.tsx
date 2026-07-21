@@ -2,7 +2,13 @@ import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 import { registrarLlave, webauthnDisponible } from "../lib/webauthn";
 
-interface Me { email?: string; mfa_habilitado?: boolean; webauthn_credenciales?: number; }
+interface Me {
+  email?: string;
+  mfa_habilitado?: boolean;
+  webauthn_credenciales?: number;
+  codigos_respaldo_disponibles?: number;
+  codigos_respaldo_total?: number;
+}
 interface Enrolamiento { secret: string; otpauth_uri: string; qr: string; }
 
 const INK = "#0F1B2D";
@@ -14,8 +20,13 @@ export default function Seguridad() {
   const [nombreLlave, setNombreLlave] = useState("");
   const [msg, setMsg]           = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [cargando, setCargando] = useState<
-    "me" | "enrolar" | "activar" | "desactivar" | "llave" | null
+    "me" | "enrolar" | "activar" | "desactivar" | "llave" | "respaldo" | null
   >("me");
+  // Códigos de respaldo: se muestran una sola vez tras generarlos.
+  const [respaldoCodigos, setRespaldoCodigos] = useState<string[] | null>(null);
+  const [regenMode, setRegenMode] = useState(false);
+  const [regenPass, setRegenPass] = useState("");
+  const [copiado, setCopiado]     = useState(false);
 
   async function registrar() {
     setMsg(null);
@@ -91,14 +102,71 @@ export default function Seguridad() {
     }
   }
 
+  async function generarRespaldo(password?: string) {
+    setMsg(null);
+    setCargando("respaldo");
+    try {
+      const { data } = await api.post<{ codigos: string[] }>(
+        "/api/admin/mfa/respaldo/generar/",
+        password ? { password } : {},
+      );
+      setRespaldoCodigos(data.codigos);
+      setRegenMode(false);
+      setRegenPass("");
+      await cargarMe();
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string } } };
+      setMsg({ tipo: "error", texto: err?.response?.data?.detail ?? "No se pudieron generar los códigos." });
+    } finally {
+      setCargando(null);
+    }
+  }
+
+  function descargarRespaldo() {
+    if (!respaldoCodigos) return;
+    const contenido =
+      `Códigos de respaldo — Xenty Accesos (super-admin)\n${me?.email ?? ""}\n` +
+      `Generados: ${new Date().toLocaleString("es-MX")}\n\n` +
+      `${respaldoCodigos.join("\n")}\n\n` +
+      "Cada código sirve UNA sola vez. Guárdalos en un lugar seguro; no se volverán a mostrar.\n";
+    const url = URL.createObjectURL(new Blob([contenido], { type: "text/plain;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "codigos-respaldo-xenty.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function copiarRespaldo() {
+    if (!respaldoCodigos) return;
+    try {
+      await navigator.clipboard.writeText(respaldoCodigos.join("\n"));
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      /* clipboard bloqueado: el usuario puede descargar el .txt */
+    }
+  }
+
   const activo = me?.mfa_habilitado === true;
+  const respTotal = me?.codigos_respaldo_total ?? 0;
+  const respDisp = me?.codigos_respaldo_disponibles ?? 0;
+  const respBadge =
+    respTotal === 0
+      ? "bg-slate-100 text-slate-600"
+      : respDisp === 0
+        ? "bg-red-100 text-red-700"
+        : "bg-green-100 text-green-800";
 
   return (
     <div className="mx-auto max-w-2xl">
       <div className="mb-6">
         <h1 className="text-xl font-bold" style={{ color: INK }}>Seguridad</h1>
         <p className="mt-0.5 text-sm text-slate-500">
-          Autenticación en dos pasos (TOTP) de tu cuenta de super-administrador.
+          Autenticación en dos pasos de tu cuenta de super-administrador: código TOTP, llave de
+          seguridad o códigos de respaldo.
         </p>
       </div>
 
@@ -241,6 +309,115 @@ export default function Seguridad() {
           <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
             Tu navegador no soporta WebAuthn.
           </p>
+        )}
+      </div>
+
+      {/* Códigos de respaldo */}
+      <div className="mt-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-700">Códigos de respaldo</h2>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Códigos de un solo uso para entrar si pierdes tu app o tu llave. Se muestran una sola
+              vez al generarlos.
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${respBadge}`}>
+            {respTotal === 0 ? "No generados" : `${respDisp} de ${respTotal} disponibles`}
+          </span>
+        </div>
+
+        {respaldoCodigos ? (
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Guárdalos ahora: por seguridad <strong>no se volverán a mostrar</strong>. Cada código
+              sirve una sola vez.
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {respaldoCodigos.map((c) => (
+                <code key={c} className="rounded-lg bg-slate-50 px-3 py-2 text-center font-mono text-sm tracking-wide text-slate-800 ring-1 ring-slate-100">
+                  {c}
+                </code>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                onClick={descargarRespaldo}
+                className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90"
+              >
+                Descargar .txt
+              </button>
+              <button
+                onClick={copiarRespaldo}
+                className="rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                {copiado ? "¡Copiado!" : "Copiar"}
+              </button>
+              <button
+                onClick={() => setRespaldoCodigos(null)}
+                className="ml-auto text-xs text-slate-400 hover:text-slate-600"
+              >
+                Ya los guardé
+              </button>
+            </div>
+          </div>
+        ) : regenMode ? (
+          <form
+            onSubmit={(e) => { e.preventDefault(); generarRespaldo(regenPass); }}
+            className="mt-5 border-t border-slate-100 pt-5"
+          >
+            <p className="text-sm text-slate-500">
+              Al regenerar, <strong>los códigos anteriores dejarán de funcionar</strong>. Confirma con
+              tu contraseña.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                type="password" required autoFocus autoComplete="current-password"
+                value={regenPass} onChange={(e) => setRegenPass(e.target.value)}
+                placeholder="Tu contraseña"
+                className="w-56 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+              <button
+                type="submit" disabled={cargando !== null || !regenPass}
+                className="rounded-lg bg-red-600 px-3.5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {cargando === "respaldo" ? "Regenerando…" : "Regenerar"}
+              </button>
+              <button
+                type="button" onClick={() => { setRegenMode(false); setRegenPass(""); }}
+                className="text-xs text-slate-400 hover:text-slate-600"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        ) : (
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <p className="text-sm text-slate-500">
+              {respTotal > 0
+                ? `Te quedan ${respDisp} de ${respTotal} códigos. Si se agotan o los pierdes, regeneralos.`
+                : "Genera 10 códigos de un solo uso para no quedarte fuera si pierdes tu segundo factor."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {respTotal > 0 ? (
+                <button
+                  onClick={() => { setMsg(null); setRegenMode(true); }}
+                  disabled={cargando !== null}
+                  className="rounded-lg border border-red-200 px-3.5 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  Regenerar códigos
+                </button>
+              ) : (
+                <button
+                  onClick={() => generarRespaldo()}
+                  disabled={cargando !== null}
+                  className="rounded-lg bg-[#2563EB] px-3.5 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {cargando === "respaldo" ? "Generando…" : "Generar códigos"}
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
