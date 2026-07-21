@@ -47,6 +47,13 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 28 (2026-07-15):** **pantalla Configuración dedicada** (`788a692`). A sugerencia del
+> usuario, la retención se movió de Catálogos a una pantalla **Configuración** propia (es config del
+> sistema, no un catálogo/datos maestros), con layout de **pestañas extensible** (hoy solo "Retención
+> de bitácoras"; futuras configs = nuevas pestañas). Nueva `Configuracion.tsx` + ruta `/configuracion`
+> + ítem en el sidebar (grupo Administración, solo-admin, ícono engrane). Catálogos vuelve a
+> grupos/tipos/protocolos. **Sin cambios de backend** (mismo `/api/config/retencion/`). tsc+build verdes.
+>
 > **Continuación 27 (2026-07-15):** **UI de retención en Catálogos** (`8c8974c`). El admin del tenant
 > ya configura la retención desde la app (antes solo por `/api/opciones/` o env). Endpoint solo-admin
 > `GET/PUT /api/config/retencion/` (`apps/config/views.py::RetencionAuditoriaView`): GET devuelve valor
