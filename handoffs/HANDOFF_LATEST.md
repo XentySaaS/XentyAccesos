@@ -47,6 +47,21 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 31 (2026-07-15):** **códigos de respaldo (recovery codes) como 3er método MFA**
+> (`17ee6ef`). 3ª tarjeta en *Seguridad* (frontend-acceso), mismo estilo que TOTP/WebAuthn. Patrón
+> **actor-agnóstico** como WebAuthn: `common/backup_codes.py` (modelo abstracto `CodigoRespaldoBase`
+> + helpers) + `accounts.CodigoRespaldo` (FK Usuario, `related_name="codigos_respaldo"`, mig. 0007).
+> 10 códigos `XXXX-XXXX-XXXX` (CSPRNG `secrets`, alfabeto sin ambiguos); **solo se guarda el hash
+> Argon2** (`make_password`), `consumir` con `check_password` (tiempo constante) marca `usado_en` (un
+> solo uso); regenerar borra los previos. Endpoints `common/backup_codes_api.py`:
+> `POST /api/auth/mfa/respaldo/generar/` (regenerar exige reauth con contraseña) y `/verificar/`
+> (2º factor en login → consume + `build_tokens`), **rate-limited** (10/m verificar, 10/h generar);
+> montados en el data plane (`config/urls.py`). `me` expone `codigos_respaldo_disponibles/total`.
+> Front: badge "N de 10 disponibles"/"No generados", generar (azul), regenerar (rojo, pide
+> contraseña), códigos visibles UNA vez con Descargar .txt / Copiar / "Ya los guardé"; Login → "Usa
+> un código de respaldo" en el paso MFA. Tests `tests/test_backup_codes.py` (6). tsc+build+ruff verdes;
+> rutas 401 sin auth. **Solo para el Usuario del tenant**; super-admin queda como extensión trivial.
+>
 > **Continuación 30 (2026-07-15):** **suscripción del tenant + zona peligrosa (cancelar cuenta)**
 > (`4353c7e`). Nueva pantalla **Suscripción** en frontend-acceso (sidebar Administración, solo-admin):
 > plan/precio/estado/fechas (solo lectura; el plan lo gobierna el super-admin) + **zona peligrosa**.

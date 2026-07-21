@@ -97,6 +97,7 @@ de respaldo. El Router con failover ya soporta ambos caminos.
 | Rate limiting | ✔ Login (10/m/IP), signup, onboarding, edge, ocr; `Ratelimited`→429 (handler DRF). Verificado en runtime (11º login → 429) |
 | MFA TOTP | ✔ Enrolamiento + activación + verificación (super-admin con MFA obligatorio + tests) |
 | WebAuthn | ✔ Registro/login por passkey (data plane + control plane) |
+| Códigos de respaldo | ✔ 3er método MFA (recovery codes) del `Usuario` del tenant: 10 códigos `XXXX-XXXX-XXXX` (CSPRNG), solo se guarda el **hash Argon2**, un solo uso (`usado_en`), regenerar exige reautenticación; `POST /api/auth/mfa/respaldo/{generar,verificar}` (rate-limited); 3ª tarjeta en *Seguridad* + opción en el login. `common/backup_codes.py`, `accounts.CodigoRespaldo` (mig. 0007). Falta extender a super-admin (trivial: subclase + montar en control plane) |
 | Recuperación de contraseña | ✔ Self-service en acceso y proveedores (token firmado, un solo uso, 1h). QA E2E ✅ |
 | Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill). **Consultables permanentemente** por el proveedor (footer → `/legal/:tipo`, endpoint público) y editables por el admin en *Privacidad* |
 
