@@ -20,8 +20,8 @@ app.conf.beat_schedule = {
         "schedule": crontab(day_of_month="1", hour="3", minute="0"),
     },
     # Purga diaria de auditoría (historial de cambios + accesos al sistema) por retención, en todos
-    # los tenants, para no saturar el almacenamiento al escalar. La ventana es configurable por
-    # entorno (RETENCION_*_DIAS) y por tenant (opciones retencion_*_dias); 0 = conservar siempre.
+    # los tenants, para no saturar el almacenamiento al escalar. Retención obligatoria 1–5 meses,
+    # configurable por entorno (RETENCION_*_MESES) y por tenant (opciones retencion_*_meses).
     "purgar-bitacoras-diaria": {
         "task": "apps.config.tasks.purgar_bitacoras_todos",
         "schedule": crontab(hour="3", minute="30"),

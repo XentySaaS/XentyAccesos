@@ -37,7 +37,7 @@ class Command(BaseCommand):
         for schema in schemas:
             r = purgar_tenant(schema, dry_run=dry)
             self.stdout.write(
-                f"{schema}: historial {verbo} {r['historial']} (retención {r['historial_dias']}d), "
-                f"bitácora {verbo} {r['bitacora']} (retención {r['bitacora_dias']}d)"
+                f"{schema}: historial {verbo} {r['historial']} (retención {r['historial_meses']} mes(es)), "
+                f"bitácora {verbo} {r['bitacora']} (retención {r['bitacora_meses']} mes(es))"
             )
         self.stdout.write(self.style.SUCCESS(f"Listo ({len(schemas)} tenant(s))."))

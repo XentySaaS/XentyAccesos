@@ -5,10 +5,11 @@ accesos al sistema/login). Con varios tenants eso satura el almacenamiento, así
 borra lo más antiguo que la ventana de retención configurada. Toda operación sobre modelos de
 tenant corre dentro de ``schema_context`` (CLAUDE.md §4).
 
-**Configurable en dos niveles:**
-- Default global por entorno: ``RETENCION_HISTORIAL_DIAS`` / ``RETENCION_BITACORA_DIAS`` (settings).
-- Override por tenant: opciones ``retencion_historial_dias`` / ``retencion_bitacora_dias`` (modelo
-  ``Opcion``, editable en ``/api/opciones/``). ``0`` = conservar para siempre (desactiva la purga).
+**Retención OBLIGATORIA (SaaS por suscripción): entre 1 y 5 meses**, sin opción de "conservar
+siempre". Configurable en dos niveles:
+- Default global por entorno: ``RETENCION_HISTORIAL_MESES`` / ``RETENCION_BITACORA_MESES``.
+- Override por tenant: opciones ``retencion_historial_meses`` / ``retencion_bitacora_meses``
+  (modelo ``Opcion``; el admin las edita en *Configuración*). Los valores se acotan a [1, 5] meses.
 """
 
 from __future__ import annotations
@@ -22,34 +23,40 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-# Claves de Opcion (override por tenant) — deben coincidir con lo que edite el admin en /api/opciones/.
-RETENCION_HISTORIAL_CLAVE = "retencion_historial_dias"
-RETENCION_BITACORA_CLAVE = "retencion_bitacora_dias"
+# Claves de Opcion (override por tenant) — deben coincidir con lo que edite el admin en Configuración.
+RETENCION_HISTORIAL_CLAVE = "retencion_historial_meses"
+RETENCION_BITACORA_CLAVE = "retencion_bitacora_meses"
+
+# Retención obligatoria acotada por suscripción: entre 1 y 5 meses (no hay "conservar siempre").
+RETENCION_MESES_MIN = 1
+RETENCION_MESES_MAX = 5
+DIAS_POR_MES = 30  # aproximación suficiente para una purga de retención
 
 
-def _dias_retencion(clave: str, default: int) -> int:
-    """Días de retención efectivos en el schema activo: opción del tenant o el default global.
+def _meses_retencion(clave: str, default: int) -> int:
+    """Meses de retención efectivos en el schema activo, acotados a [MIN, MAX].
 
     Debe llamarse ya dentro de ``schema_context`` (lee ``Opcion`` del tenant). Un valor inválido
-    cae al default; ``0`` (o negativo) significa "conservar para siempre".
+    cae al default; cualquier valor se recorta al rango permitido por la suscripción.
     """
     from .models import Opcion
 
     valor = Opcion.objects.filter(clave=clave).values_list("valor", flat=True).first()
-    if valor is None:
-        return default
-    try:
-        return int(str(valor).strip())
-    except (TypeError, ValueError):
-        return default
+    n = default
+    if valor is not None:
+        try:
+            n = int(str(valor).strip())
+        except (TypeError, ValueError):
+            n = default
+    return max(RETENCION_MESES_MIN, min(RETENCION_MESES_MAX, n))
 
 
 def _purgar_modelo(modelo, dias: int, *, batch: int, dry_run: bool = False) -> int:
     """Borra (por lotes) las filas de ``modelo`` con ``creado`` anterior a ``dias``.
 
-    ``dias <= 0`` desactiva la purga (devuelve 0). En ``dry_run`` solo cuenta, no borra.
+    En ``dry_run`` solo cuenta, no borra.
     """
-    if dias <= 0:
+    if dias <= 0:  # defensa: la retención es siempre >= 1 mes, nunca debería entrar aquí.
         return 0
     corte = timezone.now() - timedelta(days=dias)
     antiguos = modelo.objects.filter(creado__lt=corte)
@@ -74,16 +81,20 @@ def purgar_tenant(schema_name: str, *, dry_run: bool = False) -> dict:
 
     batch = getattr(settings, "RETENCION_PURGA_BATCH", 5000)
     with schema_context(schema_name):
-        h_dias = _dias_retencion(RETENCION_HISTORIAL_CLAVE, settings.RETENCION_HISTORIAL_DIAS)
-        b_dias = _dias_retencion(RETENCION_BITACORA_CLAVE, settings.RETENCION_BITACORA_DIAS)
-        historial = _purgar_modelo(HistorialCambio, h_dias, batch=batch, dry_run=dry_run)
-        bitacora = _purgar_modelo(BitacoraAcceso, b_dias, batch=batch, dry_run=dry_run)
+        h_meses = _meses_retencion(RETENCION_HISTORIAL_CLAVE, settings.RETENCION_HISTORIAL_MESES)
+        b_meses = _meses_retencion(RETENCION_BITACORA_CLAVE, settings.RETENCION_BITACORA_MESES)
+        historial = _purgar_modelo(
+            HistorialCambio, h_meses * DIAS_POR_MES, batch=batch, dry_run=dry_run
+        )
+        bitacora = _purgar_modelo(
+            BitacoraAcceso, b_meses * DIAS_POR_MES, batch=batch, dry_run=dry_run
+        )
     return {
         "schema": schema_name,
         "historial": historial,
         "bitacora": bitacora,
-        "historial_dias": h_dias,
-        "bitacora_dias": b_dias,
+        "historial_meses": h_meses,
+        "bitacora_meses": b_meses,
     }
 
 

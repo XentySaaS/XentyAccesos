@@ -18,12 +18,14 @@ from .serializers import (
     HistorialCambioSerializer,
     OpcionSerializer,
 )
-from .tasks import RETENCION_BITACORA_CLAVE, RETENCION_HISTORIAL_CLAVE
+from .tasks import (
+    RETENCION_BITACORA_CLAVE,
+    RETENCION_HISTORIAL_CLAVE,
+    RETENCION_MESES_MAX,
+    RETENCION_MESES_MIN,
+)
 
 _ADMIN = [*PERMISOS_BASE(), ContextoAcceso, RequiereRol("administrador")]
-
-# Tope sensato para la retención configurable en UI (10 años).
-_RETENCION_MAX_DIAS = 3650
 
 
 class OpcionViewSet(viewsets.ModelViewSet):
@@ -67,33 +69,39 @@ class BitacoraAccesoViewSet(viewsets.ReadOnlyModelViewSet):
 class RetencionAuditoriaView(APIView):
     """Config de retención de auditoría por tenant (la que consume la purga Celery).
 
-    GET  → valor efectivo (opción del tenant o default global) + si es personalizado + el default.
-    PUT  → guarda ``retencion_historial_dias`` / ``retencion_bitacora_dias`` (0 = conservar siempre).
+    Retención OBLIGATORIA por suscripción: entre 1 y 5 meses (sin "conservar siempre").
+    GET  → valor efectivo en meses (opción del tenant o default global) + si es personalizado +
+           el default + el rango permitido (min/max).
+    PUT  → guarda ``retencion_historial_meses`` / ``retencion_bitacora_meses`` (entero 1..5).
     """
 
     permission_classes = _ADMIN
 
     _CAMPOS = {
-        "historial_dias": (RETENCION_HISTORIAL_CLAVE, "RETENCION_HISTORIAL_DIAS"),
-        "bitacora_dias": (RETENCION_BITACORA_CLAVE, "RETENCION_BITACORA_DIAS"),
+        "historial_meses": RETENCION_HISTORIAL_CLAVE,
+        "bitacora_meses": RETENCION_BITACORA_CLAVE,
     }
 
     def _leer(self, clave: str, default: int) -> dict:
         valor = Opcion.objects.filter(clave=clave).values_list("valor", flat=True).first()
         if valor is not None:
             try:
-                return {"dias": int(str(valor).strip()), "personalizado": True, "default": default}
+                n = int(str(valor).strip())
+                n = max(RETENCION_MESES_MIN, min(RETENCION_MESES_MAX, n))
+                return {"meses": n, "personalizado": True, "default": default}
             except (TypeError, ValueError):
                 pass
-        return {"dias": default, "personalizado": False, "default": default}
+        return {"meses": default, "personalizado": False, "default": default}
 
     def get(self, request):
         return Response(
             {
                 "historial": self._leer(
-                    RETENCION_HISTORIAL_CLAVE, settings.RETENCION_HISTORIAL_DIAS
+                    RETENCION_HISTORIAL_CLAVE, settings.RETENCION_HISTORIAL_MESES
                 ),
-                "bitacora": self._leer(RETENCION_BITACORA_CLAVE, settings.RETENCION_BITACORA_DIAS),
+                "bitacora": self._leer(RETENCION_BITACORA_CLAVE, settings.RETENCION_BITACORA_MESES),
+                "min": RETENCION_MESES_MIN,
+                "max": RETENCION_MESES_MAX,
             }
         )
 
@@ -101,16 +109,18 @@ class RetencionAuditoriaView(APIView):
         data = request.data or {}
         errores: dict[str, str] = {}
         a_guardar: dict[str, int] = {}
-        for campo, (clave, _) in self._CAMPOS.items():
+        for campo, clave in self._CAMPOS.items():
             if campo not in data or data[campo] == "":
                 continue
             try:
                 n = int(data[campo])
             except (TypeError, ValueError):
-                errores[campo] = "Debe ser un número entero de días."
+                errores[campo] = "Debe ser un número entero de meses."
                 continue
-            if n < 0 or n > _RETENCION_MAX_DIAS:
-                errores[campo] = f"Entre 0 y {_RETENCION_MAX_DIAS} días (0 = conservar siempre)."
+            if n < RETENCION_MESES_MIN or n > RETENCION_MESES_MAX:
+                errores[campo] = (
+                    f"Entre {RETENCION_MESES_MIN} y {RETENCION_MESES_MAX} meses (por tu suscripción)."
+                )
                 continue
             a_guardar[clave] = n
         if errores:

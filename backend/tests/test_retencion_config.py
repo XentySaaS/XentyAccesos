@@ -1,7 +1,7 @@
-"""Endpoint de configuración de retención (UI de Catálogos): GET efectivo + PUT con validación.
+"""Endpoint de configuración de retención (pantalla Configuración): GET efectivo + PUT con validación.
 
-Ejercita ``RetencionAuditoriaView`` directamente en un tenant (sin la pila de permisos), como en
-``test_verificacion_workspace``.
+Retención en MESES, obligatoria 1–5 (por suscripción). Ejercita ``RetencionAuditoriaView``
+directamente en un tenant (sin la pila de permisos), como en ``test_verificacion_workspace``.
 """
 
 from __future__ import annotations
@@ -22,51 +22,53 @@ def _put(data: dict) -> Request:
     return Request(_factory.put("/x/", data, format="json"), parsers=[JSONParser()])
 
 
-def test_get_devuelve_default_cuando_no_hay_opcion(dos_tenants, settings):
+def test_get_devuelve_default_y_rango(dos_tenants, settings):
     from apps.config.views import RetencionAuditoriaView
 
-    settings.RETENCION_HISTORIAL_DIAS = 365
-    settings.RETENCION_BITACORA_DIAS = 200
+    settings.RETENCION_HISTORIAL_MESES = 3
+    settings.RETENCION_BITACORA_MESES = 5
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):
         r = RetencionAuditoriaView().get(Request(_factory.get("/x/")))
-    assert r.data["historial"] == {"dias": 365, "personalizado": False, "default": 365}
-    assert r.data["bitacora"] == {"dias": 200, "personalizado": False, "default": 200}
+    assert r.data["historial"] == {"meses": 3, "personalizado": False, "default": 3}
+    assert r.data["bitacora"] == {"meses": 5, "personalizado": False, "default": 5}
+    assert r.data["min"] == 1 and r.data["max"] == 5
 
 
 def test_put_guarda_opcion_y_get_lo_refleja(dos_tenants, settings):
     from apps.config.models import Opcion
     from apps.config.views import RetencionAuditoriaView
 
-    settings.RETENCION_HISTORIAL_DIAS = 365
-    settings.RETENCION_BITACORA_DIAS = 365
+    settings.RETENCION_HISTORIAL_MESES = 3
+    settings.RETENCION_BITACORA_MESES = 3
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):
-        r = RetencionAuditoriaView().put(_put({"historial_dias": 90, "bitacora_dias": 30}))
-        assert r.data["historial"]["dias"] == 90
+        r = RetencionAuditoriaView().put(_put({"historial_meses": 2, "bitacora_meses": 1}))
+        assert r.data["historial"]["meses"] == 2
         assert r.data["historial"]["personalizado"] is True
-        assert r.data["bitacora"]["dias"] == 30
-        assert Opcion.objects.get(clave="retencion_historial_dias").valor == "90"
-        assert Opcion.objects.get(clave="retencion_bitacora_dias").valor == "30"
+        assert r.data["bitacora"]["meses"] == 1
+        assert Opcion.objects.get(clave="retencion_historial_meses").valor == "2"
+        assert Opcion.objects.get(clave="retencion_bitacora_meses").valor == "1"
 
 
-def test_put_cero_es_valido(dos_tenants):
+def test_put_rechaza_fuera_de_rango_y_no_entero(dos_tenants):
     from apps.config.views import RetencionAuditoriaView
 
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):
-        r = RetencionAuditoriaView().put(_put({"historial_dias": 0}))
-    assert r.data["historial"]["dias"] == 0  # 0 = conservar siempre
+        r_cero = RetencionAuditoriaView().put(_put({"historial_meses": 0}))  # obligatorio ≥ 1
+        r_alto = RetencionAuditoriaView().put(_put({"bitacora_meses": 6}))  # > 5
+        r_txt = RetencionAuditoriaView().put(_put({"historial_meses": "abc"}))
+    assert r_cero.status_code == 400 and "historial_meses" in r_cero.data
+    assert r_alto.status_code == 400 and "bitacora_meses" in r_alto.data
+    assert r_txt.status_code == 400 and "historial_meses" in r_txt.data
 
 
-def test_put_rechaza_valores_invalidos(dos_tenants):
+def test_put_acepta_limites(dos_tenants):
     from apps.config.views import RetencionAuditoriaView
 
     t1, _ = dos_tenants
     with schema_context(t1.schema_name):
-        r_neg = RetencionAuditoriaView().put(_put({"historial_dias": -5}))
-        r_txt = RetencionAuditoriaView().put(_put({"bitacora_dias": "abc"}))
-        r_alto = RetencionAuditoriaView().put(_put({"historial_dias": 99999}))
-    assert r_neg.status_code == 400 and "historial_dias" in r_neg.data
-    assert r_txt.status_code == 400 and "bitacora_dias" in r_txt.data
-    assert r_alto.status_code == 400 and "historial_dias" in r_alto.data
+        r = RetencionAuditoriaView().put(_put({"historial_meses": 1, "bitacora_meses": 5}))
+    assert r.data["historial"]["meses"] == 1
+    assert r.data["bitacora"]["meses"] == 5
