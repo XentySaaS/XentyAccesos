@@ -86,6 +86,11 @@ class MeView(APIView):
         u = request.user
         # Métodos MFA disponibles del actor (para que la UI muestre estado y ofrezca cada uno).
         webauthn_n = u.credenciales_webauthn.count() if hasattr(u, "credenciales_webauthn") else 0
+        tiene_respaldo = hasattr(u, "codigos_respaldo")
+        respaldo_disp = (
+            u.codigos_respaldo.filter(usado_en__isnull=True).count() if tiene_respaldo else 0
+        )
+        respaldo_total = u.codigos_respaldo.count() if tiene_respaldo else 0
         return Response(
             {
                 "id": u.pk,
@@ -96,6 +101,8 @@ class MeView(APIView):
                 "mfa_habilitado": bool(getattr(u, "mfa_habilitado", False)),
                 "totp_habilitado": bool(getattr(u, "mfa_totp_secret", None)),
                 "webauthn_credenciales": webauthn_n,
+                "codigos_respaldo_disponibles": respaldo_disp,
+                "codigos_respaldo_total": respaldo_total,
             }
         )
 

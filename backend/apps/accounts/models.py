@@ -13,6 +13,7 @@ from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
+from common.backup_codes import CodigoRespaldoBase
 from common.fields import EncryptedCharField
 from common.webauthn import CredencialWebAuthnBase
 
@@ -90,6 +91,12 @@ class CredencialWebAuthn(CredencialWebAuthnBase):
     usuario = models.ForeignKey(
         Usuario, on_delete=models.CASCADE, related_name="credenciales_webauthn"
     )
+
+
+class CodigoRespaldo(CodigoRespaldoBase):
+    """Código de respaldo (2º factor de recuperación) de un ``Usuario`` del tenant."""
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="codigos_respaldo")
 
 
 class PermisoUsuario(models.Model):

@@ -39,6 +39,10 @@ from apps.soporte.api import (
 )
 from apps.tenants.suscripcion_api import SuscripcionTenantView
 from common.auth_api import LogoutView, MeView
+from common.backup_codes_api import (
+    GenerarCodigosRespaldoView,
+    VerificarCodigoRespaldoView,
+)
 from common.email_verify import VerificarEmailView
 from common.health import LivenessView, ReadinessView
 from common.mfa_api import (
@@ -97,6 +101,16 @@ urlpatterns = [
         name="mfa-totp-desactivar",
     ),
     path("api/auth/mfa/verificar/", VerificarMFAView.as_view(), name="mfa-verificar"),
+    path(
+        "api/auth/mfa/respaldo/generar/",
+        GenerarCodigosRespaldoView.as_view(),
+        name="mfa-respaldo-generar",
+    ),
+    path(
+        "api/auth/mfa/respaldo/verificar/",
+        VerificarCodigoRespaldoView.as_view(),
+        name="mfa-respaldo-verificar",
+    ),
     path(
         "api/auth/mfa/webauthn/registro/opciones/",
         WARegistroOpcionesView.as_view(),
