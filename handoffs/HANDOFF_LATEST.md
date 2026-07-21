@@ -47,6 +47,20 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 26 (2026-07-15):** **purga de auditoría por retención (Celery, configurable,
+> multitenant)** (`79f2f1b`). Las bitácoras (`HistorialCambio`=cambios de datos,
+> `BitacoraAcceso`=accesos al sistema/login) crecían sin límite → satura almacenamiento al escalar a
+> muchos tenants. Tarea `apps.config.tasks.purgar_bitacoras_todos` (beat **diaria 03:30**) itera todos
+> los tenants en `schema_context` (best-effort), con `purgar_tenant()` reutilizable y **borrado por
+> lotes** (`RETENCION_PURGA_BATCH`). **Configurable en 2 niveles:** default global por entorno
+> (`RETENCION_HISTORIAL_DIAS`/`RETENCION_BITACORA_DIAS`, default **365**) + override por tenant vía
+> `Opcion` (`retencion_historial_dias`/`retencion_bitacora_dias`, editable en `/api/opciones/`); **0 =
+> conservar siempre**. Comando manual `python manage.py purgar_bitacoras [--schema=x] [--dry-run]`.
+> Índice en `HistorialCambio.creado` (mig. `config.0004`). Tests `tests/test_retencion_bitacoras.py`
+> (5). Verificado en vivo (museos): dry-run + purga real de un registro sintético de 400 días sin tocar
+> los 58 registros reales recientes. Worker+beat reiniciados; tarea registrada. Opcional futuro (no
+> pedido): UI en Catálogos para editar la retención, y extender la purga a `acceso.RegistroAcceso`.
+>
 > **Continuación 25 (2026-07-15):** **Privacidad — buscador de titular automático** (`d0200c7`,
 > `frontend-acceso/src/pages/Privacidad.tsx`). El buscador de "Titular de datos" (ARCO) pedía clic en
 > "Buscar"; ahora es **automático** (debounce 300ms, mín. 2 letras, como el de Sanciones): se quita el
