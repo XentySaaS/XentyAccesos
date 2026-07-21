@@ -39,7 +39,8 @@ class HistorialCambio(models.Model):  # change_histories (Change_history)
     # Decisión abierta del modelo: diff antes/después (listo pero opcional).
     antes = models.JSONField(null=True, blank=True)
     despues = models.JSONField(null=True, blank=True)
-    creado = models.DateTimeField(auto_now_add=True)
+    # Indexado: la purga por retención filtra por ``creado`` y el listado ordena por ``-creado``.
+    creado = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         indexes = [models.Index(fields=["modelo", "modelo_id"])]

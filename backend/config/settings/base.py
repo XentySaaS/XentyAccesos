@@ -200,6 +200,16 @@ CELERY_RESULT_BACKEND = f"{REDIS_URL}/1"
 CELERY_TASK_DEFAULT_RETRY_DELAY = 30
 CELERY_BEAT_SCHEDULER = "celery.beat.PersistentScheduler"
 
+# ── Retención de auditoría (purga automática vía Celery) ─────────────────────
+# Días que se conservan las bitácoras antes de borrarse (evita saturar el almacenamiento al escalar
+# a muchos tenants). Son los DEFAULTS globales; cada tenant puede sobreescribirlos con las opciones
+# `retencion_historial_dias` / `retencion_bitacora_dias` (modelo Opcion, API /api/opciones/).
+# 0 = conservar para siempre (desactiva la purga de esa bitácora).
+RETENCION_HISTORIAL_DIAS = config("RETENCION_HISTORIAL_DIAS", default=365, cast=int)
+RETENCION_BITACORA_DIAS = config("RETENCION_BITACORA_DIAS", default=365, cast=int)
+# Tamaño de lote del borrado (chunked) para no bloquear la tabla en purgas grandes.
+RETENCION_PURGA_BATCH = config("RETENCION_PURGA_BATCH", default=5000, cast=int)
+
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
