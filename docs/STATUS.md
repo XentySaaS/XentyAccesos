@@ -1,14 +1,14 @@
 # Estado del Proyecto — Xenty Acceso
 
-> Actualizado: 2026-07-15 (ver `handoffs/HANDOFF_LATEST.md`)
+> Actualizado: 2026-07-21 (ver `handoffs/HANDOFF_LATEST.md`)
 
 ## Backend
 
 | App | Estado | Detalle |
 |---|---|---|
-| tenants | ✔ | Tenant, Domain, Plan, TenantMainMiddleware |
+| tenants | ✔ | Tenant, Domain (**múltiples por tenant**: primario + `es_panel_proveedores` para `<slug>.proveedores.*`), Plan, TenantMainMiddleware. **`DirectorioProveedor`** (índice global email→tenant, public) + **hub de login de proveedores** (`hub_proveedores_api.py` en `urls_public`: `POST /api/publico/proveedores/espacios[/verificar]/`, código 6 dígitos por correo + cookie de dispositivo 90d). Comando `backfill_hub_proveedores` (dominios + directorio de tenants existentes) |
 | accounts | ✔ | Usuario, PermisoUsuario, roles, JWT acceso |
-| proveedores | ✔ | CuentaProveedor, Proveedor, onboarding, JWT proveedores |
+| proveedores | ✔ | CuentaProveedor, Proveedor, onboarding, JWT proveedores. **Señales → DirectorioProveedor** (alta/cambio de email/baja lógica/borrado sincronizan el índice global del hub, best-effort). Links al proveedor via `common/panel_proveedores.py::url_panel_proveedores` (host propio del panel) |
 | empleados | ✔ | CRUD, import Excel (**plantilla `.xlsx` descargable** `/api/empleados/plantilla/` con los encabezados que consume el importador + nota de formato en la UI; email/teléfono **obligatorios**, dedup de email por empresa), foto (ImageField), docs |
 | recintos | ✔ | Recinto, Zona, Acceso, Ubicacion, Entrada, AreaAutorizada, Protocolo |
 | documentos | ✔ | TipoDocumento, DocumentoEmpleado, verificación estados. **Workspace de verificación drill-down** (`verificacion_api.py`): agregación server-side proveedor→empleado con conteos, paginada, filtros estado/evento/`mis_eventos`/búsqueda (`/api/verificacion/proveedores|empleados|eventos/`) para escalar a mucho volumen; UI 3 columnas en `Verificacion.tsx` |
@@ -34,7 +34,7 @@
 | SPA | Estado | Detalle |
 |---|---|---|
 | frontend-acceso | ✔ | Auth, Dashboard, Usuarios+Permisos, Eventos, Citas, Acceso, Sanciones, Mensajería, Verificación, Accesos al sistema, Catálogos (grupos/tipos/protocolos), **Configuración** (retención de bitácoras; pantalla extensible), **Suscripción** (plan/estado del tenant + zona peligrosa: cancelar cuenta self-service), Privacidad |
-| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA). **Acceso permanente al aviso de privacidad y términos** (footer del portal + Login → página pública `/legal/:tipo` que consume `GET /api/privacidad/documento/<tipo>/`; antes solo se veían durante el registro) |
+| frontend-proveedores | ✔ | Auth, Onboarding, Dashboard, Empleados (foto+docs), MisEventos, Documentos. **Ayuda contextual ⓘ en todos sus formularios** (componente propio sin Radix; incl. Onboarding: RFC/CURP/NSS/INE/REPSE/SUA). **Acceso permanente al aviso de privacidad y términos** (footer del portal + Login → página pública `/legal/:tipo` que consume `GET /api/privacidad/documento/<tipo>/`; antes solo se veían durante el registro). **Host propio** (2026-07-21): la SPA dejó el path `<tenant>/proveedores/` y sirve DOS hosts — `proveedores.<dominio>` (**modo hub**: `Espacios.tsx`, correo→código→lista de espacios→redirige) y `<slug>.proveedores.<dominio>` (panel del tenant en raíz `/`; Login con prefill `?email=`); vite `base:"/"` y router dual por hostname |
 | frontend-admin | ✔ | **Dashboard** + Tenants + **detalle de tenant** (asignar plan, billing/checkout Stripe, **créditos**, **periodo de gracia**) + **Planes CRUD** + **Seguridad/MFA** (TOTP + WebAuthn + **códigos de respaldo**; login con paso MFA). Control plane funcionalmente completo |
 
 > **UI transversal:** sidebar con **colapsado prolijo** (iconos centrados, pill activo centrado,
@@ -48,7 +48,7 @@
 |---|---|
 | Docker Compose | ✔ Postgres 15 + Redis 7 + backend + Nginx |
 | Celery worker/beat | ✔ Tasks activas: `enviar_campana` (mensajería), `importar_efos_task`/`sincronizar_efos_todos` (cumplimiento, retry), **`purgar_bitacoras_todos`** (config, purga de auditoría por retención, beat diaria 03:30) |
-| Nginx dev proxy | ✔ tenant.localhost:8080 |
+| Nginx dev proxy | ✔ tenant.localhost:8080 · hub `proveedores.localhost` (API→control plane) · panel `*.proveedores.localhost` (API→data plane) · path viejo `/proveedores/…` → **301** al host del panel (map `$panel_proveedores_host`; capturas `pph_*` para no pisar las del location) |
 | CI (GitHub Actions) | ✔ `.github/workflows/ci.yml`: ruff + pytest completo + build de las 4 SPAs en push a `main` y PRs |
 | CD (deploy) | 🔲 Pendiente: sin destino de producción decidido (ver HANDOFF). El **XCC entra en el mismo CD como servicio opcional/opt-in** (DEC-008): puede no levantarse en prod sin afectar al principal |
 
@@ -99,6 +99,7 @@ de respaldo. El Router con failover ya soporta ambos caminos.
 | WebAuthn | ✔ Registro/login por passkey (data plane + control plane) |
 | Códigos de respaldo | ✔ 3er método MFA (recovery codes) para el **`Usuario` del tenant Y el super-admin**: 10 códigos `XXXX-XXXX-XXXX` (CSPRNG), solo se guarda el **hash Argon2**, un solo uso (`usado_en`), regenerar exige reautenticación; rate-limited; 3ª tarjeta en *Seguridad* + opción en el login de ambos SPAs. Patrón actor-agnóstico (`common/backup_codes*.py`): `accounts.CodigoRespaldo` (data plane, `POST /api/auth/mfa/respaldo/*`, mig. 0007) y `tenants.CodigoRespaldoAdmin` (control plane, `POST /api/admin/mfa/respaldo/*`, mig. 0005) |
 | Recuperación de contraseña | ✔ Self-service en acceso y proveedores (token firmado, un solo uso, 1h). QA E2E ✅ |
+| Hub de proveedores (anti-enumeración) | ✔ La membresía email→tenants **no se revela sin probar propiedad del correo**: código de 6 dígitos (cache Redis, solo hash SHA-256, TTL 10 min, máx 5 intentos con `compare_digest`, cooldown 3 códigos/h/correo) + cookie de dispositivo firmada (90 d, HttpOnly, SameSite=Lax); respuesta genérica exista o no el correo; rate limit 10/m/IP; tenants suspendidos/cancelados y cuentas con baja lógica excluidos. El hub NUNCA maneja contraseñas ni tokens: el login ocurre en el panel del tenant (JWT/aislamiento intactos) |
 | Documentos legales por defecto | ✔ Aviso de privacidad + términos sembrados al crear tenant (+ command backfill). **Consultables permanentemente** por el proveedor (footer → `/legal/:tipo`, endpoint público) y editables por el admin en *Privacidad* |
 
 ## Pendientes críticos

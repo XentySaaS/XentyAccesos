@@ -47,6 +47,42 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 33 (2026-07-21):** **panel de proveedores en subdominio propio + hub multi-tenant
+> de login** (estilo XentyFiscal: "Busca tu espacio de trabajo"). Cambio grande aprobado tras
+> análisis previo; anti-enumeración con **opción B** (código por correo una vez por dispositivo).
+> **Arquitectura:** el panel dejó `<tenant>.dominio/proveedores/` y ahora vive en su host propio
+> `<slug>.proveedores.<dominio>` (Domain **secundario** `es_panel_proveedores=True`, mig.
+> `tenants.0006` — django-tenants sigue resolviendo el schema por Host: JWT/aislamiento/storage
+> INTACTOS), y `proveedores.<dominio>` es el **hub** (control plane, schema public) que SOLO
+> descubre espacios: correo → código 6 dígitos (si el dispositivo no está verificado) → lista de
+> espacios → redirige al panel elegido con `?email=` prellenado. El hub **nunca** toca contraseñas
+> ni tokens; el login real usa el `ProveedorLoginView` existente en el host del panel.
+> **Backend:** `tenants.DirectorioProveedor` (índice global email→tenant, sincronizado por señales
+> de `CuentaProveedor` en `apps/proveedores/signals.py`, best-effort + comando
+> `backfill_hub_proveedores` para dominios/directorio de tenants existentes; provisioning crea el
+> dominio del panel automáticamente y `bootstrap_public` registra `proveedores.<base>`);
+> `apps/tenants/hub_proveedores_api.py` (`POST /api/publico/proveedores/espacios[/verificar]/` en
+> `urls_public`): respuesta genérica exista o no el correo, código solo-hash SHA-256 en Redis (TTL
+> 10 min, máx 5 intentos `compare_digest`, cooldown 3/h/correo), cookie de dispositivo firmada 90 d
+> (HttpOnly/Lax), rate limit 10/m/IP; excluye tenants suspendidos/cancelados y bajas lógicas.
+> **Notificaciones (todas las que apuntan al panel):** nuevo helper
+> `common/panel_proveedores.py::url_panel_proveedores(request)` usado por invitación de onboarding
+> (correo+WA y `onboarding_url` que copia el admin — ahora `…/onboarding?token=`), activación de
+> proveedor, reset de contraseña ctx proveedores (`build_reset_url` sin prefijo `/proveedores`),
+> e invitación a evento (`cta_url` → `<panel>/eventos`); nuevo correo `enviar_codigo_espacios`.
+> **Nginx:** server `proveedores.localhost` (API→superadmin-backend) + `*.proveedores.localhost`
+> (API→backend) + **301** del path viejo `/proveedores/…` al host nuevo (correos ya enviados y
+> bookmarks siguen vivos). Bug encontrado: las capturas nombradas de nginx son GLOBALES — el map
+> pisaba `$resto` del location; se renombraron a `pph_*`. **SPA proveedores:** vite `base:"/"`,
+> router dual por hostname (`Espacios.tsx` en modo hub con ⓘ), Login con prefill; frontend-acceso
+> ahora usa el `onboarding_url` del backend en vez de armar el link a mano. **Verificado:** suite
+> completa verde (exit 0; hub 5/5 nuevos en `tests/test_hub_proveedores.py`), tsc+build en
+> proveedores y acceso, ruff limpio; en vivo: migración `--shared`, backfill (museos: dominio +
+> 1 cuenta), hub 200, panel `museos.proveedores.localhost` health/login OK, 301 correcto, y E2E
+> real código→cookie→espacios («3 Museos»). OJO dev: el SMTP configurado es Gmail real (no
+> Mailpit) → el código de prueba llegó al buzón real. `.env.example` documenta hosts/DNS/cert de
+> prod (`*.proveedores.<dominio>`).
+>
 > **Continuación 32 (2026-07-15):** **códigos de respaldo también para el super-admin** (`f391260`).
 > Extiende la Continuación 31 al control plane reutilizando las MISMAS vistas (actor-agnósticas):
 > `tenants.CodigoRespaldoAdmin` (FK SuperAdmin, `related_name="codigos_respaldo"`, public, mig.
