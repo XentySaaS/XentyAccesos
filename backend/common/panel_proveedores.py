@@ -13,6 +13,21 @@ existe (``<slug>.dominio`` → ``<slug>.proveedores.dominio``).
 from __future__ import annotations
 
 
+def url_hub_proveedores(request) -> str:
+    """URL absoluta del HUB de proveedores (``proveedores.<dominio base>``).
+
+    El hub es transversal (schema public): sirve el selector de espacios Y el onboarding por
+    invitación (el token resuelve el tenant, así que no necesita host de tenant). Los links de
+    invitación apuntan aquí para estandarizar la entrada de proveedores en un solo host.
+    """
+    from django.conf import settings
+
+    host = request.get_host()
+    _, _, puerto = host.partition(":")
+    sufijo = f":{puerto}" if puerto else ""
+    return f"{request.scheme}://proveedores.{settings.TENANT_BASE_DOMAIN}{sufijo}"
+
+
 def url_panel_proveedores(request, tenant=None) -> str:
     """URL absoluta (scheme://host[:puerto]) del panel de proveedores del tenant."""
     tenant = tenant or getattr(request, "tenant", None)

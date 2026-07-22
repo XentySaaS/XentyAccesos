@@ -3,12 +3,18 @@
 El hub SOLO descubre espacios: nunca maneja contraseñas ni emite tokens. El login real ocurre en
 el panel del tenant elegido (``<slug>.proveedores.dominio``), con el flujo JWT existente intacto.
 
-Flujo anti-enumeración (la membresía email→tenants no se revela a terceros):
+Flujo:
 1. ``POST espacios/`` ``{email}`` — si el dispositivo ya está verificado para ese correo (cookie
-   firmada, 90 días), devuelve los espacios. Si no, envía un código de 6 dígitos al correo (solo
-   si existe en el directorio; la respuesta es idéntica exista o no) y pide verificación.
+   firmada, 90 días), devuelve los espacios. Si el correo no tiene cuenta de proveedor activa,
+   responde ``registrado: False`` (la UI lo dice en el primer paso, sin pantalla de código). Si
+   la tiene, envía un código de 6 dígitos y pide verificación.
 2. ``POST espacios/verificar/`` ``{email, codigo}`` — valida el código (hash + ``compare_digest``,
    máx. 5 intentos, TTL 10 min), deja la cookie de dispositivo y devuelve los espacios.
+
+Enumeración (decisión de producto 2026-07-21): se revela solo la EXISTENCIA de la cuenta
+(booleano, con rate limit por IP) para no mandar a un callejón sin salida a quien no tiene
+cuenta; la parte sensible —EN QUÉ recintos trabaja el correo— sigue exigiendo probar la
+propiedad del correo (código o cookie de dispositivo).
 """
 
 from __future__ import annotations
@@ -35,10 +41,15 @@ TTL_CODIGO = 10 * 60
 MAX_INTENTOS = 5  # 6 dígitos + 5 intentos + TTL 10 min ⇒ fuerza bruta inviable
 MAX_CODIGOS_HORA = 3  # cooldown de envío por correo (anti spam/mail-bombing)
 
-# Respuesta única del paso 1 (no revela si el correo existe ni en cuántos espacios está).
 _RESPUESTA_CODIGO = {
     "verificado": False,
-    "detail": "Si el correo está registrado, te enviamos un código de verificación.",
+    "registrado": True,
+    "detail": "Te enviamos un código de verificación a tu correo.",
+}
+_RESPUESTA_NO_REGISTRADO = {
+    "verificado": False,
+    "registrado": False,
+    "detail": "Este correo no tiene una cuenta de proveedor activa.",
 }
 
 
@@ -125,10 +136,19 @@ class EspaciosProveedorView(APIView):
         if _dispositivo_verificado(request, email):
             return Response({"verificado": True, "espacios": _espacios(email, request)})
 
+        # Cuenta activa en al menos un tenant vivo (a tenants suspendidos/cancelados no se
+        # puede entrar de todos modos, así que no vale la pena un código para verlos).
+        registrado = DirectorioProveedor.objects.filter(
+            email=email,
+            activo=True,
+            tenant__estado__in=[Tenant.Estado.TRIAL, Tenant.Estado.ACTIVO],
+        ).exists()
+        if not registrado:
+            return Response(_RESPUESTA_NO_REGISTRADO)
+
         clave_envios = f"hubprov:envios:{email}"
         envios = cache.get(clave_envios, 0)
-        registrado = DirectorioProveedor.objects.filter(email=email, activo=True).exists()
-        if envios < MAX_CODIGOS_HORA and registrado:
+        if envios < MAX_CODIGOS_HORA:
             codigo = f"{secrets.randbelow(1_000_000):06d}"
             cache.set(f"hubprov:codigo:{email}", _hash(codigo), TTL_CODIGO)
             cache.delete(f"hubprov:intentos:{email}")

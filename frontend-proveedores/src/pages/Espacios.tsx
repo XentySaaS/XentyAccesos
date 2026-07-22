@@ -32,6 +32,12 @@ export default function Espacios() {
       if (data.verificado) {
         setEspacios(data.espacios);
         setPaso("lista");
+      } else if (data.registrado === false) {
+        // Sin cuenta de proveedor activa: se avisa aquí mismo, sin pantalla de código.
+        setError(
+          "Este correo no tiene una cuenta de proveedor activa. Si te invitaron, completa tu " +
+            "registro desde el enlace de la invitación; si no, pide al recinto que te invite."
+        );
       } else {
         setPaso("codigo");
       }
@@ -66,7 +72,7 @@ export default function Espacios() {
     setCodigo("");
     try {
       await api.post("/api/publico/proveedores/espacios/", { email });
-      setAviso("Si el correo está registrado, te enviamos un nuevo código.");
+      setAviso("Te enviamos un nuevo código.");
     } catch {
       setError("No se pudo reenviar el código. Intenta de nuevo en unos minutos.");
     }
@@ -137,8 +143,8 @@ export default function Espacios() {
                 Verifica tu correo
               </h2>
               <p className="mb-6 mt-1 text-sm text-slate-500">
-                Si <strong>{email}</strong> está registrado, le enviamos un código de 6 dígitos
-                (válido 10 minutos). Solo se pide la primera vez en este dispositivo.
+                Enviamos un código de 6 dígitos a <strong>{email}</strong> (válido 10 minutos).
+                Solo se pide la primera vez en este dispositivo.
               </p>
               {aviso && !error && (
                 <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
@@ -184,9 +190,8 @@ export default function Espacios() {
                 </button>
               </div>
               <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
-                ¿No llega el código? Revisa tu carpeta de spam. Si te invitaron como proveedor pero
-                aún no completas tu registro, primero termínalo desde el enlace de la invitación —
-                este acceso solo funciona con cuentas ya registradas.
+                ¿No llega el código? Revisa tu carpeta de spam o usa «Reenviar código». Por
+                seguridad se permiten máximo 3 envíos por hora.
               </p>
             </>
           )}

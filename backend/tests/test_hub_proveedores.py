@@ -61,6 +61,11 @@ def test_url_panel_proveedores_desde_request(dos_tenants):
         url_panel_proveedores(peticion, tenant=None) == "http://aisl-uno.proveedores.localhost:8080"
     )
 
+    # El hub es transversal: siempre proveedores.<dominio base> con esquema/puerto de la petición.
+    from common.panel_proveedores import url_hub_proveedores
+
+    assert url_hub_proveedores(peticion) == "http://proveedores.localhost:8080"
+
     # Con registro Domain del panel: manda la tabla (fuente de verdad).
     Domain.objects.create(
         domain="aisl-uno.proveedores.localhost",
@@ -109,7 +114,7 @@ def test_directorio_se_sincroniza_con_senales(dos_tenants):
         assert not DirectorioProveedor.objects.filter(tenant=t1, cuenta_id=cuenta.pk).exists()
 
 
-# ── Flujo del hub (anti-enumeración + código + cookie de dispositivo) ────────
+# ── Flujo del hub (código + cookie de dispositivo; membresía por-tenant protegida) ──
 def test_hub_no_enumera_y_verifica_por_codigo(dos_tenants, settings, mailoutbox):
     from apps.tenants.hub_proveedores_api import (
         COOKIE_DISPOSITIVO,
@@ -127,18 +132,21 @@ def test_hub_no_enumera_y_verifica_por_codigo(dos_tenants, settings, mailoutbox)
         es_panel_proveedores=True,
     )
     try:
-        # Correo NO registrado: misma respuesta genérica y NINGÚN correo enviado.
+        # Correo SIN cuenta de proveedor activa: se dice en el paso 1 (registrado=False, decisión
+        # de producto) y NO se envía ningún correo ni se muestra pantalla de código.
         r = EspaciosProveedorView().post(_req({"email": "nadie@x.com"}))
         assert r.status_code == 200 and r.data["verificado"] is False
+        assert r.data["registrado"] is False
         assert len(mailoutbox) == 0
 
-        # Correo registrado: misma respuesta (sin espacios) pero llega el código de 6 dígitos.
+        # Correo registrado: registrado=True (sin espacios aún) y llega el código de 6 dígitos.
         email = _email_unico("hub")
         with schema_context(t1.schema_name):
             _cuenta(email)
         r = EspaciosProveedorView().post(_req({"email": email}))
         assert r.status_code == 200 and r.data["verificado"] is False
-        assert "espacios" not in r.data  # nunca se listan sin probar propiedad del correo
+        assert r.data["registrado"] is True
+        assert "espacios" not in r.data  # la membresía por-tenant exige probar el correo
         assert len(mailoutbox) == 1
         codigo = re.search(r"\b(\d{6})\b", mailoutbox[0].body).group(1)
 
@@ -166,11 +174,14 @@ def test_hub_no_enumera_y_verifica_por_codigo(dos_tenants, settings, mailoutbox)
         assert len(directo.data["espacios"]) == 1
         assert len(mailoutbox) == 1  # no se envió otro código
 
-        # La cookie de un correo NO sirve para espiar otro correo.
+        # La cookie de un correo NO sirve para espiar los espacios de otro correo registrado.
+        email2 = _email_unico("otro")
+        with schema_context(t1.schema_name):
+            _cuenta(email2)
         ajeno = EspaciosProveedorView().post(
-            _req({"email": _email_unico("otro")}, cookies={COOKIE_DISPOSITIVO: cookie})
+            _req({"email": email2}, cookies={COOKIE_DISPOSITIVO: cookie})
         )
-        assert ajeno.data["verificado"] is False
+        assert ajeno.data["verificado"] is False and "espacios" not in ajeno.data
     finally:
         Domain.objects.filter(tenant=t1, es_panel_proveedores=True).delete()
 
@@ -198,7 +209,8 @@ def test_hub_excluye_tenants_cancelados_y_cuentas_inactivas(dos_tenants, setting
         # Solo el tenant vivo aparece; el cancelado no se revela.
         assert [e["nombre"] for e in ok.data["espacios"]] == ["Tenant Uno"]
 
-        # Cuentas dadas de baja lógica (en TODOS los tenants): el hub deja de enviar códigos.
+        # Cuentas dadas de baja lógica (en TODOS los tenants): el hub responde registrado=False
+        # y deja de enviar códigos.
         from apps.proveedores.models import CuentaProveedor
 
         for t in (t1, t2):
@@ -206,7 +218,8 @@ def test_hub_excluye_tenants_cancelados_y_cuentas_inactivas(dos_tenants, setting
                 c = CuentaProveedor.objects.get(email=email)
                 c.activo = False
                 c.save(update_fields=["activo"])
-        EspaciosProveedorView().post(_req({"email": email}))
+        baja = EspaciosProveedorView().post(_req({"email": email}))
+        assert baja.data["registrado"] is False
         assert len(mailoutbox) == 1  # ya no hay entradas activas → no se envía código
     finally:
         Domain.objects.filter(es_panel_proveedores=True, tenant__in=[t1, t2]).delete()

@@ -19,13 +19,17 @@ function Protegida({ children }: { children: JSX.Element }) {
 
 /**
  * La misma SPA sirve DOS hosts (nginx):
- * - proveedores.<dominio>          → modo HUB: solo el buscador de espacios (sin login local).
+ * - proveedores.<dominio>          → modo HUB: buscador de espacios + ONBOARDING por invitación
+ *                                    (el token resuelve el tenant; API del control plane).
  * - <slug>.proveedores.<dominio>   → panel del tenant (login + autoservicio), en la raíz "/".
  */
 const esHub = window.location.hostname.split(".")[0] === "proveedores";
 
 export const router = esHub
-  ? createBrowserRouter([{ path: "*", element: <Espacios /> }])
+  ? createBrowserRouter([
+      { path: "/onboarding", element: <Onboarding /> },
+      { path: "*", element: <Espacios /> },
+    ])
   : createBrowserRouter([
       { path: "/", element: <Login /> },
       { path: "/recuperar", element: <Recuperar /> },

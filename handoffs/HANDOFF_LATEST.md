@@ -47,6 +47,22 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 34 (2026-07-21):** **onboarding estandarizado en el hub + aviso de correo sin
+> cuenta** (feedback tras probar la Continuación 33). (a) Las invitaciones de onboarding ahora
+> apuntan al HUB (`proveedores.<dominio>/onboarding?token=…`, helper `url_hub_proveedores` sobre
+> `TENANT_BASE_DOMAIN`): el wizard es transversal (token→tenant vía `schema_context`) y sus 4
+> endpoints ya vivían en `urls_public` (onboarding GET/POST, documento legal, OCR INE); el router
+> del hub añade `/onboarding` y al terminar navega a `/` (el buscador de espacios). La activación
+> sigue apuntando al panel del tenant (ahí se inicia sesión). El 301 del path viejo se conserva.
+> (b) **Decisión de producto**: el paso 1 del hub responde `registrado: false` cuando el correo no
+> tiene cuenta de proveedor activa (en tenant vivo) → la UI lo avisa en el paso del correo y ya NO
+> muestra la pantalla del código (caso real: responsable invitado sin completar onboarding —
+> "Infofin" — esperaba un código que por diseño nunca llegaba). Se revela solo la EXISTENCIA
+> (booleano, rate-limited); la membresía por-tenant sigue exigiendo código/cookie. Tests del hub
+> actualizados al nuevo contrato (5/5), tsc+build verdes; verificado en vivo (`registrado
+> true/false`, onboarding con token real en el hub 200) y reenviada la invitación de Infofin con
+> el link estandarizado.
+>
 > **Continuación 33 (2026-07-21):** **panel de proveedores en subdominio propio + hub multi-tenant
 > de login** (estilo XentyFiscal: "Busca tu espacio de trabajo"). Cambio grande aprobado tras
 > análisis previo; anti-enumeración con **opción B** (código por correo una vez por dispositivo).

@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 
 from apps.config.services import AuditViewSetMixin
 from common.emails import enviar_activacion_proveedor, enviar_invitacion_proveedor
-from common.panel_proveedores import url_panel_proveedores
+from common.panel_proveedores import url_hub_proveedores, url_panel_proveedores
 from common.permissions import PERMISOS_BASE, RequiereModulo, RequiereRol
 from common.signing import VIGENCIA_HORAS, firmar_invitacion, leer_invitacion
 
@@ -29,9 +29,8 @@ from .serializers import OnboardingProveedorSerializer, ProveedorSerializer
 def _base_url_de(request) -> str:
     """URL base del PANEL DE PROVEEDORES del tenant (host propio ``<slug>.proveedores.dominio``).
 
-    El admin invita desde ``<tenant>.dominio`` (operación), pero los links del proveedor apuntan
-    al host del panel — que también resuelve el tenant por Host (Domain secundario), así el
-    onboarding conserva el contexto de tenant.
+    Para links que requieren cuenta (p. ej. activación → login). El ONBOARDING, en cambio, apunta
+    al HUB (``url_hub_proveedores``): es transversal y el token resuelve el tenant.
     """
     return url_panel_proveedores(request)
 
@@ -66,7 +65,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 nombre_empresa=proveedor.nombre,
                 nombre_tenant=nombre_tenant,
                 token=token,
-                base_url=_base_url_de(self.request),
+                base_url=url_hub_proveedores(self.request),
                 telefono=proveedor.telefono,
             )
 
@@ -93,7 +92,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 nombre_empresa=proveedor.nombre,
                 nombre_tenant=nombre_tenant,
                 token=token,
-                base_url=_base_url_de(request),
+                base_url=url_hub_proveedores(request),
                 telefono=proveedor.telefono,
             )
 
@@ -102,7 +101,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 "token": token,
                 "vigencia_horas": VIGENCIA_HORAS,
                 "email_enviado": bool(email_destino),
-                "onboarding_url": f"{_base_url_de(request)}/onboarding?token={token}",
+                "onboarding_url": f"{url_hub_proveedores(request)}/onboarding?token={token}",
             }
         )
 
