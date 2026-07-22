@@ -183,6 +183,11 @@ export default function Espacios() {
                   Reenviar código
                 </button>
               </div>
+              <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
+                ¿No llega el código? Revisa tu carpeta de spam. Si te invitaron como proveedor pero
+                aún no completas tu registro, primero termínalo desde el enlace de la invitación —
+                este acceso solo funciona con cuentas ya registradas.
+              </p>
             </>
           )}
 
