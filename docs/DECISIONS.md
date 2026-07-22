@@ -96,3 +96,15 @@
 **Justificación:** Un solo pipeline simplifica la operación (un release, un host), pero el XCC es un respaldo no-oficial (Baileys) que puede fallar/banearse; acoplarlo como obligatorio arriesgaría al principal. La no-afectación **ya está garantizada por arquitectura**: master switch global (`ConfiguracionConnector.habilitado`) + Router con failover a UltraMsg/Sandbox + breaker. El XCC nunca es dependencia dura.
 **Impacto:** Cuando exista el CD (falta host), el XCC entra como servicio opcional; su imagen se construye del repo del XCC. Con el master switch OFF o el contenedor apagado, el principal opera igual. Artefactos de deploy del XCC: `xenty-connector/DEPLOY.md`, `docker-compose.prod.yml`, `nginx.xcc.conf.example`.
 **Archivos:** `docs/ARQUITECTURA_CONNECTOR.md` §14, `xenty-connector/DEPLOY.md`
+
+---
+
+## DEC-009: El panel de proveedores vive en subdominios por tenant; se rechaza el host único
+
+**Fecha:** 2026-07-21
+**Problema:** Tras separar proveedores a su propio espacio de dominios (hub `proveedores.<dominio>` + panel `<slug>.proveedores.<dominio>`), se propuso que TODO viviera en un solo host (`proveedores.<dominio>/login`, `/dashboard`) con un select para cambiar de tenant dentro del panel.
+**Alternativas:** (a) Host único con tenant resuelto por claim del JWT / header `X-Tenant` (b) Mantener subdominios por tenant y dar el mismo UX con un selector de espacios que navegue entre hosts
+**Decisión:** Se mantienen los **subdominios por tenant** (opción b). El host único queda rechazado.
+**Justificación:** El host único rompe la invariante estructural host→schema: la validación del claim `tenant` se vuelve circular (el schema se elegiría desde el propio token), los endpoints sin sesión (login, reset) pasarían a confiar en un tenant elegido por el cliente, el enforcement por middleware tendría que reordenarse, y —lo que ningún código arregla— todos los tokens de todos los espacios del proveedor vivirían en UN solo origen del navegador (un XSS expondría todas las sesiones a la vez; hoy cada tenant es un origen aislado). Contradice CLAUDE.md §4 («aislamiento por DB, no por disciplina de código»). El beneficio era cosmético (la URL); el proveedor entra por el hub, por links de correo o por el selector, nunca tecleando el dominio. XentyFiscal usa el mismo patrón (selector central → subdominio del workspace).
+**Impacto:** La experiencia se unifica por UI, no por dominio: hub con código de verificación por dispositivo + onboarding, login del panel con marca del recinto (`GET /api/publico/marca/`) y link «← Elegir otro espacio». Pendiente opcional (no confirmado): selector de espacios en el header del panel que navegue entre hosts.
+**Archivos:** `backend/common/jwt.py`, `backend/apps/tenants/hub_proveedores_api.py`, `backend/common/panel_proveedores.py`, `nginx/nginx.conf`, `handoffs/HANDOFF_LATEST.md` (continuaciones 33-37)
