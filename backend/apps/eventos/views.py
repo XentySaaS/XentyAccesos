@@ -17,6 +17,7 @@ from apps.config.services import AuditViewSetMixin
 from apps.documentos.services import cumple_requisitos
 from apps.empleados.models import Empleado
 from apps.gafetes.services import TIPO_EVENTO, TIPO_PARKING, componer_gafete, emitir_qr
+from common.panel_proveedores import url_panel_proveedores
 from common.permissions import (
     PERMISOS_BASE,
     ContextoAcceso,
@@ -39,10 +40,6 @@ from .serializers import EventoProveedorSerializer, EventoSerializer
 
 def _tenant_nombre(request) -> str:
     return getattr(getattr(request, "tenant", None), "nombre", connection.schema_name)
-
-
-def _base_url(request) -> str:
-    return f"{request.scheme}://{request.get_host()}"
 
 
 class EventoViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
@@ -255,7 +252,9 @@ class EventoProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
         ep = serializer.instance
         self._sync_cajones(ep)
         noti.notificar_invitacion(
-            ep, nombre_tenant=_tenant_nombre(self.request), panel_url=_base_url(self.request)
+            ep,
+            nombre_tenant=_tenant_nombre(self.request),
+            panel_url=url_panel_proveedores(self.request),
         )
 
     def perform_update(self, serializer):

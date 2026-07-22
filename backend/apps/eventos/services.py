@@ -121,8 +121,8 @@ def notificar_invitacion(ep, *, nombre_tenant: str, panel_url: str | None = None
     proveedor = ep.proveedor
     evento = ep.evento
     responsable = (proveedor.nombre_responsable or proveedor.nombre or "").strip().title()
-    panel = (panel_url or "").rstrip("/")
-    cta_url = f"{panel}/proveedores/eventos" if panel else None
+    panel = (panel_url or "").rstrip("/")  # host propio del panel (<slug>.proveedores.dominio)
+    cta_url = f"{panel}/eventos" if panel else None
     resumen = _resumen_evento(ep)
 
     asunto = f"Invitación al evento {evento.nombre} — {nombre_tenant}"

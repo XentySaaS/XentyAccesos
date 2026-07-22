@@ -5,7 +5,8 @@ import { defineConfig } from "vite";
 const target = process.env.VITE_PROXY_TARGET || "http://localhost:8002";
 
 export default defineConfig({
-  base: "/proveedores/",  // se sirve bajo <tenant>.localhost/proveedores/ (Nginx)
+  // Se sirve en la RAÍZ de dos hosts propios (Nginx): proveedores.<dominio> (hub) y
+  // <slug>.proveedores.<dominio> (panel del tenant). El path viejo /proveedores/ redirige 301.
   plugins: [react()],
   server: {
     host: true,

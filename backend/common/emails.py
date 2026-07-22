@@ -24,15 +24,16 @@ def _plano(saludo: str, parrafos: list[str], *, url: str | None, nombre_tenant: 
 
 
 def _proveedores_url(base_url: str | None = None) -> str:
-    """Base del SPA de proveedores.
+    """Base del panel de proveedores del tenant (host propio ``<slug>.proveedores.dominio``).
 
-    Preferimos ``base_url`` (derivado del host de la petición del admin que invita): así el link
-    hereda el subdominio del tenant —``<tenant>.dominio``— y Nginx preserva el Host para que
-    django-tenants resuelva el tenant. Sin esto, un link a ``localhost`` pierde el contexto de
-    tenant y el backend responde 404 ("No tenant for hostname"). El setting queda como fallback
-    para contextos sin petición (Celery/ETL).
+    ``base_url`` debe venir de ``common.panel_proveedores.url_panel_proveedores(request)`` (los
+    call sites con petición lo hacen): ese host también resuelve el tenant por Host (Domain
+    secundario), así el link conserva el contexto de tenant. El setting queda como fallback para
+    contextos sin petición (Celery).
     """
-    base = base_url or getattr(settings, "FRONTEND_PROVEEDORES_URL", "http://localhost:5175")
+    base = base_url or getattr(
+        settings, "FRONTEND_PROVEEDORES_URL", "http://proveedores.localhost:8080"
+    )
     return base.rstrip("/")
 
 
@@ -55,7 +56,7 @@ def enviar_invitacion_proveedor(
     telefono: str | None = None,
 ) -> None:
     """Envía la invitación de onboarding al responsable (correo + WhatsApp si tiene teléfono)."""
-    url = f"{_proveedores_url(base_url)}/proveedores/onboarding?token={token}"
+    url = f"{_proveedores_url(base_url)}/onboarding?token={token}"
     asunto = f"Invitación para registrarte como proveedor de {nombre_tenant}"
     saludo = "Hola,"
     parrafos = [
@@ -155,6 +156,33 @@ def enviar_reset_password(
     _notificar_wa(telefono, texto_plano)
 
 
+def enviar_codigo_espacios(*, email_destino: str, codigo: str) -> None:
+    """Código de verificación del hub de proveedores (verificar dispositivo antes de listar espacios).
+
+    Sin marca de tenant: el hub es transversal (aún no se sabe a qué espacio entrará). Solo correo —
+    en el hub no se conoce (ni se debe revelar) el teléfono asociado.
+    """
+    asunto = "Tu código de verificación — Xenty Accesos"
+    saludo = "Hola,"
+    parrafos = [
+        f"Tu código para ver tus espacios de trabajo es: <strong>{codigo}</strong>",
+        "Es válido durante <strong>10 minutos</strong> y solo funciona en el dispositivo donde lo solicitaste.",
+        "Si tú no lo solicitaste, ignora este correo: nadie puede ver tus espacios sin este código.",
+    ]
+    texto_plano = _plano(saludo, parrafos, url=None, nombre_tenant="Xenty Accesos")
+    html = construir_correo(
+        nombre_tenant="Xenty Accesos",
+        tipo="info",
+        titulo="Tu código de verificación",
+        saludo=saludo,
+        parrafos=parrafos,
+        asunto=asunto,
+        pre_header="Código para ver tus espacios de trabajo (válido 10 minutos).",
+        footer_legal="Si no solicitaste este código, ignora este mensaje. Xenty Accesos · Sistema de Control de Acceso.",
+    )
+    enviar_correo_html(asunto=asunto, texto_plano=texto_plano, html=html, destino=email_destino)
+
+
 def enviar_activacion_proveedor(
     *,
     email_destino: str,
@@ -165,7 +193,7 @@ def enviar_activacion_proveedor(
     telefono: str | None = None,
 ) -> None:
     """Notifica al responsable que su cuenta fue activada (correo + WhatsApp si tiene teléfono)."""
-    url = f"{_proveedores_url(base_url)}/proveedores"
+    url = _proveedores_url(base_url)
     asunto = f"Tu acceso como proveedor de {nombre_tenant} está listo"
     saludo = f"Hola {nombre_responsable},"
     parrafos = [

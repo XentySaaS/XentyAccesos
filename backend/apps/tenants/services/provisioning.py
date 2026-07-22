@@ -24,6 +24,16 @@ class ProvisionError(ValueError):
     pass
 
 
+def dominio_panel_proveedores(slug: str, dominio_primario: str) -> str:
+    """``<slug>.dominio`` → ``<slug>.proveedores.dominio`` (host del panel de proveedores)."""
+    if dominio_primario.startswith(f"{slug}."):
+        return f"{slug}.proveedores.{dominio_primario[len(slug) + 1 :]}"
+    # Dominio primario atípico (p. ej. personalizado): se cuelga del dominio base configurado.
+    from django.conf import settings
+
+    return f"{slug}.proveedores.{settings.TENANT_BASE_DOMAIN}"
+
+
 def provisionar_tenant(
     *,
     slug: str,
@@ -62,6 +72,13 @@ def provisionar_tenant(
             trial_ends_at=timezone.now() + timedelta(days=trial_dias),
         )
         Domain.objects.create(domain=dominio, tenant=tenant, is_primary=True)
+        # Host propio del panel de proveedores (mismo schema, resuelto por django-tenants).
+        Domain.objects.create(
+            domain=dominio_panel_proveedores(slug, dominio),
+            tenant=tenant,
+            is_primary=False,
+            es_panel_proveedores=True,
+        )
         SaldoCreditos.objects.get_or_create(tenant=tenant, defaults={"saldo": 0})
 
     password = admin_password or secrets.token_urlsafe(12)

@@ -50,13 +50,13 @@ def generar_token_reset(user, ctx: str) -> str:
 def build_reset_url(request, ctx: str, token: str) -> str:
     """URL absoluta a la pantalla de restablecimiento del SPA correspondiente.
 
-    Deriva esquema/host de la petición (que llega al subdominio del tenant), de modo que el enlace
-    conserva el contexto de tenant. El SPA de proveedores se sirve bajo ``/proveedores``.
+    Deriva esquema/host de la petición, que llega al host del SPA que la originó (operación en
+    ``<slug>.dominio``, proveedores en su host propio ``<slug>.proveedores.dominio``), de modo que
+    el enlace conserva el contexto de tenant sin prefijos de ruta.
     """
     host = request.get_host()
     scheme = "https" if request.is_secure() else "http"
-    prefijo = "/proveedores" if ctx == "proveedores" else ""
-    return f"{scheme}://{host}{prefijo}/restablecer?token={token}"
+    return f"{scheme}://{host}/restablecer?token={token}"
 
 
 class _EmailSerializer(serializers.Serializer):

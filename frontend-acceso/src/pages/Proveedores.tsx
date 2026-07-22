@@ -140,11 +140,9 @@ export default function Proveedores() {
     setInvitando(p.id); setError(null);
     try {
       const { data } = await api.post(`/api/proveedores/${p.id}/invitar/`);
-      // Armamos el link desde el origen del admin (mismo subdominio de tenant y mismo puerto) para
-      // que Nginx preserve el Host y django-tenants resuelva el tenant; así se evita el 404
-      // "No tenant for hostname" que daba al apuntar a un host sin contexto de tenant (localhost:5175).
-      const onboardingUrl = `${window.location.origin}/proveedores/onboarding?token=${data.token}`;
-      setTokenModal({ url: onboardingUrl, nombre: p.nombre, emailEnviado: data.email_enviado });
+      // El backend arma la URL con el host PROPIO del panel de proveedores del tenant
+      // (<slug>.proveedores.<dominio>), que también resuelve el tenant por Host.
+      setTokenModal({ url: data.onboarding_url, nombre: p.nombre, emailEnviado: data.email_enviado });
       await cargar();
     } catch {
       setError("No se pudo generar la invitación.");

@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 
 from apps.config.services import AuditViewSetMixin
 from common.emails import enviar_activacion_proveedor, enviar_invitacion_proveedor
+from common.panel_proveedores import url_panel_proveedores
 from common.permissions import PERMISOS_BASE, RequiereModulo, RequiereRol
 from common.signing import VIGENCIA_HORAS, firmar_invitacion, leer_invitacion
 
@@ -26,13 +27,13 @@ from .serializers import OnboardingProveedorSerializer, ProveedorSerializer
 
 
 def _base_url_de(request) -> str:
-    """URL base (scheme+host) de la petición del admin.
+    """URL base del PANEL DE PROVEEDORES del tenant (host propio ``<slug>.proveedores.dominio``).
 
-    El admin invita desde ``<tenant>.dominio`` (subdominio del tenant), así el link de onboarding
-    hereda ese host y Nginx preserva el Host → django-tenants resuelve el tenant. Es lo que evita el
-    404 "No tenant for hostname" que aparece al apuntar a un host sin contexto de tenant.
+    El admin invita desde ``<tenant>.dominio`` (operación), pero los links del proveedor apuntan
+    al host del panel — que también resuelve el tenant por Host (Domain secundario), así el
+    onboarding conserva el contexto de tenant.
     """
-    return f"{request.scheme}://{request.get_host()}"
+    return url_panel_proveedores(request)
 
 
 class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
@@ -101,7 +102,7 @@ class ProveedorViewSet(AuditViewSetMixin, viewsets.ModelViewSet):
                 "token": token,
                 "vigencia_horas": VIGENCIA_HORAS,
                 "email_enviado": bool(email_destino),
-                "onboarding_url": f"{_base_url_de(request)}/proveedores/onboarding?token={token}",
+                "onboarding_url": f"{_base_url_de(request)}/onboarding?token={token}",
             }
         )
 

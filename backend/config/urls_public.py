@@ -21,6 +21,7 @@ from apps.tenants.admin_api import (
     TenantAdminViewSet,
 )
 from apps.tenants.connector_sesion_api import AdminSesionQRView, AdminSesionView
+from apps.tenants.hub_proveedores_api import EspaciosProveedorView, VerificarEspaciosView
 from apps.tenants.webhooks import StripeWebhookView
 from common.auth_api import MeView
 from common.backup_codes_api import (
@@ -73,6 +74,17 @@ urlpatterns = [
         "api/onboarding/documento/",
         DocumentoOnboardingView.as_view(),
         name="onboarding-documento-public",
+    ),
+    # Hub de login de proveedores (proveedores.<dominio>): descubre espacios por correo.
+    path(
+        "api/publico/proveedores/espacios/",
+        EspaciosProveedorView.as_view(),
+        name="hub-proveedores-espacios",
+    ),
+    path(
+        "api/publico/proveedores/espacios/verificar/",
+        VerificarEspaciosView.as_view(),
+        name="hub-proveedores-verificar",
     ),
     # Alta pública self-service de tenants
     path("api/signup/", SignupView.as_view(), name="signup"),

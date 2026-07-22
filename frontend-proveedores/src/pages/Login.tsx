@@ -4,13 +4,14 @@ import api from "../api/client";
 import { useAuth } from "../store/auth";
 
 export default function Login() {
-  const [email,    setEmail]    = useState("");
+  const [params]    = useSearchParams();
+  // El hub (proveedores.<dominio>) redirige aquí con el correo ya verificado como prefill.
+  const [email,    setEmail]    = useState(params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
   const setTokens   = useAuth((s) => s.setTokens);
   const navigate    = useNavigate();
-  const [params]    = useSearchParams();
   const sesionExp   = params.get("sesion") === "expirada";
 
   async function onSubmit(e: FormEvent) {

@@ -17,8 +17,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         base = getattr(settings, "TENANT_BASE_DOMAIN", "localhost")
-        # Hosts que sirve el control plane (LP, www y panel super-admin) → schema public.
-        hosts = [base, f"www.{base}", f"xenty.{base}", f"admin.{base}"]
+        # Hosts que sirve el control plane (LP, www, panel super-admin y hub de proveedores)
+        # → schema public. El hub (proveedores.<base>) solo descubre espacios; el panel de cada
+        # tenant vive en <slug>.proveedores.<base> (Domain secundario del tenant).
+        hosts = [base, f"www.{base}", f"xenty.{base}", f"admin.{base}", f"proveedores.{base}"]
 
         tenant = Tenant.objects.filter(schema_name="public").first()
         if tenant is None:

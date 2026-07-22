@@ -56,7 +56,42 @@ class Tenant(TenantMixin):
 
 
 class Domain(DomainMixin):
-    """Subdominio que resuelve al tenant (``<slug>.xenty.mx``). Origen: ``domains``."""
+    """Subdominio que resuelve al tenant (``<slug>.xenty.mx``). Origen: ``domains``.
+
+    Un tenant puede tener VARIOS dominios (django-tenants): el primario es la operación
+    (``<slug>.dominio``) y ``es_panel_proveedores=True`` marca el host propio del panel de
+    proveedores (``<slug>.proveedores.dominio``) — mismo schema, distinto host.
+    """
+
+    es_panel_proveedores = models.BooleanField(default=False)
+
+
+class DirectorioProveedor(models.Model):
+    """Índice GLOBAL email→tenant de cuentas de proveedor (para el hub ``proveedores.dominio``).
+
+    Responde «¿en qué espacios está registrado este correo?» sin escanear N schemas en el login.
+    Solo metadatos mínimos (email + estado): la cuenta y su PII siguen viviendo en el schema del
+    tenant. Se sincroniza por señales de ``CuentaProveedor`` (``apps.proveedores.signals``) y se
+    reconstruye con ``manage.py backfill_hub_proveedores``.
+    """
+
+    tenant = models.ForeignKey(
+        Tenant, on_delete=models.CASCADE, related_name="directorio_proveedores"
+    )
+    cuenta_id = models.PositiveIntegerField()  # pk de CuentaProveedor DENTRO del schema del tenant
+    email = models.EmailField(db_index=True)  # normalizado en minúsculas
+    activo = models.BooleanField(default=True)
+    actualizado = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "cuenta_id"], name="uniq_directorio_tenant_cuenta"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.email} @ {self.tenant.schema_name}"
 
 
 class Plan(models.Model):
