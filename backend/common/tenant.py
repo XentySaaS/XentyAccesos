@@ -7,6 +7,10 @@ correos y WhatsApp.
 
 from __future__ import annotations
 
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 
 def nombre_tenant_actual(default: str = "Xenty Accesos") -> str:
     """Nombre display del tenant activo, para mostrarlo como quien invita/notifica.
@@ -28,3 +32,18 @@ def nombre_tenant_actual(default: str = "Xenty Accesos") -> str:
         if obj is not None:
             return obj.nombre
     return default
+
+
+class MarcaTenantView(APIView):
+    """``GET /api/publico/marca/`` — nombre display del tenant del host (público, sin auth).
+
+    Lo usan las pantallas públicas de los SPAs del tenant (p. ej. el login de proveedores muestra
+    «Portal de proveedores de 3 Museos»). No expone nada sensible: el nombre ya figura en cada
+    correo/WhatsApp que el tenant envía.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"nombre": nombre_tenant_actual()})

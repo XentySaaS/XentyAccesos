@@ -47,6 +47,17 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 37 (2026-07-21):** **login de proveedores con identidad del recinto + regreso al
+> hub**. El usuario preguntó si TODO proveedores podía vivir en `proveedores.localhost` (un solo
+> host); se explicó que romperia la invariante host→schema (aislamiento estructural de
+> django-tenants + aislamiento de sesión por origen del navegador) y que XentyFiscal usa el mismo
+> patrón; en su lugar se unificó la EXPERIENCIA: (1) endpoint público `GET /api/publico/marca/`
+> (data plane, `common/tenant.py::MarcaTenantView`, sin auth — el nombre ya figura en cada correo
+> del tenant) y el login de proveedores muestra «Portal de proveedores de **3 Museos**»;
+> (2) link «← Elegir otro espacio de trabajo» que regresa al hub (host del panel sin su primer
+> label; solo se muestra si el host tiene la forma `<slug>.proveedores.*`). Test del endpoint en
+> `test_marca_tenant.py` (5/5), tsc+build proveedores verdes, verificado en vivo.
+>
 > **Continuación 36 (2026-07-21):** **"ojito" mostrar/ocultar en TODOS los campos de contraseña y
 > secretos** (pedido del usuario; no debilita seguridad — NIST lo recomienda para reducir errores
 > de captura). Componente `InputPassword` por SPA (`components/InputPassword.tsx`; en landing

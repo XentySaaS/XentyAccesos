@@ -1,8 +1,17 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
 import InputPassword from "../components/InputPassword";
 import { useAuth } from "../store/auth";
+
+/** URL del hub (selector de espacios): el host del panel sin su primer label.
+ *  'museos.proveedores.localhost:8080' → 'proveedores.localhost:8080'. */
+function urlHub(): string | null {
+  const { protocol, hostname, port } = window.location;
+  const labels = hostname.split(".");
+  if (labels[1] !== "proveedores") return null; // host atípico: no ofrecer el link
+  return `${protocol}//${labels.slice(1).join(".")}${port ? `:${port}` : ""}/`;
+}
 
 export default function Login() {
   const [params]    = useSearchParams();
@@ -11,9 +20,18 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error,    setError]    = useState<string | null>(null);
   const [loading,  setLoading]  = useState(false);
+  const [recinto,  setRecinto]  = useState<string | null>(null);
   const setTokens   = useAuth((s) => s.setTokens);
   const navigate    = useNavigate();
   const sesionExp   = params.get("sesion") === "expirada";
+  const hub         = urlHub();
+
+  // Marca del recinto (pública): que se vea EN QUÉ espacio se está iniciando sesión.
+  useEffect(() => {
+    api.get<{ nombre: string }>("/api/publico/marca/")
+      .then(({ data }) => { if (data.nombre) setRecinto(data.nombre); })
+      .catch(() => {});
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -40,7 +58,13 @@ export default function Login() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}xenty.png`} alt="Xenty" className="h-12 w-auto" />
           <div className="text-center">
-            <p className="mt-1 text-sm text-slate-500">Autoservicio de empresas proveedoras</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {recinto ? (
+                <>Portal de proveedores de <strong className="text-slate-700">{recinto}</strong></>
+              ) : (
+                "Autoservicio de empresas proveedoras"
+              )}
+            </p>
           </div>
         </div>
 
@@ -98,6 +122,15 @@ export default function Login() {
               ¿Olvidaste tu contraseña?
             </Link>
           </form>
+
+          {hub && (
+            <a
+              href={hub}
+              className="mt-3 block text-center text-xs text-slate-400 transition hover:text-slate-600"
+            >
+              ← Elegir otro espacio de trabajo
+            </a>
+          )}
         </div>
 
         <div className="mt-6 flex flex-col items-center gap-1.5 text-center text-xs text-slate-400">

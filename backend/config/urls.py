@@ -51,6 +51,7 @@ from common.mfa_api import (
     EnrolarTOTPView,
     VerificarMFAView,
 )
+from common.tenant import MarcaTenantView
 from common.webauthn_api import (
     LoginOpcionesView as WALoginOpcionesView,
 )
@@ -68,6 +69,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", LivenessView.as_view(), name="health"),
     path("health/ready/", ReadinessView.as_view(), name="health-ready"),
+    # Marca del tenant del host (pública): la usan pantallas públicas de los SPAs (login proveedores).
+    path("api/publico/marca/", MarcaTenantView.as_view(), name="marca-tenant"),
     path("api/auth/acceso/login/", AccesoLoginView.as_view(), name="acceso-login"),
     path("api/auth/proveedores/login/", ProveedorLoginView.as_view(), name="proveedores-login"),
     path(

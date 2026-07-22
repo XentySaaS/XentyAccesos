@@ -45,3 +45,13 @@ def test_firma_plana_termina_en_el_tenant_sin_xenty():
     txt = _plano("Hola,", ["cuerpo"], url=None, nombre_tenant="3 Museos")
     assert txt.strip().endswith("— 3 Museos")
     assert "Xenty" not in txt  # la firma ya no arrastra «· Xenty Acceso»
+
+
+def test_endpoint_publico_marca_devuelve_nombre_del_tenant(dos_tenants):
+    """GET /api/publico/marca/ (data plane): nombre display del tenant del host, sin auth."""
+    from common.tenant import MarcaTenantView
+
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        r = MarcaTenantView().get(None)
+    assert r.status_code == 200 and r.data == {"nombre": "Tenant Uno"}
