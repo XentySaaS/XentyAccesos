@@ -47,6 +47,17 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 35 (2026-07-21):** **fix: el POST del onboarding reventaba desde el hub (500
+> "Error al enviar")**. Causa: `OnboardingProveedorView.post` validaba el serializer ANTES del
+> `schema_context` del token, y `validate_email` consulta `CuentaProveedor` — en el host del
+> tenant funcionaba (la petición ya venía en ese schema), pero desde el hub (schema public)
+> `relation proveedores_cuentaproveedor does not exist`. Fix: leer el token primero y validar el
+> serializer DENTRO del `schema_context`. Los archivos no eran problema: ambos backends montan
+> `./backend:/app` (media compartida). Test de regresión
+> `test_onboarding_post_funciona_desde_schema_public` (POST multipart con conexión en public →
+> 201 + cuenta en el tenant + entrada del directorio por señal). 6/6 verdes; smoke en vivo:
+> token corrupto desde el hub → 400 (antes 500).
+>
 > **Continuación 34 (2026-07-21):** **onboarding estandarizado en el hub + aviso de correo sin
 > cuenta** (feedback tras probar la Continuación 33). (a) Las invitaciones de onboarding ahora
 > apuntan al HUB (`proveedores.<dominio>/onboarding?token=…`, helper `url_hub_proveedores` sobre

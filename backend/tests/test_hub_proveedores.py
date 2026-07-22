@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import pytest
 from django_tenants.utils import schema_context
-from rest_framework.parsers import JSONParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
@@ -112,6 +112,57 @@ def test_directorio_se_sincroniza_con_senales(dos_tenants):
 
         cuenta.delete()
         assert not DirectorioProveedor.objects.filter(tenant=t1, cuenta_id=cuenta.pk).exists()
+
+
+# ── Onboarding desde el hub (schema public) ──────────────────────────────────
+def test_onboarding_post_funciona_desde_schema_public(dos_tenants, settings):
+    """Regresión: el wizard se envía desde el HUB (schema public, control plane).
+
+    La validación del serializer consulta CuentaProveedor (unicidad de email), así que debe
+    correr DENTRO del schema del token. Antes corría antes del schema_context → desde public
+    reventaba con ProgrammingError (relation proveedores_cuentaproveedor does not exist) → 500.
+    """
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    from apps.proveedores.views import OnboardingProveedorView
+    from common.signing import firmar_invitacion
+
+    settings.RATELIMIT_ENABLE = False
+    t1, _ = dos_tenants
+    with schema_context(t1.schema_name):
+        from apps.proveedores.models import Proveedor
+
+        proveedor = Proveedor.objects.create(nombre="Empresa Hub")
+        token = firmar_invitacion(proveedor.id, t1.schema_name)
+
+    pdf = b"%PDF-1.4\n%%EOF\n"
+    email = _email_unico("onboard")
+    crudo = _factory.post(
+        "/x/",
+        {
+            "token": token,
+            "nombre": "Resp",
+            "email": email,
+            "password": "supersecreta1",
+            "privacy": "true",
+            "terms": "true",
+            "repse": SimpleUploadedFile("repse.pdf", pdf, content_type="application/pdf"),
+            "sua": SimpleUploadedFile("sua.pdf", pdf, content_type="application/pdf"),
+        },
+        format="multipart",
+    )
+    # OJO: se invoca con la conexión en 'public' (así llega desde el hub).
+    r = OnboardingProveedorView().post(Request(crudo, parsers=[MultiPartParser(), FormParser()]))
+    assert r.status_code == 201, getattr(r, "data", r)
+
+    # La cuenta quedó en el schema del tenant y la señal la registró en el directorio global.
+    from apps.tenants.models import DirectorioProveedor
+
+    assert DirectorioProveedor.objects.filter(tenant=t1, email=email, activo=True).exists()
+    with schema_context(t1.schema_name):
+        from apps.proveedores.models import CuentaProveedor
+
+        assert CuentaProveedor.objects.filter(email=email).exists()
 
 
 # ── Flujo del hub (código + cookie de dispositivo; membresía por-tenant protegida) ──

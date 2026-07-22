@@ -274,12 +274,11 @@ class OnboardingProveedorView(APIView):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
         data.update(request.FILES)
 
-        s = OnboardingProveedorSerializer(data=data)
-        s.is_valid(raise_exception=True)
-        datos = s.validated_data
-
+        # El token se lee ANTES de validar el serializer: la validación consulta tablas del
+        # tenant (unicidad del email en CuentaProveedor) y esta vista también atiende desde el
+        # schema public (hub proveedores.<dominio>), donde esas tablas no existen.
         try:
-            payload, tenant_slug = self._leer_token(datos["token"])
+            payload, tenant_slug = self._leer_token(str(data.get("token") or ""))
         except ValueError:
             return Response({"detail": "Token requerido."}, status=status.HTTP_400_BAD_REQUEST)
         except signing.SignatureExpired:
@@ -288,6 +287,9 @@ class OnboardingProveedorView(APIView):
             return Response({"detail": "Invitación inválida."}, status=status.HTTP_400_BAD_REQUEST)
 
         with schema_context(tenant_slug):
+            s = OnboardingProveedorSerializer(data=data)
+            s.is_valid(raise_exception=True)
+            datos = s.validated_data
             proveedor = Proveedor.objects.filter(pk=payload.get("proveedor_id")).first()
             if proveedor is None:
                 return Response(
