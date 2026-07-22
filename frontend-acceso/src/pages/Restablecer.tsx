@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import api from "../api/client";
+import InputPassword from "../components/InputPassword";
 
 export default function Restablecer() {
   const [params]  = useSearchParams();
@@ -78,8 +79,8 @@ export default function Restablecer() {
               )}
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-slate-700">Nueva contraseña</span>
-                <input
-                  type="password" required autoFocus autoComplete="new-password" minLength={8}
+                <InputPassword
+                  required autoFocus autoComplete="new-password" minLength={8}
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="Al menos 8 caracteres"
@@ -87,8 +88,8 @@ export default function Restablecer() {
               </label>
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-slate-700">Repetir contraseña</span>
-                <input
-                  type="password" required autoComplete="new-password" minLength={8}
+                <InputPassword
+                  required autoComplete="new-password" minLength={8}
                   value={repetir} onChange={(e) => setRepetir(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="••••••••"

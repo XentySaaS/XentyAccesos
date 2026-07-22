@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
+import InputPassword from "../components/InputPassword";
 import { mfaPendiente } from "../lib/jwt";
 import { autenticarLlave, webauthnDisponible } from "../lib/webauthn";
 import { useAuth } from "../store/auth";
@@ -166,8 +167,8 @@ export default function Login() {
 
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-slate-700">Contraseña</span>
-                <input
-                  type="password" required autoComplete="current-password"
+                <InputPassword
+                  required autoComplete="current-password"
                   value={password} onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   placeholder="••••••••"

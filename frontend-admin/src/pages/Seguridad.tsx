@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import InputPassword from "../components/InputPassword";
 import { registrarLlave, webauthnDisponible } from "../lib/webauthn";
 
 interface Me {
@@ -371,8 +372,8 @@ export default function Seguridad() {
               tu contraseña.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <input
-                type="password" required autoFocus autoComplete="current-password"
+              <InputPassword
+                required autoFocus autoComplete="current-password"
                 value={regenPass} onChange={(e) => setRegenPass(e.target.value)}
                 placeholder="Tu contraseña"
                 className="w-56 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"

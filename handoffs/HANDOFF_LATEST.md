@@ -47,6 +47,15 @@ Sesión de **hardening + una feature de operación + documentación**. Cinco com
 > `tests/test_emails_dual_canal.py` (8) fija la regla para los 4 wrappers. Regla registrada:
 > **toda notificación va por correo y WhatsApp si el destinatario tiene ambos configurados.**
 >
+> **Continuación 36 (2026-07-21):** **"ojito" mostrar/ocultar en TODOS los campos de contraseña y
+> secretos** (pedido del usuario; no debilita seguridad — NIST lo recomienda para reducir errores
+> de captura). Componente `InputPassword` por SPA (`components/InputPassword.tsx`; en landing
+> `src/InputPassword.tsx`): wrapper relativo + botón `type="button"` con Eye/EyeOff (lucide),
+> passthrough de props (`Omit<InputHTMLAttributes,"type">` + `pr-10`). Aplicado en los 14 campos:
+> proveedores (Login, Restablecer ×2, Onboarding ×2), acceso (Login, Restablecer ×2, Seguridad
+> regenerar-códigos, Soporte API key), admin (Login, Seguridad regenerar-códigos, Comunicaciones
+> secreto HMAC) y landing (signup). tsc + build verdes en las 4 SPAs.
+>
 > **Continuación 35 (2026-07-21):** **fix: el POST del onboarding reventaba desde el hub (500
 > "Error al enviar")**. Causa: `OnboardingProveedorView.post` validaba el serializer ANTES del
 > `schema_context` del token, y `validate_email` consulta `CuentaProveedor` — en el host del

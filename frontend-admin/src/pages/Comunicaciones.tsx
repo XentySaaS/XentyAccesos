@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
+import InputPassword from "../components/InputPassword";
 import { AdminWhatsAppSesiones } from "../components/AdminWhatsAppSesiones";
 
 interface Config {
@@ -139,8 +140,7 @@ export default function Comunicaciones() {
           </label>
           <label className="mt-4 block text-sm">
             <span className="mb-1 block font-medium text-slate-700">Secreto HMAC</span>
-            <input
-              type="password"
+            <InputPassword
               value={hmac}
               onChange={(e) => setHmac(e.target.value)}
               placeholder={cfg.hmac_configurado ? "•••••••• (sin cambios)" : "Pega el secreto compartido"}

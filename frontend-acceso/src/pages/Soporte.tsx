@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import api from "../api/client";
 import { Ayuda } from "../components/Ayuda";
+import InputPassword from "../components/InputPassword";
 
 interface Salud {
   estado?: string; plan?: string | null; modo_solo_lectura?: boolean;
@@ -155,7 +156,7 @@ export default function Soporte() {
             API Key
             <Ayuda>Credencial para autenticar contra la Mesa de Ayuda. Se guarda cifrada; déjala vacía para conservar la actual.</Ayuda>
           </span>
-          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)}
+          <InputPassword value={apiKey} onChange={e => setApiKey(e.target.value)}
             placeholder={cfg?.api_key_configurada ? "•••••••• (sin cambios)" : "Pega la API key"}
             className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
         </label>

@@ -1,6 +1,7 @@
 import { CalendarCheck, QrCode, ShieldCheck, Users } from "lucide-react";
 import { FormEvent, useState } from "react";
 import api from "./api";
+import InputPassword from "./InputPassword";
 
 interface Resultado {
   tenant: string;
@@ -108,7 +109,7 @@ export default function App() {
                 value={f.admin_nombre} onChange={set("admin_nombre")} required />
               <input className="w-full rounded-lg border px-3 py-2" type="email" placeholder="Tu correo"
                 value={f.admin_email} onChange={set("admin_email")} required />
-              <input className="w-full rounded-lg border px-3 py-2" type="password"
+              <InputPassword className="w-full rounded-lg border px-3 py-2"
                 placeholder="Contraseña (mín. 8)" value={f.admin_password}
                 onChange={set("admin_password")} required minLength={8} />
               <button disabled={enviando}

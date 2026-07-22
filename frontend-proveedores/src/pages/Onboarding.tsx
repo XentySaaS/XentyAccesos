@@ -2,6 +2,7 @@ import axios from "axios";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ayuda } from "../components/Ayuda";
+import InputPassword from "../components/InputPassword";
 
 const INK    = "#0F1B2D";
 const SIGNAL = "#2563EB";
@@ -903,14 +904,14 @@ export default function Onboarding() {
                 <div className="grid grid-cols-2 gap-4">
                   <label className="block">
                     <Lbl req ayuda="Mínimo 8 caracteres. La usarás junto con tu correo para entrar al portal; combina letras, números y símbolos para mayor seguridad.">Contraseña</Lbl>
-                    <input type="password" minLength={8} value={form.password}
+                    <InputPassword minLength={8} value={form.password}
                       className={inp(errs.password)}
                       onChange={e => { set("password", e.target.value); clr("password"); }} />
                     <Err msg={errs.password} />
                   </label>
                   <label className="block">
                     <Lbl req ayuda="Vuelve a escribir la misma contraseña para confirmar que quedó bien capturada.">Confirmar contraseña</Lbl>
-                    <input type="password" minLength={8} value={form.confirmar}
+                    <InputPassword minLength={8} value={form.confirmar}
                       className={inp(errs.confirmar)}
                       onChange={e => { set("confirmar", e.target.value); clr("confirmar"); }} />
                     <Err msg={errs.confirmar} />
